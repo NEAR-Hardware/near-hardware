@@ -32,7 +32,34 @@ const api: NearHardwareApi = {
       ipcRenderer.invoke('projects:create-chat', projectId, environmentId),
     deleteChat: (projectId, chatId) =>
       ipcRenderer.invoke('projects:delete-chat', projectId, chatId),
-    onChange: (listener) => subscribe('projects:changed', listener)
+    onChange: (listener) => subscribe('projects:changed', listener),
+    setBoard: (projectId, board) => ipcRenderer.invoke('projects:set-board', projectId, board)
+  },
+  devices: {
+    list: () => ipcRenderer.invoke('devices:list'),
+    onChange: (listener) => subscribe('devices:changed', listener)
+  },
+  serial: {
+    open: (path, baudRate) => ipcRenderer.invoke('serial:open', path, baudRate),
+    close: (path) => ipcRenderer.invoke('serial:close', path),
+    write: (path, data) => ipcRenderer.invoke('serial:write', path, data),
+    onData: (listener) => subscribe('serial:data', listener),
+    onOpened: (listener) => subscribe('serial:opened', listener),
+    onClosed: (listener) => subscribe('serial:closed', listener),
+    onError: (listener) => subscribe('serial:error', listener)
+  },
+  terminal: {
+    create: (projectId, cols, rows) => ipcRenderer.invoke('terminal:create', projectId, cols, rows),
+    write: (id, data) => ipcRenderer.invoke('terminal:write', id, data),
+    resize: (id, cols, rows) => ipcRenderer.invoke('terminal:resize', id, cols, rows),
+    kill: (id) => ipcRenderer.invoke('terminal:kill', id),
+    onData: (listener) => subscribe('terminal:data', listener),
+    onExit: (listener) => subscribe('terminal:exit', listener)
+  },
+  platformio: {
+    status: () => ipcRenderer.invoke('platformio:status'),
+    install: () => ipcRenderer.invoke('platformio:install'),
+    onLog: (listener) => subscribe('platformio:log', listener)
   },
   chat: {
     open: (projectId, chatId) => ipcRenderer.invoke('chat:open', projectId, chatId),

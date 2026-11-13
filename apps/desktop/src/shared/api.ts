@@ -5,7 +5,9 @@ import type {
   EnvironmentId,
   EnvironmentStatus
 } from './environments'
+import type { DeviceInfo, PlatformioStatus } from './hardware'
 import type {
+  BoardProfile,
   Chat,
   CreateProjectResult,
   FileEntry,
@@ -39,6 +41,7 @@ export interface NearHardwareApi {
     // Only connected environments can be used
     createChat(projectId: string, environmentId: EnvironmentId): Promise<Chat>
     deleteChat(projectId: string, chatId: string): Promise<void>
+    setBoard(projectId: string, board: Partial<BoardProfile>): Promise<BoardProfile | undefined>
     // Fires when the main process changes projects, e.g. naming a chat
     onChange(listener: () => void): () => void
   }
@@ -59,6 +62,33 @@ export interface NearHardwareApi {
     // Watches one project at a time; null stops watching
     watch(projectId: string | null): Promise<void>
     onChange(listener: (event: FilesChangedEvent) => void): () => void
+  }
+  devices: {
+    // Also starts the background watcher that fires onChange
+    list(): Promise<DeviceInfo[]>
+    onChange(listener: (devices: DeviceInfo[]) => void): () => void
+  }
+  serial: {
+    open(path: string, baudRate: number): Promise<void>
+    close(path: string): Promise<void>
+    write(path: string, data: string): Promise<void>
+    onData(listener: (event: { path: string; data: string }) => void): () => void
+    onOpened(listener: (event: { path: string; baudRate: number }) => void): () => void
+    onClosed(listener: (event: { path: string }) => void): () => void
+    onError(listener: (event: { path: string; message: string }) => void): () => void
+  }
+  terminal: {
+    create(projectId: string, cols: number, rows: number): Promise<string>
+    write(id: string, data: string): Promise<void>
+    resize(id: string, cols: number, rows: number): Promise<void>
+    kill(id: string): Promise<void>
+    onData(listener: (event: { id: string; data: string }) => void): () => void
+    onExit(listener: (event: { id: string; exitCode: number }) => void): () => void
+  }
+  platformio: {
+    status(): Promise<PlatformioStatus>
+    install(): Promise<PlatformioStatus>
+    onLog(listener: (line: string) => void): () => void
   }
   // Native context menu; resolves to the chosen item's id, or null if dismissed
   showMenu(items: MenuItemSpec[]): Promise<string | null>

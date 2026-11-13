@@ -1,16 +1,9 @@
 // Owns every open serial port, so the serial monitor panel and agent tools
 // share one connection instead of fighting over the device
 import { SerialPort } from 'serialport'
+import type { DeviceInfo } from '../../shared/hardware'
 
-export type DeviceInfo = {
-  path: string
-  manufacturer?: string
-  vendorId?: string
-  productId?: string
-  serialNumber?: string
-  // Best guess from the USB vendor id, e.g. "Espressif (native USB)"
-  chipHint?: string
-}
+export type { DeviceInfo }
 
 // Common USB-serial vendors on dev boards
 const VENDORS: Record<string, string> = {
@@ -49,7 +42,8 @@ export async function listDevices(): Promise<DeviceInfo[]> {
       // USB devices only; skips Bluetooth and debug pseudo-ports
       .filter((p) => p.vendorId)
       .map((p) => ({
-        path: p.path,
+        // macOS lists the tty.* node; cu.* is the one for outgoing connections and uploads
+        path: process.platform === 'darwin' ? p.path.replace('/dev/tty.', '/dev/cu.') : p.path,
         manufacturer: p.manufacturer,
         vendorId: p.vendorId?.toLowerCase(),
         productId: p.productId?.toLowerCase(),

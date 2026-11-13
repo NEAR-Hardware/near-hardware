@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { closeAllChats } from './chat/manager'
 import { setBridgeWindow, startBridge } from './hardware/bridge'
+import { closeAllTerminals } from './hardware/ipc'
 import { closeAllPorts, setSerialEventSink } from './hardware/serial'
 import { registerIpcHandlers } from './ipc'
 
@@ -103,6 +104,7 @@ app.on('before-quit', (event) => {
   quitting = true
   event.preventDefault()
   closeAllPorts()
+  closeAllTerminals()
   closeAllChats().finally(() => app.quit())
 })
 

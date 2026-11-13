@@ -12,6 +12,7 @@ import {
   setChatPermissionMode
 } from './chat/manager'
 import { listDirectory, resolveInProject, stopWatching, watchProject } from './files'
+import { registerHardwareIpc } from './hardware/ipc'
 import {
   addExistingFolder,
   createChat,
@@ -46,6 +47,8 @@ function assertEnvironmentId(value: unknown): EnvironmentId {
 }
 
 export function registerIpcHandlers(): void {
+  registerHardwareIpc()
+
   ipcMain.handle('environments:detect-all', () =>
     Promise.all(ENVIRONMENTS.map((environment) => detect(environment.id)))
   )

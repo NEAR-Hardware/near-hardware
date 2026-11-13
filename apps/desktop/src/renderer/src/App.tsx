@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { PanelRight } from 'lucide-react'
+import { PanelBottom, PanelRight, Usb } from 'lucide-react'
 import type { EnvironmentId } from '../../shared/environments'
 import type { Chat, Project } from '../../shared/projects'
+import BottomPanel from './components/bottom/BottomPanel'
 import ChatView from './components/chat/ChatView'
 import EnvironmentsView from './components/EnvironmentsView'
 import FilesPanel from './components/FilesPanel'
@@ -10,6 +11,7 @@ import PanelResizer from './components/PanelResizer'
 import ProjectHome from './components/ProjectHome'
 import Sidebar, { SidebarHeader } from './components/Sidebar'
 import { revealLabel } from './format'
+import { describeDevice } from './hooks/useDevices'
 import { useNow } from './hooks/useNow'
 import { usePanel } from './hooks/usePanel'
 import { FILES_PANEL, MAIN_MIN_WIDTH, SIDEBAR_PANEL } from './panelLayout'
@@ -22,6 +24,28 @@ function App(): React.JSX.Element {
   const [projects, setProjects] = useState<Project[]>()
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const now = useNow()
+  const [bottom, setBottom] = useState(loadBottomPanel)
+  const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => saveBottomPanel(bottom), [bottom])
+
+  // Toast when a board is plugged in (not for devices already there at launch)
+  useEffect(() => {
+    let known: string[] | undefined
+    window.api.devices.list().then((list) => (known = list.map((d) => d.path)))
+    return window.api.devices.onChange((list) => {
+      const added = known ? list.filter((d) => !known!.includes(d.path)) : []
+      known = list.map((d) => d.path)
+      if (added[0])
+        setToast(`${describeDevice(added[0])} connected on ${added[0].path.replace('/dev/', '')}`)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 5000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   const refreshProjects = useCallback(async () => {
     setProjects(await window.api.projects.list())
@@ -55,7 +79,14 @@ function App(): React.JSX.Element {
   // ⌘B toggles the sidebar and ⌥⌘B the files panel, like Cursor and VS Code
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (!(event.metaKey || event.ctrlKey) || event.code !== 'KeyB') return
+      if (!(event.metaKey || event.ctrlKey)) return
+      // ⌘J toggles the terminal / serial monitor panel, like VS Code
+      if (event.code === 'KeyJ') {
+        event.preventDefault()
+        setBottom((b) => ({ ...b, open: !b.open }))
+        return
+      }
+      if (event.code !== 'KeyB') return
       event.preventDefault()
       if (event.altKey) files.toggle()
       else sidebar.toggle()
@@ -133,6 +164,16 @@ function App(): React.JSX.Element {
       <main className="main">
         {/* Invisible strip so the window can be dragged from the main area too */}
         <div className="titlebar">
+          {project && (
+            <button
+              className="icon-button"
+              aria-label="Toggle panel"
+              title="Terminal and serial monitor (⌘J)"
+              onClick={() => setBottom((b) => ({ ...b, open: !b.open }))}
+            >
+              <PanelBottom size={16} strokeWidth={1.5} />
+            </button>
+          )}
           {project && !files.layout.open && (
             <button
               className="icon-button"
@@ -156,6 +197,15 @@ function App(): React.JSX.Element {
             />
           )}
         </div>
+        {project && (
+          <BottomPanel
+            project={project}
+            open={bottom.open}
+            height={bottom.height}
+            onHeightChange={(height) => setBottom((b) => ({ ...b, height }))}
+            onClose={() => setBottom((b) => ({ ...b, open: false }))}
+          />
+        )}
       </main>
 
       {project && (
@@ -204,8 +254,35 @@ function App(): React.JSX.Element {
       {newProjectOpen && (
         <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={openProject} />
       )}
+      {toast && (
+        <div className="toast" role="status">
+          <Usb size={14} /> {toast}
+        </div>
+      )}
     </div>
   )
+}
+
+// Bottom panel open state and height, remembered across restarts
+type BottomPanelLayout = { open: boolean; height: number }
+const BOTTOM_KEY = 'near-hardware.bottom-panel'
+
+function loadBottomPanel(): BottomPanelLayout {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BOTTOM_KEY) ?? 'null')
+    if (typeof saved?.open === 'boolean' && typeof saved?.height === 'number') return saved
+  } catch {
+    // Fall through to the default
+  }
+  return { open: false, height: 260 }
+}
+
+function saveBottomPanel(layout: BottomPanelLayout): void {
+  try {
+    localStorage.setItem(BOTTOM_KEY, JSON.stringify(layout))
+  } catch {
+    // Only a convenience
+  }
 }
 
 export default App

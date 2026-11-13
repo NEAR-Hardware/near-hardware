@@ -4,6 +4,7 @@ import type { RateLimitWindow, SendMessageInput } from '../../../../shared/chat'
 import type { Chat, Project } from '../../../../shared/projects'
 import { useChat } from '../../hooks/useChat'
 import AgentIcon from '../AgentIcon'
+import BoardSetupCard from './BoardSetupCard'
 import Composer from './Composer'
 import MessageList from './MessageList'
 import './Chat.css'
@@ -66,7 +67,13 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
         <RateLimits windows={state.usage.rateLimits ?? []} />
       </header>
 
-      {state.items.length === 0 && state.status !== 'running' ? (
+      {!project.board?.name ? (
+        <BoardSetupCard
+          project={project}
+          agentName={environment.name}
+          onStart={(text) => send({ text, images: [] })}
+        />
+      ) : state.items.length === 0 && state.status !== 'running' ? (
         <div className="chat-empty">
           <AgentIcon id={chat.environmentId} size={26} />
           <p>
@@ -91,18 +98,21 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
         />
       )}
 
-      <Composer
-        agentName={environment.name}
-        draft={draft}
-        onDraftChange={updateDraft}
-        info={state.info}
-        usage={state.usage}
-        status={state.status}
-        onSend={send}
-        onStop={() => window.api.chat.interrupt(chat.id)}
-        onModelChange={(model) => window.api.chat.setModel(chat.id, model)}
-        onPermissionModeChange={(mode) => window.api.chat.setPermissionMode(chat.id, mode)}
-      />
+      {/* The board name is required before anything else */}
+      {project.board?.name && (
+        <Composer
+          agentName={environment.name}
+          draft={draft}
+          onDraftChange={updateDraft}
+          info={state.info}
+          usage={state.usage}
+          status={state.status}
+          onSend={send}
+          onStop={() => window.api.chat.interrupt(chat.id)}
+          onModelChange={(model) => window.api.chat.setModel(chat.id, model)}
+          onPermissionModeChange={(mode) => window.api.chat.setPermissionMode(chat.id, mode)}
+        />
+      )}
     </div>
   )
 }

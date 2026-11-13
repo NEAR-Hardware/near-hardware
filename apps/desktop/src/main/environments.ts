@@ -48,7 +48,9 @@ async function resolveSearchPath(): Promise<string[]> {
     join(home, '.npm-global/bin'),
     join(home, '.bun/bin'),
     join(home, '.claude/local'),
-    join(home, '.opencode/bin')
+    join(home, '.opencode/bin'),
+    // PlatformIO's virtualenv, so agents can run `pio` once it's installed
+    join(home, '.platformio/penv/bin')
   ]) {
     dirs.add(dir)
   }

@@ -17,6 +17,7 @@ import {
   type EnvironmentStatus
 } from '../../../shared/environments'
 import AgentIcon from './AgentIcon'
+import PlatformioCard from './PlatformioCard'
 import './EnvironmentsView.css'
 
 type Statuses = Partial<Record<EnvironmentId, EnvironmentStatus>>
@@ -186,6 +187,7 @@ function EnvironmentsView(): React.JSX.Element | null {
           </div>
         </div>
       )}
+      <PlatformioCard />
     </div>
   )
 }

@@ -189,6 +189,19 @@ function ToolInput({ name, input }: { name: string; input: unknown }): React.JSX
       </pre>
     )
   }
+  // A new file is all additions
+  const written = asString(fields.content)
+  if (name === 'Write' && written !== undefined) {
+    return (
+      <pre className="tool-diff">
+        {written.split('\n').map((line, i) => (
+          <div key={i} className="diff-added">
+            + {line}
+          </div>
+        ))}
+      </pre>
+    )
+  }
   if (name === 'Bash' && asString(fields.command)) {
     return <pre className="tool-command">$ {asString(fields.command)}</pre>
   }
