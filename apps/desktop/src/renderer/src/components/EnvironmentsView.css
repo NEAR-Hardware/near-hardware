@@ -1,0 +1,288 @@
+.env-view {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+.env-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.env-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.env-header p {
+  max-width: 520px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.env-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.env-card:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--card-hover);
+}
+
+.env-card:focus-visible,
+.env-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.env-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.env-card-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.env-card-vendor {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.env-card-description {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.agent-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--tile);
+  color: var(--text);
+}
+
+.env-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.env-status.installed {
+  color: var(--success);
+}
+
+.env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.env-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.env-panel > p {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.env-panel.warning {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.env-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.env-panel.warning .env-panel-title svg {
+  color: var(--warning);
+}
+
+.env-command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.env-command code {
+  flex: 1;
+  overflow-x: auto;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: text;
+}
+
+code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.env-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.env-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: default;
+}
+
+.env-button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.env-button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #1a0d05;
+  font-weight: 600;
+}
+
+.env-button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.env-button:disabled {
+  opacity: 0.6;
+}
+
+.env-current-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.env-current-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.env-current-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.env-current-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.env-badge.ready {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+}
+
+.env-badge.warning {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+}
+
+.env-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+
+.env-details dt {
+  color: var(--text-muted);
+}
+
+.env-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.env-details code {
+  font-size: 12px;
+  user-select: text;
+}
+
+.env-muted {
+  color: var(--text-muted);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import EnvironmentsView from './components/EnvironmentsView'
 import Sidebar, { SidebarHeader } from './components/Sidebar'
 import SidebarResizer from './components/SidebarResizer'
 import {
@@ -56,6 +57,9 @@ function App(): React.JSX.Element {
       <main className="main">
         {/* Invisible strip so the window can be dragged from the main area too */}
         <div className="titlebar" />
+        <div className="main-content">
+          <EnvironmentsView />
+        </div>
       </main>
       <SidebarResizer
         open={sidebar.open}

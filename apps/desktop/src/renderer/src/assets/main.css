@@ -5,11 +5,19 @@
   --border: #262626;
   --hover: rgba(255, 255, 255, 0.06);
   --active: #2a2a2a;
+  --border-strong: #333333;
+  --card: #1b1b1b;
+  --card-hover: #202020;
+  --tile: #262626;
   --text: #e6e6e6;
+  --text-muted: #8f8f8f;
   --icon: #a3a3a3;
   --icon-dim: #5c5c5c;
+  --success: #4ade80;
+  --warning: #fbbf24;
   /* Orange from the NEAR Hardware gear logo */
   --accent: #ff6a1a;
+  --accent-hover: #ff7d38;
 
   --titlebar-height: 36px;
   --header-left-pad: 10px;
@@ -58,8 +66,15 @@ body {
 }
 
 .main {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .titlebar {

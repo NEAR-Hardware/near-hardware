@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Layers, PanelLeft, Search, Send } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Layers, PanelLeft, Search } from 'lucide-react'
 import './Sidebar.css'
 
 const ICON_SIZE = 16
@@ -51,10 +51,6 @@ function Sidebar({ open }: SidebarProps): React.JSX.Element {
           <button className="nav-item active">
             <Layers size={ICON_SIZE} strokeWidth={ICON_STROKE} />
             <span>Environments</span>
-          </button>
-          <button className="nav-item">
-            <Send size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-            <span>New Chat</span>
           </button>
         </nav>
       </div>
