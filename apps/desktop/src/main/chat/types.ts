@@ -12,6 +12,10 @@ export type AdapterContext = {
   // PATH from the user's login shell, so the CLI finds its own tools
   env: NodeJS.ProcessEnv
   emit: (event: ChatEvent) => void
+  // How to launch the NEAR Hardware MCP server for this chat
+  mcp: { command: string; args: string[]; env: Record<string, string> }
+  // resources/hardware-agent.md: the harness instructions every agent gets
+  systemPrompt: string
 }
 
 // One running conversation with a coding agent's CLI

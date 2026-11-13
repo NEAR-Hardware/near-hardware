@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, realpath, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import type { EnvironmentId } from '../shared/environments'
-import type { Chat, CreateProjectResult, Project } from '../shared/projects'
+import type { BoardProfile, Chat, CreateProjectResult, Project } from '../shared/projects'
 import { readSettings, updateSettings, type Settings } from './settings'
 
 export async function defaultProjectLocation(): Promise<string> {
@@ -126,6 +126,38 @@ export async function createChat(projectId: string, environmentId: EnvironmentId
     return updateProject(settings, projectId, (p) => ({ ...p, chats: [...p.chats, chat] }))
   })
   return chat
+}
+
+// Merges fields into the project's board profile; only known string fields are kept
+export async function updateProjectBoard(
+  projectId: string,
+  patch: Record<string, unknown>
+): Promise<BoardProfile | undefined> {
+  const fields: (keyof BoardProfile)[] = [
+    'name',
+    'port',
+    'vendorId',
+    'productId',
+    'manufacturer',
+    'chip',
+    'docsUrl',
+    'platformioBoard',
+    'framework',
+    'summary'
+  ]
+  const clean = Object.fromEntries(
+    fields
+      .filter((key) => typeof patch[key] === 'string')
+      .map((key) => [key, String(patch[key]).trim()])
+  )
+  let board: BoardProfile | undefined
+  await updateSettings((settings) =>
+    updateProject(settings, projectId, (p) => {
+      board = { ...p.board, ...clean, name: String(clean.name ?? p.board?.name ?? '') }
+      return { ...p, board }
+    })
+  )
+  return board
 }
 
 export async function updateChat(

@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { closeAllChats } from './chat/manager'
+import { setBridgeWindow, startBridge } from './hardware/bridge'
+import { closeAllPorts, setSerialEventSink } from './hardware/serial'
 import { registerIpcHandlers } from './ipc'
 
 function createWindow(): void {
@@ -30,6 +32,11 @@ function createWindow(): void {
     }
   })
 
+  setBridgeWindow(mainWindow.webContents)
+  setSerialEventSink((channel, payload) => {
+    if (!mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload)
+  })
+
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
@@ -51,7 +58,7 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.nearhardware.desktop')
 
@@ -68,6 +75,8 @@ app.whenReady().then(() => {
   })
 
   registerIpcHandlers()
+  // Agents' MCP servers call into the app through this local bridge
+  await startBridge()
 
   createWindow()
 
@@ -93,6 +102,7 @@ app.on('before-quit', (event) => {
   if (quitting) return
   quitting = true
   event.preventDefault()
+  closeAllPorts()
   closeAllChats().finally(() => app.quit())
 })
 

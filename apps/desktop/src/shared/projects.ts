@@ -9,6 +9,21 @@ export type Chat = {
   updatedAt: string
 }
 
+// The hardware a project targets: what the user told us plus what the agent learned
+export type BoardProfile = {
+  // Exact name as the user entered it, ideally copied from the maker's site
+  name: string
+  port?: string
+  vendorId?: string
+  productId?: string
+  manufacturer?: string
+  chip?: string
+  docsUrl?: string
+  platformioBoard?: string
+  framework?: string
+  summary?: string
+}
+
 export type Project = {
   id: string
   name: string
@@ -16,6 +31,7 @@ export type Project = {
   path: string
   createdAt: string
   chats: Chat[]
+  board?: BoardProfile
 }
 
 export type CreateProjectResult = { ok: true; project: Project } | { ok: false; error: string }

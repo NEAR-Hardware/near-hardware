@@ -14,7 +14,9 @@ import {
   type SendMessageInput
 } from '../../shared/chat'
 import { getEnvironment } from '../../shared/environments'
+import hardwareAgentGuide from '../../../resources/hardware-agent.md?asset'
 import { getSearchPath } from '../environments'
+import { mcpServerLaunch } from '../hardware/bridge'
 import { getProject, updateChat } from '../projects'
 import { readSettings } from '../settings'
 import { AcpSession } from './acp'
@@ -113,7 +115,12 @@ async function createSession(chat: OpenChat): Promise<AgentSession | undefined> 
     model: chat.state.info.model,
     permissionMode: chat.state.info.permissionMode,
     env: { ...process.env, PATH: (await getSearchPath()).join(delimiter) },
-    emit
+    emit,
+    mcp: mcpServerLaunch(project.id, chat.chatId),
+    systemPrompt: await readFile(
+      hardwareAgentGuide.replace('app.asar', 'app.asar.unpacked'),
+      'utf8'
+    )
   }
 
   switch (record.environmentId) {
@@ -137,8 +144,15 @@ async function createSession(chat: OpenChat): Promise<AgentSession | undefined> 
           loginHint: 'Run `agent login` in a terminal, then try again.'
         }
       )
+    case 'opencode':
+      // ACP works today; OpenCode's HTTP server would add token and cost detail
+      return new AcpSession(context, {
+        name: 'OpenCode',
+        args: ['acp'],
+        loginHint: 'Run `opencode auth login` in a terminal, then try again.'
+      })
     default:
-      notice(`Chatting with ${name} isn’t supported yet. Claude Code and Codex work today.`)
+      notice(`Chatting with ${name} isn’t supported yet.`)
       return undefined
   }
 }

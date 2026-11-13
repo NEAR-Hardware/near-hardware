@@ -159,7 +159,10 @@ export class ClaudeSession implements AgentSession {
         includePartialMessages: true,
         // Load the user's and project's CLAUDE.md, settings and custom /commands
         settingSources: ['user', 'project', 'local'],
-        systemPrompt: { type: 'preset', preset: 'claude_code' },
+        systemPrompt: { type: 'preset', preset: 'claude_code', append: this.context.systemPrompt },
+        mcpServers: { 'near-hardware': { type: 'stdio', ...this.context.mcp } },
+        // Our own tools are safe to run without a prompt
+        allowedTools: ['mcp__near-hardware'],
         canUseTool: (toolName, input, options) =>
           this.askPermission(toolName, input, options.suggestions, options.signal, options),
         stderr: (data) => console.error('[claude]', data.trimEnd())

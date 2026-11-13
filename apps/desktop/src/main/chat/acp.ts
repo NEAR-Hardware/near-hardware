@@ -107,6 +107,8 @@ export class AcpSession implements AgentSession {
   >()
   private model?: string
   private mode?: string
+  // ACP has no system prompt, so a new session gets the harness guide with its first prompt
+  private needsInstructions = false
 
   constructor(
     private readonly context: AdapterContext,
@@ -176,7 +178,18 @@ export class AcpSession implements AgentSession {
   }
 
   private async openSession(): Promise<string> {
-    const params = { cwd: this.context.cwd, mcpServers: [] }
+    const { command, args, env } = this.context.mcp
+    const params = {
+      cwd: this.context.cwd,
+      mcpServers: [
+        {
+          name: 'near-hardware',
+          command,
+          args,
+          env: Object.entries(env).map(([name, value]) => ({ name, value }))
+        }
+      ]
+    }
     let result: Record<string, unknown>
     if (this.sessionId) {
       this.replaying = true
@@ -192,6 +205,7 @@ export class AcpSession implements AgentSession {
       }
     } else {
       result = (await this.request('session/new', params)) as Record<string, unknown>
+      this.needsInstructions = true
     }
     this.sessionId = (result.sessionId as string | undefined) ?? this.sessionId!
     this.applySessionOptions(result)
@@ -434,6 +448,14 @@ export class AcpSession implements AgentSession {
         {
           sessionId,
           prompt: [
+            ...(this.takeInstructions()
+              ? [
+                  {
+                    type: 'text',
+                    text: `<near-hardware-harness>\n${this.context.systemPrompt}\n</near-hardware-harness>`
+                  }
+                ]
+              : []),
             { type: 'text', text },
             ...images.map((image) => ({
               type: 'image',
@@ -453,6 +475,12 @@ export class AcpSession implements AgentSession {
       this.pendingTurns = Math.max(0, this.pendingTurns - 1)
       if (this.pendingTurns === 0) this.context.emit({ type: 'status', status: 'idle' })
     }
+  }
+
+  private takeInstructions(): boolean {
+    const needed = this.needsInstructions
+    this.needsInstructions = false
+    return needed
   }
 
   async interrupt(): Promise<void> {

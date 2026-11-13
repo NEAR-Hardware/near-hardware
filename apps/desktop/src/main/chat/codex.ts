@@ -126,6 +126,8 @@ export class CodexSession implements AgentSession {
       rpcId: number | string
       item: Extract<ChatItem, { kind: 'permission' }>
       decisions: unknown[]
+      // MCP elicitations answer with an action instead of a decision
+      elicitation?: boolean
     }
   >()
   private rateLimits: RateLimitSnapshot = {}
@@ -152,11 +154,27 @@ export class CodexSession implements AgentSession {
   private async launch(): Promise<void> {
     const { emit } = this.context
     emit({ type: 'status', status: 'starting' })
-    const child = spawn(this.context.executablePath ?? 'codex', ['app-server'], {
-      cwd: this.context.cwd,
-      env: this.context.env,
-      stdio: ['pipe', 'pipe', 'pipe']
-    })
+    const { command, args, env } = this.context.mcp
+    const toml = (value: string): string => JSON.stringify(value)
+    const child = spawn(
+      this.context.executablePath ?? 'codex',
+      [
+        'app-server',
+        '-c',
+        `mcp_servers.near_hardware.command=${toml(command)}`,
+        '-c',
+        `mcp_servers.near_hardware.args=[${args.map(toml).join(',')}]`,
+        '-c',
+        `mcp_servers.near_hardware.env={${Object.entries(env)
+          .map(([key, value]) => `${key}=${toml(value)}`)
+          .join(',')}}`
+      ],
+      {
+        cwd: this.context.cwd,
+        env: this.context.env,
+        stdio: ['pipe', 'pipe', 'pipe']
+      }
+    )
     this.process = child
     createInterface({ input: child.stdout! }).on('line', (line) => this.onLine(line))
     child.stderr!.on('data', (data) => console.error('[codex]', String(data).trimEnd()))
@@ -227,6 +245,7 @@ export class CodexSession implements AgentSession {
       cwd: this.context.cwd,
       sandbox: mode.sandbox,
       approvalPolicy: mode.approvalPolicy,
+      developerInstructions: this.context.systemPrompt,
       ...(this.model && { model: this.model })
     })) as { thread: { id: string }; model?: string }
     this.threadId = result.thread.id
@@ -455,6 +474,25 @@ export class CodexSession implements AgentSession {
       this.context.emit({ type: 'item', item })
       return
     }
+    if (method === 'mcpServer/elicitation/request') {
+      // Our own tools are safe; approve them without bothering the user
+      if (params.serverName === 'near_hardware') {
+        this.write({ id: rpcId, result: { action: 'accept', content: {}, _meta: null } })
+        return
+      }
+      const item: Extract<ChatItem, { kind: 'permission' }> = {
+        kind: 'permission',
+        id: `permission:${randomUUID()}`,
+        toolName: 'MCP',
+        title: String(params.message ?? `${params.serverName} wants to run a tool`),
+        input: {},
+        status: 'pending',
+        canAlwaysAllow: false
+      }
+      this.approvals.set(item.id, { rpcId, item, decisions: [], elicitation: true })
+      this.context.emit({ type: 'item', item })
+      return
+    }
     // Requests the chat can't present yet are declined so the turn never hangs
     this.write({
       id: rpcId,
@@ -466,6 +504,22 @@ export class CodexSession implements AgentSession {
     const approval = this.approvals.get(itemId)
     if (!approval) return
     this.approvals.delete(itemId)
+    if (approval.elicitation) {
+      const accepted = decision !== 'deny'
+      this.write({
+        id: approval.rpcId,
+        result: {
+          action: accepted ? 'accept' : 'decline',
+          content: accepted ? {} : null,
+          _meta: null
+        }
+      })
+      this.context.emit({
+        type: 'item',
+        item: { ...approval.item, status: accepted ? 'allowed' : 'denied' }
+      })
+      return
+    }
     const offers = (value: string): boolean =>
       approval.decisions.length === 0 || approval.decisions.includes(value)
     let answer: string
