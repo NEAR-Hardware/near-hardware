@@ -1,0 +1,13 @@
+{
+  "name": "near-hardware",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter @near-hardware/desktop dev",
+    "build": "bun run --filter @near-hardware/desktop build",
+    "typecheck": "bun run --filter '*' typecheck"
+  }
+}

@@ -1,0 +1,3 @@
+[install]
+# electron-builder expects a flat node_modules when packaging
+linker = "hoisted"

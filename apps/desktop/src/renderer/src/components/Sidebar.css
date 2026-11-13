@@ -1,0 +1,107 @@
+.sidebar {
+  flex-shrink: 0;
+  width: var(--sidebar-width);
+  height: 100%;
+  overflow: hidden;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  transition:
+    width var(--sidebar-transition),
+    border-right-width var(--sidebar-transition);
+}
+
+[data-sidebar='collapsed'] .sidebar {
+  width: 0;
+  border-right-width: 0;
+}
+
+/* Fixed width so items don't reflow while the sidebar animates */
+.sidebar-content {
+  width: var(--sidebar-width);
+  padding-top: var(--titlebar-height);
+}
+
+.sidebar-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: var(--sidebar-width);
+  height: var(--titlebar-height);
+  padding: 0 10px 0 var(--header-left-pad);
+  -webkit-app-region: drag;
+  transition: width var(--sidebar-transition);
+}
+
+/* Collapsed: the arrows slide in next to the toggle and search buttons */
+[data-sidebar='collapsed'] .sidebar-header {
+  width: calc(var(--header-left-pad) + 4 * 26px + 4 * 2px + 8px + 10px);
+}
+
+.sidebar-header-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--icon);
+  cursor: default;
+  -webkit-app-region: no-drag;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.icon-button:disabled {
+  color: var(--icon-dim);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.nav-item svg {
+  flex-shrink: 0;
+  color: var(--icon);
+}
+
+.nav-item:hover {
+  background: var(--hover);
+}
+
+.nav-item.active {
+  background: var(--active);
+}

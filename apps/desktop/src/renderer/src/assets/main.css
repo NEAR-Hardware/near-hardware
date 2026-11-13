@@ -1,0 +1,65 @@
+:root {
+  /* Keep --bg in sync with backgroundColor in src/main/index.ts */
+  --bg: #161616;
+  --sidebar-bg: #1b1b1b;
+  --border: #262626;
+  --hover: rgba(255, 255, 255, 0.06);
+  --active: #2a2a2a;
+  --text: #e6e6e6;
+  --icon: #a3a3a3;
+  --icon-dim: #5c5c5c;
+
+  --titlebar-height: 36px;
+  --header-left-pad: 10px;
+  --sidebar-width: 260px;
+  --sidebar-transition: 200ms ease;
+
+  color-scheme: dark;
+}
+
+/* Leave room for the macOS traffic lights */
+:root[data-platform='darwin'] {
+  --header-left-pad: 78px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+.app {
+  display: flex;
+  height: 100%;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.titlebar {
+  height: var(--titlebar-height);
+  -webkit-app-region: drag;
+}
