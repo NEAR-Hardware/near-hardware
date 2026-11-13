@@ -2,12 +2,16 @@ import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ConnectedEnvironment, EnvironmentStatus } from '../shared/environments'
+import type { Project } from '../shared/projects'
 
 export type Settings = {
   connectedEnvironments: ConnectedEnvironment[]
+  projects: Project[]
+  // Where the last new project was created, offered again next time
+  lastProjectLocation?: string
 }
 
-const DEFAULT_SETTINGS: Settings = { connectedEnvironments: [] }
+const DEFAULT_SETTINGS: Settings = { connectedEnvironments: [], projects: [] }
 
 type StoredSettings = Partial<Settings> & {
   // Earlier versions saved a single selected environment

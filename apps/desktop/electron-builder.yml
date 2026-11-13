@@ -6,6 +6,8 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!scripts/*'
+  # The Agent SDK's bundled Claude Code binaries; chats run the user's installed CLI
+  - '!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'

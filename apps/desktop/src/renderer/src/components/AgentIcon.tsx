@@ -26,17 +26,29 @@ const BRAND_ICONS: Record<EnvironmentId, BrandIcon> = {
 type AgentIconProps = {
   id: EnvironmentId
   size?: number
+  // false renders just the glyph, without the rounded tile behind it
+  tile?: boolean
 }
 
-function AgentIcon({ id, size = 20 }: AgentIconProps): React.JSX.Element {
+function AgentIcon({ id, size = 20, tile = true }: AgentIconProps): React.JSX.Element {
   const gradientId = useId()
   const { path, fill, gradient, evenOdd } = BRAND_ICONS[id]
   return (
-    <span className="agent-icon" style={{ width: size * 2, height: size * 2 }}>
+    <span
+      className={tile ? 'agent-icon' : 'agent-glyph'}
+      style={tile ? { width: size * 2, height: size * 2 } : undefined}
+    >
       <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
         {gradient && (
           <defs>
-            <linearGradient id={gradientId} x1="12" x2="12" y1="0" y2="24" gradientUnits="userSpaceOnUse">
+            <linearGradient
+              id={gradientId}
+              x1="12"
+              x2="12"
+              y1="0"
+              y2="24"
+              gradientUnits="userSpaceOnUse"
+            >
               {gradient.map((color, index) => (
                 <stop key={color} offset={index / (gradient.length - 1)} stopColor={color} />
               ))}

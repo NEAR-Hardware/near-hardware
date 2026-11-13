@@ -1,25 +1,36 @@
 import { useRef } from 'react'
-import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH } from '../sidebarLayout'
 
 const KEYBOARD_STEP = 16
 
-type SidebarResizerProps = {
+type PanelResizerProps = {
+  // Which window edge the panel sits against; a right panel grows as you drag left
+  side: 'left' | 'right'
+  className: string
+  label: string
   open: boolean
   width: number
+  minWidth: number
+  maxWidth: number
   // startWidth is the width before this drag, so a snap-collapse can restore it
   onResize: (width: number, startWidth: number) => void
   onResizingChange: (resizing: boolean) => void
   onReset: () => void
 }
 
-function SidebarResizer({
+function PanelResizer({
+  side,
+  className,
+  label,
   open,
   width,
+  minWidth,
+  maxWidth,
   onResize,
   onResizingChange,
   onReset
-}: SidebarResizerProps): React.JSX.Element {
+}: PanelResizerProps): React.JSX.Element {
   const drag = useRef<{ startX: number; startWidth: number } | null>(null)
+  const direction = side === 'left' ? 1 : -1
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
     if (event.button !== 0) return
@@ -33,7 +44,7 @@ function SidebarResizer({
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
     if (!drag.current) return
     const { startX, startWidth } = drag.current
-    onResize(startWidth + event.clientX - startX, startWidth)
+    onResize(startWidth + direction * (event.clientX - startX), startWidth)
   }
 
   const endDrag = (): void => {
@@ -45,19 +56,20 @@ function SidebarResizer({
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault()
-      onResize(width + (event.key === 'ArrowLeft' ? -KEYBOARD_STEP : KEYBOARD_STEP), width)
+      const step = (event.key === 'ArrowRight' ? 1 : -1) * direction * KEYBOARD_STEP
+      onResize(width + step, width)
     }
   }
 
   return (
     <div
-      className="sidebar-resizer"
+      className={`panel-resizer ${className}`}
       role="separator"
       aria-orientation="vertical"
-      aria-label="Resize sidebar"
+      aria-label={label}
       aria-valuenow={width}
-      aria-valuemin={SIDEBAR_MIN_WIDTH}
-      aria-valuemax={SIDEBAR_MAX_WIDTH}
+      aria-valuemin={minWidth}
+      aria-valuemax={maxWidth}
       title="Drag to resize, double-click to reset"
       tabIndex={open ? 0 : -1}
       onPointerDown={onPointerDown}
@@ -71,4 +83,4 @@ function SidebarResizer({
   )
 }
 
-export default SidebarResizer
+export default PanelResizer

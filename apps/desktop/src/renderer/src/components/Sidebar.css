@@ -15,70 +15,20 @@
   border-right-width: 0;
 }
 
-/* Fixed width so items don't reflow while the sidebar animates */
+/* Fixed width so items don't reflow while the sidebar animates; the title bar
+   area stays out of the scroll region so content never slides under it */
 .sidebar-content {
+  display: flex;
+  flex-direction: column;
   width: var(--sidebar-width);
+  height: 100%;
   padding-top: var(--titlebar-height);
 }
 
-/* Straddles the sidebar's right border, below the title bar so it never
-   competes with the window drag regions */
-.sidebar-resizer {
-  position: absolute;
-  top: var(--titlebar-height);
-  bottom: 0;
-  left: calc(var(--sidebar-width) - 3px);
-  z-index: 5;
-  width: 6px;
-  cursor: col-resize;
-  transition: left var(--sidebar-transition);
-}
-
-.sidebar-resizer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 2px;
-  width: 2px;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
-/* Short delay so the line doesn't flash when the pointer just passes over */
-.sidebar-resizer:hover::after {
-  opacity: 1;
-  transition-delay: 300ms;
-}
-
-.sidebar-resizer:focus-visible {
-  outline: none;
-}
-
-.sidebar-resizer:focus-visible::after,
-[data-resizing] .sidebar-resizer::after {
-  opacity: 1;
-  transition-delay: 0s;
-}
-
-[data-sidebar='collapsed'] .sidebar-resizer {
-  left: -3px;
-}
-
-[data-sidebar='collapsed']:not([data-resizing]) .sidebar-resizer {
-  pointer-events: none;
-}
-
-[data-resizing] .sidebar,
-[data-resizing] .sidebar-header,
-[data-resizing] .sidebar-resizer {
-  transition: none;
-}
-
-[data-resizing],
-[data-resizing] * {
-  cursor: col-resize !important;
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
 }
 
 .sidebar-header {
@@ -101,9 +51,136 @@
   width: calc(var(--header-left-pad) + 4 * 26px + 4 * 2px + 8px + 10px);
 }
 
+[data-resizing] .sidebar,
+[data-resizing] .sidebar-header {
+  transition: none;
+}
+
 .sidebar-header-spacer {
   flex: 1;
   min-width: 8px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+}
+
+.sidebar-section .sidebar-nav {
+  padding-top: 2px;
+}
+
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  margin-top: 10px;
+  padding: 0 12px 0 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.nav-item > svg,
+.nav-item > .agent-glyph {
+  flex-shrink: 0;
+  color: var(--icon);
+}
+
+.nav-item:hover {
+  background: var(--hover);
+}
+
+.nav-item.active {
+  background: var(--active);
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.nav-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item-meta {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Chats sit indented under their project, with a faint guide line running
+   down from the center of the project's folder icon */
+.project-chats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 2px 15px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border-strong);
+}
+
+.chat-item .agent-glyph {
+  display: grid;
+  width: 16px;
+  place-items: center;
+}
+
+.chat-item .nav-item-label {
+  color: var(--text-secondary);
+}
+
+.chat-item.active .nav-item-label {
+  color: var(--text);
+}
+
+/* Project row: hover actions sit over the right end of the row */
+.nav-row {
+  position: relative;
+}
+
+.nav-row-actions {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: none;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+
+.nav-row:hover .nav-row-actions,
+.nav-row:focus-within .nav-row-actions {
+  display: flex;
+}
+
+.nav-row:hover .nav-item,
+.nav-row:focus-within .nav-item {
+  padding-right: 58px;
 }
 
 .icon-button {
@@ -120,6 +197,11 @@
   -webkit-app-region: no-drag;
 }
 
+.icon-button.small {
+  width: 22px;
+  height: 22px;
+}
+
 .icon-button:hover:not(:disabled) {
   background: var(--hover);
   color: var(--text);
@@ -129,39 +211,7 @@
   color: var(--icon-dim);
 }
 
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 8px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
-  white-space: nowrap;
-  cursor: default;
-}
-
-.nav-item svg {
-  flex-shrink: 0;
-  color: var(--icon);
-}
-
-.nav-item:hover {
-  background: var(--hover);
-}
-
-.nav-item.active {
-  background: var(--active);
+.icon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }

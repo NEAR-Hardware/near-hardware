@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, ExternalLink, Info, LoaderCircle, RefreshCw, TriangleAlert } from 'lucide-react'
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Info,
+  LoaderCircle,
+  RefreshCw,
+  TriangleAlert
+} from 'lucide-react'
 import {
   ENVIRONMENTS,
   getEnvironment,
@@ -15,7 +23,10 @@ type Statuses = Partial<Record<EnvironmentId, EnvironmentStatus>>
 
 const isWindows = (): boolean => document.documentElement.dataset.platform === 'win32'
 
-function upsert(list: ConnectedEnvironment[], environment: ConnectedEnvironment): ConnectedEnvironment[] {
+function upsert(
+  list: ConnectedEnvironment[],
+  environment: ConnectedEnvironment
+): ConnectedEnvironment[] {
   return list.some((e) => e.id === environment.id)
     ? list.map((e) => (e.id === environment.id ? environment : e))
     : [...list, environment]
@@ -29,20 +40,27 @@ function EnvironmentsView(): React.JSX.Element | null {
   const [pending, setPending] = useState<ReadonlySet<EnvironmentId>>(new Set())
   const [missing, setMissing] = useState<EnvironmentId | null>(null)
 
-  const scan = useCallback(async () => {
-    setScanning(true)
-    try {
-      const results = await window.api.environments.detectAll()
-      setStatuses(Object.fromEntries(results.map((status) => [status.id, status])))
-    } finally {
-      setScanning(false)
-    }
-  }, [])
+  const detectAll = useCallback(
+    () =>
+      window.api.environments
+        .detectAll()
+        .then((results) =>
+          setStatuses(Object.fromEntries(results.map((status) => [status.id, status])))
+        )
+        .finally(() => setScanning(false)),
+    []
+  )
 
+  // `scanning` starts true, so the first scan doesn't need to set it
   useEffect(() => {
     window.api.environments.listConnected().then(setConnected)
-    scan()
-  }, [scan])
+    detectAll()
+  }, [detectAll])
+
+  const rescan = (): void => {
+    setScanning(true)
+    detectAll()
+  }
 
   const setPendingFor = (id: EnvironmentId, isPending: boolean): void =>
     setPending((current) => {
@@ -57,7 +75,10 @@ function EnvironmentsView(): React.JSX.Element | null {
     setMissing((current) => (current === id ? null : current))
     try {
       const result = await window.api.environments.connect(id)
-      setStatuses((current) => ({ ...current, [id]: result.ok ? result.environment : result.status }))
+      setStatuses((current) => ({
+        ...current,
+        [id]: result.ok ? result.environment : result.status
+      }))
       if (result.ok) setConnected((list) => upsert(list ?? [], result.environment))
       else setMissing(id)
     } finally {
@@ -99,7 +120,7 @@ function EnvironmentsView(): React.JSX.Element | null {
           aria-label="Rescan installed agents"
           title="Rescan installed agents"
           disabled={scanning}
-          onClick={scan}
+          onClick={rescan}
         >
           <RefreshCw size={16} strokeWidth={1.5} className={scanning ? 'spin' : undefined} />
         </button>
@@ -111,10 +132,7 @@ function EnvironmentsView(): React.JSX.Element | null {
           {!scanning && ` · ${installed.length} of ${ENVIRONMENTS.length} installed`}
         </span>
         {!scanning && connectable.length > 0 && (
-          <button
-            className="env-button small"
-            onClick={() => connectable.forEach((d) => connect(d.id))}
-          >
+          <button className="btn small" onClick={() => connectable.forEach((d) => connect(d.id))}>
             Connect all installed ({connectable.length})
           </button>
         )}
@@ -158,7 +176,7 @@ function EnvironmentsView(): React.JSX.Element | null {
           {!isWindows() && <CommandBox command={getEnvironment('cursor').installCommand} />}
           <div className="env-actions">
             <button
-              className="env-button"
+              className="btn"
               onClick={() => connect('cursor')}
               disabled={pending.has('cursor')}
             >
@@ -200,25 +218,25 @@ function EnvironmentCard({
   let action: React.JSX.Element | null = null
   if (pending) {
     action = (
-      <button className="env-button small" disabled>
+      <button className="btn small" disabled>
         <LoaderCircle size={12} className="spin" /> {connected ? 'Disconnecting' : 'Connecting'}
       </button>
     )
   } else if (connected) {
     action = (
-      <button className="env-button small ghost" onClick={onDisconnect}>
+      <button className="btn small ghost" onClick={onDisconnect}>
         Disconnect
       </button>
     )
   } else if (status?.installed) {
     action = (
-      <button className="env-button small primary" onClick={onConnect}>
+      <button className="btn small primary" onClick={onConnect}>
         Connect
       </button>
     )
   } else if (status) {
     action = (
-      <button className="env-button small" onClick={onInstall}>
+      <button className="btn small" onClick={onInstall}>
         Install
       </button>
     )
@@ -314,14 +332,14 @@ function InstallHelp({
       <p>Install it, then check again. NEAR Hardware will connect it once it&apos;s found.</p>
       {!isWindows() && <CommandBox command={definition.installCommand} />}
       <div className="env-actions">
-        <a className="env-button" href={definition.installUrl} target="_blank" rel="noreferrer">
+        <a className="btn" href={definition.installUrl} target="_blank" rel="noreferrer">
           Install guide <ExternalLink size={13} />
         </a>
-        <button className="env-button primary" onClick={onRetry} disabled={retrying}>
+        <button className="btn primary" onClick={onRetry} disabled={retrying}>
           {retrying && <LoaderCircle size={13} className="spin" />}
           Check again
         </button>
-        <button className="env-button ghost" onClick={onDismiss}>
+        <button className="btn ghost" onClick={onDismiss}>
           Dismiss
         </button>
       </div>

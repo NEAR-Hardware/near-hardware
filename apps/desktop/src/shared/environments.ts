@@ -72,5 +72,4 @@ export type ConnectedEnvironment = EnvironmentStatus & {
 }
 
 export type ConnectEnvironmentResult =
-  | { ok: true; environment: ConnectedEnvironment }
-  | { ok: false; status: EnvironmentStatus }
+  { ok: true; environment: ConnectedEnvironment } | { ok: false; status: EnvironmentStatus }

@@ -1,0 +1,118 @@
+/* Covers the window including the title bar; no-drag so the drag strips
+   underneath don't swallow clicks while the dialog is open */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-app-region: no-drag;
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(480px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.dialog h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dialog-subtitle {
+  margin-top: -10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.field > span {
+  color: var(--text-muted);
+}
+
+.field input {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  user-select: text;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+}
+
+.location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.location-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+
+.dialog-hint,
+.dialog-error {
+  margin-top: -4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.dialog-hint {
+  color: var(--text-muted);
+}
+
+.dialog-hint code {
+  color: var(--text-secondary);
+  font-size: 12px;
+  user-select: text;
+}
+
+.dialog-error {
+  color: var(--danger);
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dialog-footer-spacer {
+  flex: 1;
+}

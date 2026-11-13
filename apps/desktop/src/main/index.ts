@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { closeAllChats } from './chat/manager'
 import { registerIpcHandlers } from './ipc'
 
 function createWindow(): void {
@@ -9,8 +10,8 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 780,
-    // Leaves room for a max-width sidebar plus a usable main area
-    minWidth: 720,
+    // Leaves room for the sidebar, files panel and a usable main area
+    minWidth: 900,
     minHeight: 480,
     show: false,
     autoHideMenuBar: true,
@@ -84,6 +85,15 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Stop every agent CLI and save open transcripts before quitting
+let quitting = false
+app.on('before-quit', (event) => {
+  if (quitting) return
+  quitting = true
+  event.preventDefault()
+  closeAllChats().finally(() => app.quit())
 })
 
 // In this file you can include the rest of your app's specific main process
