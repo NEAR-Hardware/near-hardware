@@ -6,8 +6,11 @@ import icon from '../../resources/icon.png?asset'
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1200,
+    height: 780,
+    // Leaves room for a max-width sidebar plus a usable main area
+    minWidth: 720,
+    minHeight: 480,
     show: false,
     autoHideMenuBar: true,
     // Hide the native title bar so the app's background runs to the top edge.

@@ -8,6 +8,8 @@
   --text: #e6e6e6;
   --icon: #a3a3a3;
   --icon-dim: #5c5c5c;
+  /* Orange from the NEAR Hardware gear logo */
+  --accent: #ff6a1a;
 
   --titlebar-height: 36px;
   --header-left-pad: 10px;
@@ -50,6 +52,7 @@ body {
 }
 
 .app {
+  position: relative;
   display: flex;
   height: 100%;
 }

@@ -1,9 +1,37 @@
 import { useCallback, useEffect, useState } from 'react'
 import Sidebar, { SidebarHeader } from './components/Sidebar'
+import SidebarResizer from './components/SidebarResizer'
+import {
+  SIDEBAR_COLLAPSE_THRESHOLD,
+  SIDEBAR_DEFAULT_WIDTH,
+  clampSidebarWidth,
+  loadSidebarLayout,
+  saveSidebarLayout
+} from './sidebarLayout'
 
 function App(): React.JSX.Element {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const toggleSidebar = useCallback(() => setSidebarOpen((open) => !open), [])
+  const [sidebar, setSidebar] = useState(loadSidebarLayout)
+  const [resizing, setResizing] = useState(false)
+
+  // Save once a drag ends rather than on every pointer move
+  useEffect(() => {
+    if (!resizing) saveSidebarLayout(sidebar)
+  }, [sidebar, resizing])
+
+  const toggleSidebar = useCallback(() => setSidebar((s) => ({ ...s, open: !s.open })), [])
+
+  const resizeSidebar = useCallback((width: number, startWidth: number) => {
+    setSidebar(
+      width < SIDEBAR_COLLAPSE_THRESHOLD
+        ? { open: false, width: startWidth }
+        : { open: true, width: clampSidebarWidth(width) }
+    )
+  }, [])
+
+  const resetSidebarWidth = useCallback(
+    () => setSidebar((s) => ({ ...s, width: SIDEBAR_DEFAULT_WIDTH })),
+    []
+  )
 
   // ⌘B / Ctrl+B toggles the sidebar, like Cursor and VS Code
   useEffect(() => {
@@ -18,14 +46,26 @@ function App(): React.JSX.Element {
   }, [toggleSidebar])
 
   return (
-    <div className="app" data-sidebar={sidebarOpen ? 'open' : 'collapsed'}>
-      <Sidebar open={sidebarOpen} />
+    <div
+      className="app"
+      data-sidebar={sidebar.open ? 'open' : 'collapsed'}
+      data-resizing={resizing ? '' : undefined}
+      style={{ '--sidebar-width': `${sidebar.width}px` } as React.CSSProperties}
+    >
+      <Sidebar open={sidebar.open} />
       <main className="main">
         {/* Invisible strip so the window can be dragged from the main area too */}
         <div className="titlebar" />
       </main>
+      <SidebarResizer
+        open={sidebar.open}
+        width={sidebar.width}
+        onResize={resizeSidebar}
+        onResizingChange={setResizing}
+        onReset={resetSidebarWidth}
+      />
       {/* Must stay last, see SidebarHeader */}
-      <SidebarHeader open={sidebarOpen} onToggle={toggleSidebar} />
+      <SidebarHeader open={sidebar.open} onToggle={toggleSidebar} />
     </div>
   )
 }
