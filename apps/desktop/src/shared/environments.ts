@@ -66,10 +66,11 @@ export type EnvironmentStatus = {
   agentCliPath?: string
 }
 
-export type SelectedEnvironment = EnvironmentStatus & {
-  selectedAt: string
+// Several agents can be connected; each project picks one of them
+export type ConnectedEnvironment = EnvironmentStatus & {
+  connectedAt: string
 }
 
-export type SelectEnvironmentResult =
-  | { ok: true; environment: SelectedEnvironment }
+export type ConnectEnvironmentResult =
+  | { ok: true; environment: ConnectedEnvironment }
   | { ok: false; status: EnvironmentStatus }

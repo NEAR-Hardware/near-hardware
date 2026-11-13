@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron'
 import { is } from '@electron-toolkit/utils'
-import { ENVIRONMENTS, isEnvironmentId, type EnvironmentId } from '../shared/environments'
+import {
+  ENVIRONMENTS,
+  isEnvironmentId,
+  type ConnectEnvironmentResult,
+  type ConnectedEnvironment,
+  type EnvironmentId
+} from '../shared/environments'
 import { detectEnvironment } from './environments'
 import { readSettings, updateSettings } from './settings'
 
@@ -25,17 +31,44 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('environments:detect', (_event, id: unknown) => detect(assertEnvironmentId(id)))
 
-  ipcMain.handle('environments:get-selected', async () => (await readSettings()).environment)
+  ipcMain.handle(
+    'environments:list-connected',
+    async () => (await readSettings()).connectedEnvironments
+  )
 
-  ipcMain.handle('environments:select', async (_event, id: unknown) => {
-    const status = await detect(assertEnvironmentId(id))
-    if (!status.installed) return { ok: false, status }
-    const environment = { ...status, selectedAt: new Date().toISOString() }
-    await updateSettings({ environment })
-    return { ok: true, environment }
-  })
+  ipcMain.handle(
+    'environments:connect',
+    async (_event, id: unknown): Promise<ConnectEnvironmentResult> => {
+      const status = await detect(assertEnvironmentId(id))
+      if (!status.installed) return { ok: false, status }
 
-  ipcMain.handle('environments:clear', async () => {
-    await updateSettings({ environment: null })
+      let environment: ConnectedEnvironment = { ...status, connectedAt: new Date().toISOString() }
+      await updateSettings((settings) => {
+        const existing = settings.connectedEnvironments.find((e) => e.id === status.id)
+        if (!existing) {
+          return {
+            ...settings,
+            connectedEnvironments: [...settings.connectedEnvironments, environment]
+          }
+        }
+        // Reconnecting refreshes the saved paths and version, keeping the original date
+        environment = { ...environment, connectedAt: existing.connectedAt }
+        return {
+          ...settings,
+          connectedEnvironments: settings.connectedEnvironments.map((e) =>
+            e.id === status.id ? environment : e
+          )
+        }
+      })
+      return { ok: true, environment }
+    }
+  )
+
+  ipcMain.handle('environments:disconnect', async (_event, id: unknown) => {
+    const environmentId = assertEnvironmentId(id)
+    await updateSettings((settings) => ({
+      ...settings,
+      connectedEnvironments: settings.connectedEnvironments.filter((e) => e.id !== environmentId)
+    }))
   })
 }

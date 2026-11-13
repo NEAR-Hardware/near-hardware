@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Copy, ExternalLink, LoaderCircle, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Check, Copy, ExternalLink, Info, LoaderCircle, RefreshCw, TriangleAlert } from 'lucide-react'
 import {
   ENVIRONMENTS,
   getEnvironment,
+  type ConnectedEnvironment,
   type EnvironmentDefinition,
   type EnvironmentId,
-  type EnvironmentStatus,
-  type SelectedEnvironment
+  type EnvironmentStatus
 } from '../../../shared/environments'
 import AgentIcon from './AgentIcon'
 import './EnvironmentsView.css'
@@ -15,12 +15,18 @@ type Statuses = Partial<Record<EnvironmentId, EnvironmentStatus>>
 
 const isWindows = (): boolean => document.documentElement.dataset.platform === 'win32'
 
+function upsert(list: ConnectedEnvironment[], environment: ConnectedEnvironment): ConnectedEnvironment[] {
+  return list.some((e) => e.id === environment.id)
+    ? list.map((e) => (e.id === environment.id ? environment : e))
+    : [...list, environment]
+}
+
 function EnvironmentsView(): React.JSX.Element | null {
-  // undefined while the saved selection is still loading
-  const [selected, setSelected] = useState<SelectedEnvironment | null>()
+  // undefined while the saved connections are still loading
+  const [connected, setConnected] = useState<ConnectedEnvironment[]>()
   const [statuses, setStatuses] = useState<Statuses>({})
   const [scanning, setScanning] = useState(true)
-  const [pending, setPending] = useState<EnvironmentId | null>(null)
+  const [pending, setPending] = useState<ReadonlySet<EnvironmentId>>(new Set())
   const [missing, setMissing] = useState<EnvironmentId | null>(null)
 
   const scan = useCallback(async () => {
@@ -34,31 +40,49 @@ function EnvironmentsView(): React.JSX.Element | null {
   }, [])
 
   useEffect(() => {
-    window.api.environments.getSelected().then(setSelected)
+    window.api.environments.listConnected().then(setConnected)
     scan()
   }, [scan])
 
-  const choose = async (id: EnvironmentId): Promise<void> => {
-    if (pending) return
-    setPending(id)
-    setMissing(null)
+  const setPendingFor = (id: EnvironmentId, isPending: boolean): void =>
+    setPending((current) => {
+      const next = new Set(current)
+      if (isPending) next.add(id)
+      else next.delete(id)
+      return next
+    })
+
+  const connect = async (id: EnvironmentId): Promise<void> => {
+    setPendingFor(id, true)
+    setMissing((current) => (current === id ? null : current))
     try {
-      const result = await window.api.environments.select(id)
+      const result = await window.api.environments.connect(id)
       setStatuses((current) => ({ ...current, [id]: result.ok ? result.environment : result.status }))
-      if (result.ok) setSelected(result.environment)
+      if (result.ok) setConnected((list) => upsert(list ?? [], result.environment))
       else setMissing(id)
     } finally {
-      setPending(null)
+      setPendingFor(id, false)
     }
   }
 
-  const change = async (): Promise<void> => {
-    await window.api.environments.clear()
-    setSelected(null)
-    setMissing(null)
+  const disconnect = async (id: EnvironmentId): Promise<void> => {
+    setPendingFor(id, true)
+    try {
+      await window.api.environments.disconnect(id)
+      setConnected((list) => list?.filter((e) => e.id !== id))
+    } finally {
+      setPendingFor(id, false)
+    }
   }
 
-  if (selected === undefined) return null
+  if (connected === undefined) return null
+
+  const isConnected = (id: EnvironmentId): boolean => connected.some((e) => e.id === id)
+  const installed = ENVIRONMENTS.filter((d) => statuses[d.id]?.installed)
+  const connectable = installed.filter((d) => !isConnected(d.id) && !pending.has(d.id))
+  const cursor = connected.find((e) => e.id === 'cursor')
+  const cursorStatus = statuses.cursor
+  const cursorNeedsAgentCli = cursor && cursorStatus?.installed && !cursorStatus.agentCliPath
 
   return (
     <div className="env-view">
@@ -66,8 +90,8 @@ function EnvironmentsView(): React.JSX.Element | null {
         <div>
           <h1>Environments</h1>
           <p>
-            Choose the coding agent NEAR Hardware hands your projects to. It runs on this computer
-            with your own account.
+            Connect the coding agents on this computer. When you start a project, you&apos;ll pick
+            which connected agent builds it.
           </p>
         </div>
         <button
@@ -81,35 +105,68 @@ function EnvironmentsView(): React.JSX.Element | null {
         </button>
       </header>
 
-      {selected ? (
-        <CurrentEnvironment
-          selected={selected}
-          status={statuses[selected.id]}
-          scanning={scanning}
-          onChange={change}
+      <div className="env-toolbar">
+        <span>
+          {connected.length} connected
+          {!scanning && ` · ${installed.length} of ${ENVIRONMENTS.length} installed`}
+        </span>
+        {!scanning && connectable.length > 0 && (
+          <button
+            className="env-button small"
+            onClick={() => connectable.forEach((d) => connect(d.id))}
+          >
+            Connect all installed ({connectable.length})
+          </button>
+        )}
+      </div>
+
+      <div className="env-grid">
+        {ENVIRONMENTS.map((definition) => (
+          <EnvironmentCard
+            key={definition.id}
+            definition={definition}
+            status={statuses[definition.id]}
+            connected={connected.find((e) => e.id === definition.id)}
+            scanning={scanning}
+            pending={pending.has(definition.id)}
+            onConnect={() => connect(definition.id)}
+            onDisconnect={() => disconnect(definition.id)}
+            onInstall={() => setMissing(definition.id)}
+          />
+        ))}
+      </div>
+
+      {missing && (
+        <InstallHelp
+          definition={getEnvironment(missing)}
+          retrying={pending.has(missing)}
+          onRetry={() => connect(missing)}
+          onDismiss={() => setMissing(null)}
         />
-      ) : (
-        <>
-          <div className="env-grid">
-            {ENVIRONMENTS.map((definition) => (
-              <EnvironmentCard
-                key={definition.id}
-                definition={definition}
-                status={statuses[definition.id]}
-                scanning={scanning}
-                pending={pending === definition.id}
-                onSelect={() => choose(definition.id)}
-              />
-            ))}
+      )}
+
+      {cursorNeedsAgentCli && (
+        <div className="env-panel">
+          <div className="env-panel-title">
+            <Info size={16} strokeWidth={1.75} />
+            Cursor&apos;s agent CLI isn&apos;t installed
           </div>
-          {missing && (
-            <InstallHelp
-              definition={getEnvironment(missing)}
-              retrying={pending === missing}
-              onRetry={() => choose(missing)}
-            />
-          )}
-        </>
+          <p>
+            NEAR Hardware runs Cursor through its agent CLI so it can work in the background.
+            Install it, then check again.
+          </p>
+          {!isWindows() && <CommandBox command={getEnvironment('cursor').installCommand} />}
+          <div className="env-actions">
+            <button
+              className="env-button"
+              onClick={() => connect('cursor')}
+              disabled={pending.has('cursor')}
+            >
+              {pending.has('cursor') && <LoaderCircle size={13} className="spin" />}
+              Check again
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -118,44 +175,106 @@ function EnvironmentsView(): React.JSX.Element | null {
 type EnvironmentCardProps = {
   definition: EnvironmentDefinition
   status?: EnvironmentStatus
+  connected?: ConnectedEnvironment
   scanning: boolean
   pending: boolean
-  onSelect: () => void
+  onConnect: () => void
+  onDisconnect: () => void
+  onInstall: () => void
 }
 
 function EnvironmentCard({
   definition,
   status,
+  connected,
   scanning,
   pending,
-  onSelect
+  onConnect,
+  onDisconnect,
+  onInstall
 }: EnvironmentCardProps): React.JSX.Element {
+  // Prefer this session's scan; the saved connection may be stale
+  const live = status ?? connected
+  const location = live?.cliPath ?? live?.appPath
+
+  let action: React.JSX.Element | null = null
+  if (pending) {
+    action = (
+      <button className="env-button small" disabled>
+        <LoaderCircle size={12} className="spin" /> {connected ? 'Disconnecting' : 'Connecting'}
+      </button>
+    )
+  } else if (connected) {
+    action = (
+      <button className="env-button small ghost" onClick={onDisconnect}>
+        Disconnect
+      </button>
+    )
+  } else if (status?.installed) {
+    action = (
+      <button className="env-button small primary" onClick={onConnect}>
+        Connect
+      </button>
+    )
+  } else if (status) {
+    action = (
+      <button className="env-button small" onClick={onInstall}>
+        Install
+      </button>
+    )
+  }
+
   return (
-    <button className="env-card" onClick={onSelect} disabled={pending}>
+    <div className={`env-card${connected ? ' connected' : ''}`}>
       <div className="env-card-top">
         <AgentIcon id={definition.id} />
-        <div>
+        <div className="env-card-title">
           <div className="env-card-name">{definition.name}</div>
           <div className="env-card-vendor">{definition.vendor}</div>
         </div>
+        {connected && (
+          <span className="env-badge ready">
+            <Check size={12} /> Connected
+          </span>
+        )}
       </div>
       <p className="env-card-description">{definition.description}</p>
-      <StatusLine status={status} checking={pending || (scanning && !status)} />
-    </button>
+      {connected && location && (
+        <code className="env-card-path" title={location}>
+          {location}
+        </code>
+      )}
+      <div className="env-card-footer">
+        <StatusLine
+          status={status}
+          checking={scanning && !status}
+          gone={Boolean(connected && status && !status.installed)}
+        />
+        {action}
+      </div>
+    </div>
   )
 }
 
-function StatusLine({
-  status,
-  checking
-}: {
+type StatusLineProps = {
   status?: EnvironmentStatus
   checking: boolean
-}): React.JSX.Element {
+  // Connected earlier but no longer found on this computer
+  gone: boolean
+}
+
+function StatusLine({ status, checking, gone }: StatusLineProps): React.JSX.Element {
   if (checking) {
     return (
       <span className="env-status">
         <LoaderCircle size={12} className="spin" /> Checking…
+      </span>
+    )
+  }
+  if (gone) {
+    return (
+      <span className="env-status warning">
+        <TriangleAlert size={12} /> No longer found
       </span>
     )
   }
@@ -177,16 +296,22 @@ type InstallHelpProps = {
   definition: EnvironmentDefinition
   retrying: boolean
   onRetry: () => void
+  onDismiss: () => void
 }
 
-function InstallHelp({ definition, retrying, onRetry }: InstallHelpProps): React.JSX.Element {
+function InstallHelp({
+  definition,
+  retrying,
+  onRetry,
+  onDismiss
+}: InstallHelpProps): React.JSX.Element {
   return (
     <div className="env-panel warning" role="status">
       <div className="env-panel-title">
         <TriangleAlert size={16} strokeWidth={1.75} />
         {definition.name} isn&apos;t installed on this computer
       </div>
-      <p>Install it, then check again. NEAR Hardware will select it once it&apos;s found.</p>
+      <p>Install it, then check again. NEAR Hardware will connect it once it&apos;s found.</p>
       {!isWindows() && <CommandBox command={definition.installCommand} />}
       <div className="env-actions">
         <a className="env-button" href={definition.installUrl} target="_blank" rel="noreferrer">
@@ -196,99 +321,8 @@ function InstallHelp({ definition, retrying, onRetry }: InstallHelpProps): React
           {retrying && <LoaderCircle size={13} className="spin" />}
           Check again
         </button>
-      </div>
-    </div>
-  )
-}
-
-type CurrentEnvironmentProps = {
-  selected: SelectedEnvironment
-  // Fresh result from this session's scan; the saved selection may be stale
-  status?: EnvironmentStatus
-  scanning: boolean
-  onChange: () => void
-}
-
-function CurrentEnvironment({
-  selected,
-  status,
-  scanning,
-  onChange
-}: CurrentEnvironmentProps): React.JSX.Element {
-  const definition = getEnvironment(selected.id)
-  const live = status ?? selected
-  const gone = !scanning && status !== undefined && !status.installed
-
-  return (
-    <div className={`env-panel${gone ? ' warning' : ''}`}>
-      <div className="env-current-head">
-        <AgentIcon id={selected.id} size={22} />
-        <div className="env-current-title">
-          <span className="env-current-label">Current environment</span>
-          <span className="env-current-name">{definition.name}</span>
-        </div>
-        {gone ? (
-          <span className="env-badge warning">
-            <TriangleAlert size={12} /> Not found
-          </span>
-        ) : (
-          <span className="env-badge ready">
-            <Check size={12} /> Ready
-          </span>
-        )}
-      </div>
-
-      {gone ? (
-        <p>
-          {definition.name} is no longer installed on this computer. Reinstall it or pick another
-          environment.
-        </p>
-      ) : (
-        <p>New projects you start in NEAR Hardware will open with {definition.name}.</p>
-      )}
-
-      <dl className="env-details">
-        <dt>Version</dt>
-        <dd>{live.version ? `v${live.version}` : 'Unknown'}</dd>
-        {live.cliPath && (
-          <>
-            <dt>Command</dt>
-            <dd>
-              <code>{live.cliPath}</code>
-            </dd>
-          </>
-        )}
-        {live.appPath && (
-          <>
-            <dt>App</dt>
-            <dd>
-              <code>{live.appPath}</code>
-            </dd>
-          </>
-        )}
-        {selected.id === 'cursor' && (
-          <>
-            <dt>Agent CLI</dt>
-            <dd>
-              {live.agentCliPath ? (
-                <code>{live.agentCliPath}</code>
-              ) : (
-                <span className="env-muted">
-                  Not installed. NEAR Hardware needs it to run Cursor in the background.
-                </span>
-              )}
-            </dd>
-          </>
-        )}
-      </dl>
-
-      {selected.id === 'cursor' && !live.agentCliPath && !isWindows() && (
-        <CommandBox command={definition.installCommand} />
-      )}
-
-      <div className="env-actions">
-        <button className="env-button" onClick={onChange}>
-          Change environment
+        <button className="env-button ghost" onClick={onDismiss}>
+          Dismiss
         </button>
       </div>
     </div>

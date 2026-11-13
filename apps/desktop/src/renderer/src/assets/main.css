@@ -18,6 +18,7 @@
   /* Orange from the NEAR Hardware gear logo */
   --accent: #ff6a1a;
   --accent-hover: #ff7d38;
+  --accent-border: rgba(255, 106, 26, 0.4);
 
   --titlebar-height: 36px;
   --header-left-pad: 10px;

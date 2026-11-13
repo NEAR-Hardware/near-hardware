@@ -7,9 +7,9 @@ const api: NearHardwareApi = {
   environments: {
     detectAll: () => ipcRenderer.invoke('environments:detect-all'),
     detect: (id) => ipcRenderer.invoke('environments:detect', id),
-    getSelected: () => ipcRenderer.invoke('environments:get-selected'),
-    select: (id) => ipcRenderer.invoke('environments:select', id),
-    clear: () => ipcRenderer.invoke('environments:clear')
+    listConnected: () => ipcRenderer.invoke('environments:list-connected'),
+    connect: (id) => ipcRenderer.invoke('environments:connect', id),
+    disconnect: (id) => ipcRenderer.invoke('environments:disconnect', id)
   }
 }
 

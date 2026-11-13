@@ -1,8 +1,8 @@
 import type {
+  ConnectEnvironmentResult,
+  ConnectedEnvironment,
   EnvironmentId,
-  EnvironmentStatus,
-  SelectEnvironmentResult,
-  SelectedEnvironment
+  EnvironmentStatus
 } from './environments'
 
 // What the preload script exposes to the renderer as `window.api`
@@ -10,9 +10,9 @@ export interface NearHardwareApi {
   environments: {
     detectAll(): Promise<EnvironmentStatus[]>
     detect(id: EnvironmentId): Promise<EnvironmentStatus>
-    getSelected(): Promise<SelectedEnvironment | null>
-    // Re-checks the agent and only selects it if it's installed
-    select(id: EnvironmentId): Promise<SelectEnvironmentResult>
-    clear(): Promise<void>
+    listConnected(): Promise<ConnectedEnvironment[]>
+    // Re-checks the agent and only connects it if it's installed
+    connect(id: EnvironmentId): Promise<ConnectEnvironmentResult>
+    disconnect(id: EnvironmentId): Promise<void>
   }
 }
