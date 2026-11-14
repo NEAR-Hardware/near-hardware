@@ -1,0 +1,20 @@
+{
+  "name": "near-watch-wallet-tools",
+  "private": true,
+  "type": "module",
+  "description": "Host tools for the NEAR watch wallet: serial signer test, sample generator",
+  "scripts": {
+    "build:extension": "node build-extension.mjs",
+    "check:extension": "node check-extension.mjs",
+    "samples": "node make-samples.mjs",
+    "sign-test": "node watch-sign.mjs",
+    "e2e": "node watch-e2e.mjs"
+  },
+  "dependencies": {
+    "near-api-js": "^7.5.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "puppeteer-core": "^25.17.0"
+  }
+}

@@ -1,0 +1,333 @@
+{
+  "board": {
+    "name": "ESP32-S3-Touch-LCD-3.5",
+    "headers": [
+      {
+        "id": "H1",
+        "side": "left",
+        "label": "2x16 header, odd pins 1-31",
+        "pins": [
+          {
+            "id": "BAT",
+            "label": "BAT",
+            "kind": "power"
+          },
+          {
+            "id": "GND_3",
+            "label": "GND",
+            "kind": "ground"
+          },
+          {
+            "id": "GPIO21",
+            "label": "GPIO21",
+            "kind": "gpio",
+            "note": "camera D7 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO38",
+            "label": "GPIO38",
+            "kind": "gpio",
+            "note": "camera XCLK (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO39",
+            "label": "GPIO39",
+            "kind": "gpio",
+            "note": "camera D6 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO40",
+            "label": "GPIO40",
+            "kind": "gpio",
+            "note": "camera D5 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO41",
+            "label": "GPIO41",
+            "kind": "gpio",
+            "note": "camera PCLK (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO42",
+            "label": "GPIO42",
+            "kind": "gpio",
+            "note": "camera D4 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO45",
+            "label": "GPIO45",
+            "kind": "gpio",
+            "functions": [
+              "strapping"
+            ],
+            "note": "camera D0 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO46",
+            "label": "GPIO46",
+            "kind": "gpio",
+            "functions": [
+              "strapping"
+            ],
+            "note": "camera D3 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO47",
+            "label": "GPIO47",
+            "kind": "gpio",
+            "note": "camera D1 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO48",
+            "label": "GPIO48",
+            "kind": "gpio",
+            "note": "camera D2 (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO44",
+            "label": "RXD (GPIO44)",
+            "kind": "uart",
+            "functions": [
+              "UART0 RX"
+            ]
+          },
+          {
+            "id": "GPIO43",
+            "label": "TXD (GPIO43)",
+            "kind": "uart",
+            "functions": [
+              "UART0 TX"
+            ]
+          },
+          {
+            "id": "GND_29",
+            "label": "GND",
+            "kind": "ground"
+          },
+          {
+            "id": "3V3_31",
+            "label": "3V3",
+            "kind": "power"
+          }
+        ]
+      },
+      {
+        "id": "H2",
+        "side": "right",
+        "label": "2x16 header, even pins 2-32",
+        "pins": [
+          {
+            "id": "5V",
+            "label": "5V",
+            "kind": "power"
+          },
+          {
+            "id": "GND_4",
+            "label": "GND",
+            "kind": "ground"
+          },
+          {
+            "id": "GPIO19",
+            "label": "DN (GPIO19)",
+            "kind": "other",
+            "functions": [
+              "USB D-"
+            ],
+            "used": "USB"
+          },
+          {
+            "id": "GPIO20",
+            "label": "DP (GPIO20)",
+            "kind": "other",
+            "functions": [
+              "USB D+"
+            ],
+            "used": "USB"
+          },
+          {
+            "id": "GPIO11",
+            "label": "GPIO11",
+            "kind": "gpio",
+            "functions": [
+              "SDMMC CLK"
+            ],
+            "note": "TF card CLK (when a card is used)"
+          },
+          {
+            "id": "GPIO10",
+            "label": "GPIO10",
+            "kind": "gpio",
+            "functions": [
+              "SDMMC CMD"
+            ],
+            "note": "TF card CMD (when a card is used)"
+          },
+          {
+            "id": "GPIO9",
+            "label": "GPIO9",
+            "kind": "gpio",
+            "functions": [
+              "SDMMC D0"
+            ],
+            "note": "TF card D0 (when a card is used)"
+          },
+          {
+            "id": "GPIO17",
+            "label": "GPIO17",
+            "kind": "gpio",
+            "note": "camera VSYNC (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO18",
+            "label": "GPIO18",
+            "kind": "gpio",
+            "note": "camera HREF (when a camera is fitted)"
+          },
+          {
+            "id": "GPIO0",
+            "label": "BOOT (GPIO0)",
+            "kind": "other",
+            "functions": [
+              "BOOT button",
+              "strapping"
+            ],
+            "used": "BOOT button"
+          },
+          {
+            "id": "RST",
+            "label": "RST",
+            "kind": "other",
+            "functions": [
+              "EN / reset"
+            ]
+          },
+          {
+            "id": "PWR",
+            "label": "PWR",
+            "kind": "other",
+            "functions": [
+              "PMIC power key"
+            ]
+          },
+          {
+            "id": "GPIO7",
+            "label": "SCL (GPIO7)",
+            "kind": "i2c",
+            "functions": [
+              "I2C SCL"
+            ],
+            "used": "shared I2C bus (touch, PMIC, RTC, IMU, codec, expander)"
+          },
+          {
+            "id": "GPIO8",
+            "label": "SDA (GPIO8)",
+            "kind": "i2c",
+            "functions": [
+              "I2C SDA"
+            ],
+            "used": "shared I2C bus (touch, PMIC, RTC, IMU, codec, expander)"
+          },
+          {
+            "id": "GND_30",
+            "label": "GND",
+            "kind": "ground"
+          },
+          {
+            "id": "3V3_32",
+            "label": "3V3",
+            "kind": "power"
+          }
+        ]
+      }
+    ],
+    "onboard": [
+      {
+        "name": "3.5in IPS LCD 320x480 (ST7796, SPI)",
+        "pins": [
+          "GPIO1",
+          "GPIO2",
+          "GPIO3",
+          "GPIO5",
+          "GPIO6"
+        ]
+      },
+      {
+        "name": "Touch FT6336 (I2C 0x38)",
+        "pins": [
+          "GPIO7",
+          "GPIO8"
+        ]
+      },
+      {
+        "name": "IO expander TCA9554 (I2C 0x20): LCD reset EXIO1, PWR key EXIO6",
+        "pins": [
+          "GPIO7",
+          "GPIO8"
+        ]
+      },
+      {
+        "name": "PMIC AXP2101 (0x34), RTC PCF85063 (0x51), IMU QMI8658 (0x6B)",
+        "pins": [
+          "GPIO7",
+          "GPIO8"
+        ]
+      },
+      {
+        "name": "Audio ES8311 (I2C 0x18, I2S)",
+        "pins": [
+          "GPIO12",
+          "GPIO13",
+          "GPIO14",
+          "GPIO15",
+          "GPIO16"
+        ]
+      },
+      {
+        "name": "TF card (SDMMC 1-bit)",
+        "pins": [
+          "GPIO9",
+          "GPIO10",
+          "GPIO11"
+        ]
+      },
+      {
+        "name": "Camera DVP connector (OV2640/OV5640)",
+        "pins": [
+          "GPIO17",
+          "GPIO18",
+          "GPIO21",
+          "GPIO38",
+          "GPIO39",
+          "GPIO40",
+          "GPIO41",
+          "GPIO42",
+          "GPIO45",
+          "GPIO46",
+          "GPIO47",
+          "GPIO48"
+        ]
+      },
+      {
+        "name": "USB-C native USB",
+        "pins": [
+          "GPIO19",
+          "GPIO20"
+        ]
+      },
+      {
+        "name": "BOOT button",
+        "pins": [
+          "GPIO0"
+        ]
+      }
+    ]
+  },
+  "parts": [],
+  "wires": [],
+  "notes": [
+    "Header is on the back of the board; pin 1 (BAT) is at the top-left when you look at the back with the USB-C port on the left.",
+    "GPIO1, 2, 3, 5 (LCD SPI) and 6 (backlight), 12-16 (audio) are used on the board and not on the header.",
+    "GPIO9/10/11 are free only without a TF card; the camera-shared pins are free only without a camera.",
+    "NEAR Checkout uses no external parts: display, touch and USB only."
+  ]
+}

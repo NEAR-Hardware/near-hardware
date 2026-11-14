@@ -1,0 +1,8 @@
+node_modules/
+firmware/.pio/
+firmware/sim/sim
+firmware/sim/sim-mainnet
+firmware/sim/*.o
+webapp/dist/
+tools/.cache/
+.DS_Store

@@ -118,9 +118,9 @@ export class ClaudeSession implements AgentSession {
   private streamBlockIds = new Map<number, string>()
   private streamTypeCounts = { text: 0, thinking: 0 }
   private interrupted = false
-  // Messages sent but not yet answered; the CLI queues them and runs one per turn,
-  // so the chat only goes idle when the last one finishes
-  private pendingTurns = 0
+  // Whether a turn is underway. Messages sent mid-turn are folded into it by the
+  // CLI (no turn of their own), so this follows the CLI's output, not a count of sends
+  private running = false
   // total_cost_usd is cumulative per CLI process; track it to add only new spend
   private lastProcessCost = 0
   private costUsd = 0
@@ -207,7 +207,7 @@ export class ClaudeSession implements AgentSession {
         this.queue = undefined
         this.starting = undefined
       }
-      this.pendingTurns = 0
+      this.running = false
       for (const pending of this.permissions.values()) {
         pending.resolve({ behavior: 'deny', message: 'Session ended' })
       }
@@ -220,6 +220,8 @@ export class ClaudeSession implements AgentSession {
     const { emit } = this.context
     // Sub-agent internals would flood the chat; their parent tool call shows the result
     if ('parent_tool_use_id' in message && message.parent_tool_use_id) return
+    // The CLI started another turn on its own, e.g. for a message it had queued
+    if (message.type === 'assistant' || message.type === 'stream_event') this.setRunning(true)
 
     switch (message.type) {
       case 'system':
@@ -358,8 +360,7 @@ export class ClaudeSession implements AgentSession {
           this.notice('error', errors?.join('\n') || `Turn ended: ${message.subtype}`)
         }
         this.interrupted = false
-        this.pendingTurns = Math.max(0, this.pendingTurns - 1)
-        if (this.pendingTurns === 0) emit({ type: 'status', status: 'idle' })
+        this.setRunning(false)
         this.refreshUsage()
         return
       }
@@ -434,8 +435,8 @@ export class ClaudeSession implements AgentSession {
 
   async send({ text, images }: SendMessageInput): Promise<void> {
     await this.start()
-    this.pendingTurns++
-    this.context.emit({ type: 'status', status: 'running' })
+    this.running = false
+    this.setRunning(true)
     this.queue?.push({
       type: 'user',
       session_id: this.sessionId ?? '',
@@ -456,9 +457,24 @@ export class ClaudeSession implements AgentSession {
   }
 
   async interrupt(): Promise<void> {
-    if (!this.query) return
+    if (!this.query) {
+      this.setRunning(false)
+      return
+    }
     this.interrupted = true
     await this.query.interrupt().catch(() => undefined)
+    // A running turn answers with a result; if none comes, the CLI was already idle
+    setTimeout(() => {
+      if (!this.running) return
+      this.interrupted = false
+      this.setRunning(false)
+    }, 2000)
+  }
+
+  private setRunning(running: boolean): void {
+    if (this.running === running) return
+    this.running = running
+    this.context.emit({ type: 'status', status: running ? 'running' : 'idle' })
   }
 
   async setModel(model: string): Promise<void> {

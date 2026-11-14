@@ -1,0 +1,22 @@
+{
+  "name": "near-watch-demo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Test site for the NEAR watch wallet: NEAR Connect on testnet or mainnet, set_greeting and NEP-413",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "dev:mainnet": "VITE_NEAR_NETWORK=mainnet vite --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "build:mainnet": "tsc --noEmit && VITE_NEAR_NETWORK=mainnet vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "dependencies": {
+    "@hot-labs/near-connect": "^0.12.0",
+    "near-api-js": "^7.5.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}

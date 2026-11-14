@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NEAR Checkout · demo controller</title>
+<style>
+  @font-face { font-family: P; src: url(/font.ttf) format("truetype"); }
+  :root { --bg: #94be75; --dim: #def0cd; --shade: #7aa65e; --alert: #ffd6c4; --red: #d63028; --dark: #09161c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: #fff; font-family: P, monospace; -webkit-font-smoothing: none; }
+  main { max-width: 1040px; margin: 0 auto; padding: 28px 24px 40px; display: grid; grid-template-columns: 1fr 340px; gap: 32px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: var(--dim); font-size: 11px; line-height: 18px; margin-bottom: 22px; }
+  .pill { display: inline-block; padding: 6px 10px; border: 3px solid #fff; font-size: 12px; margin-right: 8px; }
+  .pill.live { background: var(--red); border-color: var(--red); }
+  .pill.off { color: var(--alert); border-color: var(--alert); }
+  .state { margin: 22px 0; border: 4px solid #fff; border-bottom-width: 10px; padding: 18px; min-height: 150px; font-size: 13px; line-height: 24px; }
+  .state .big { font-size: 22px; line-height: 34px; }
+  .state .dim { color: var(--dim); }
+  .state { word-break: break-all; }
+  button { font-family: P, monospace; color: #fff; background: transparent; border: 4px solid #fff; border-bottom-width: 12px;
+           width: 100%; padding: 30px 16px; font-size: 20px; line-height: 30px; cursor: pointer; margin-bottom: 18px; text-align: left; }
+  button:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+  button:active:not(:disabled) { background: #fff; color: var(--bg); }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.expire { border-color: var(--alert); color: var(--alert); }
+  button .key { float: right; font-size: 12px; opacity: .8; }
+  button.small { padding: 10px 12px; font-size: 11px; border-width: 3px; border-bottom-width: 7px; width: auto; display: inline-block; margin-right: 8px; }
+  .hint { font-size: 10px; line-height: 17px; color: var(--dim); }
+  .mirror { background: var(--dark); padding: 10px; border-radius: 10px; }
+  .mirror img { display: block; width: 320px; height: 480px; image-rendering: pixelated; background: var(--bg); }
+  .log { margin-top: 18px; font-size: 9px; line-height: 15px; color: var(--dim); height: 170px; overflow: auto; white-space: pre-wrap; border-top: 3px dashed var(--shade); padding-top: 10px; }
+  .log .error { color: var(--alert); }
+  .log .ok { color: #fff; }
+  .toast { min-height: 18px; font-size: 11px; color: var(--alert); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <section>
+    <h1>NEAR checkout</h1>
+    <div class="sub">demo controller · in DEMO mode this page decides how a sale ends.<br>The till shows a real 1Click quote: a real payment to it really pays the merchant.</div>
+    <div>
+      <span id="conn" class="pill off">till: connecting</span>
+      <span id="mode" class="pill">mode: ?</span>
+      <span id="link" class="pill">1Click: ?</span>
+    </div>
+    <div class="state" id="state">waiting for the till…</div>
+    <div class="toast" id="toast"></div>
+    <button id="paid"><span class="key">[P]</span>Simulate payment received</button>
+    <button id="expire" class="expire"><span class="key">[E]</span>Simulate expired</button>
+    <div class="hint">Start a sale on the till (new sale → price → token). When the QR shows, press a button here.
+      The till then walks through what a real NEAR Intents payment shows. It also keeps polling 1Click,
+      so a real payment is picked up too. In LIVE mode these buttons do nothing: only 1Click marks a sale paid.</div>
+    <div class="log" id="log"></div>
+  </section>
+  <aside>
+    <div class="mirror"><img id="mirror" alt="the till's screen"></div>
+    <p class="hint">mirror of the till's framebuffer, refreshed on every screen change.
+      <button class="small" id="refresh">refresh</button></p>
+  </aside>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let st = null, connected = false, expiresAt = 0;
+
+function render() {
+  $("conn").textContent = connected ? "till: connected" : "till: not connected";
+  $("conn").className = "pill" + (connected ? "" : " off");
+  const live = st?.mode === "live";
+  $("mode").textContent = "mode: " + (st ? st.mode.toUpperCase() : "?");
+  $("mode").className = "pill" + (live ? " live" : "");
+  $("link").textContent = "1Click: " + ({ usb: "via USB", wifi: "via Wi-Fi", none: "offline" }[st?.link] ?? "?");
+  const canSim = connected && st && !live && st.screen === "quote";
+  $("paid").disabled = $("expire").disabled = !canSim;
+  if (!st) return;
+  let h = "";
+  const sale = st.symbol ? `$${st.price} in ${st.symbol} on ${st.chain}` : "";
+  switch (st.screen) {
+    case "home": h = `<div class="big">home</div><span class="dim">merchant</span> ${st.merchant}`; break;
+    case "amount": h = `<div class="big">$${st.price}</div><span class="dim">entering the price</span>`; break;
+    case "pay": h = `<div class="big">$${st.price}</div><span class="dim">customer is choosing a token</span>`; break;
+    case "quoting": h = `<div class="big">quoting…</div>${sale}`; break;
+    case "quote": {
+      const s = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+      h = `<div class="big">QR on screen</div>${sale}<br><span class="dim">send</span> ${st.amountIn} ${st.symbol}` +
+          `<br><span class="dim">deposit</span> ${st.depositAddress}` +
+          `<br><span class="dim">real 1Click quote${st.verified ? ", signed by 1Click ✓" : ""}</span>` +
+          `<br><span class="dim">expires in</span> <span id="cd">${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}</span>`;
+      break;
+    }
+    case "waiting": h = `<div class="big">payment seen</div>${sale}<br><span class="dim">${st.status}</span>`; break;
+    case "paid": h = `<div class="big">paid ✓</div>+${st.received} USDC to ${st.merchant}<br><span class="dim">${st.receipt}</span>`; break;
+    case "ended": h = `<div class="big">${st.ended}</div>${sale}`; break;
+    case "error": h = `<div class="big">${st.error}</div><span class="dim">${st.message}</span>`; break;
+    default: h = `<div class="big">${st.screen}</div>`;
+  }
+  $("state").innerHTML = h;
+}
+
+function refreshMirror() { if (connected) $("mirror").src = "/api/shot.png?t=" + Date.now(); }
+
+async function simulate(action) {
+  $("toast").textContent = "";
+  const r = await fetch("/api/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+  const j = await r.json();
+  if (!j.ok) $("toast").textContent = "till said: " + (j.error ?? r.status);
+}
+
+$("paid").onclick = () => simulate("paid");
+$("expire").onclick = () => simulate("expire");
+$("refresh").onclick = refreshMirror;
+document.addEventListener("keydown", (e) => {
+  if (e.key === "p" || e.key === "P") { if (!$("paid").disabled) simulate("paid"); }
+  if (e.key === "e" || e.key === "E") { if (!$("expire").disabled) simulate("expire"); }
+});
+
+const es = new EventSource("/api/events");
+let mirrorTimer = null;
+es.addEventListener("state", (e) => {
+  const prev = st?.screen;
+  st = JSON.parse(e.data);
+  if (st.screen === "quote" && st.expiresIn !== undefined) expiresAt = Date.now() + st.expiresIn * 1000;
+  render();
+  clearTimeout(mirrorTimer);
+  mirrorTimer = setTimeout(refreshMirror, prev === st.screen ? 150 : 350);
+});
+es.addEventListener("connection", (e) => { connected = JSON.parse(e.data).connected; render(); if (connected) refreshMirror(); });
+es.addEventListener("log", (e) => {
+  const l = JSON.parse(e.data);
+  const div = document.createElement("div");
+  div.className = l.kind;
+  div.textContent = `${l.t} ${l.msg}`;
+  $("log").appendChild(div);
+  $("log").scrollTop = 1e9;
+});
+setInterval(() => {
+  if (st?.screen === "quote" && $("cd")) {
+    const s = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+    $("cd").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+}, 500);
+render();
+</script>
+</body>
+</html>

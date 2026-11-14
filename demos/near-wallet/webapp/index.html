@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEAR watch demo</title>
+  <link rel="icon" href="/favicon.png">
+</head>
+<body>
+  <div class="page">
+    <section class="watch">
+      <div class="face">
+        <div class="bar"><span id="clock">--:--</span><img class="px" id="link" src="/img/near.png" width="20" height="20" alt=""></div>
+        <img class="px portrait" src="/img/portrait.png" width="160" height="156" alt="">
+        <div class="title">illia's<br>vault</div>
+        <div class="acc" id="accShort">not connected</div>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+        <div class="bal"><img class="px" src="/img/near.png" width="20" height="20" alt=""><span id="bal">testnet</span></div>
+      </div>
+      <p class="caption">your key lives on the watch</p>
+    </section>
+
+    <section class="panel">
+      <h1>NEAR watch demo</h1>
+      <p class="dim">a test site using NEAR Connect on <span id="network">testnet</span>. connect, then approve on the watch.</p>
+      <p class="dim" id="mainnetNote" hidden>mainnet: set greeting spends a little real NEAR for gas. the watch firmware is demo grade.</p>
+
+      <div id="signedOut">
+        <button class="btn big" id="login">connect wallet</button>
+        <p class="hint">pick <b>NEAR Hardware Wallet</b> in the list</p>
+      </div>
+
+      <div id="signedIn" hidden>
+        <div class="box">
+          <div class="k">account</div>
+          <div class="v mono" id="account"></div>
+          <div class="k">balance</div>
+          <div class="v" id="balance">…</div>
+          <div class="k">wallet</div>
+          <div class="v" id="walletName">…</div>
+        </div>
+
+        <div class="box">
+          <div class="k">greeting on <span id="contract">hello.near-examples.testnet</span></div>
+          <div class="v greeting" id="greeting">…</div>
+          <input id="greetingInput" maxlength="80" value="hello from my watch">
+          <button class="btn" id="setGreeting">set greeting</button>
+        </div>
+
+        <div class="box">
+          <div class="k">NEP-413 message</div>
+          <input id="message" maxlength="200" value="I own this account. Signed on my watch.">
+          <button class="btn" id="signMessage">sign message</button>
+        </div>
+
+        <div id="status" class="status" aria-live="polite"></div>
+        <button class="btn small" id="logout">disconnect</button>
+      </div>
+    </section>
+  </div>
+  <img class="peek px" src="/img/mascot-peek.png" alt="">
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

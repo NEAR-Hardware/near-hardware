@@ -1,0 +1,109 @@
+@font-face {
+  font-family: "PressStart2P";
+  src: url("/fonts/PressStart2P-Regular.ttf") format("truetype");
+}
+:root {
+  --bg: #94be75;
+  --white: #fff;
+  --dim: #def0cd;
+  --label: #2c5622;
+  --alert: #ffd6c4;
+  --night: #1d2418;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--night);
+  color: var(--white);
+  font-family: "PressStart2P", monospace;
+  -webkit-font-smoothing: none;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+.px { image-rendering: pixelated; }
+.page { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; justify-content: center; max-width: 1040px; }
+
+/* the watch, drawn like the real 410x502 AMOLED face */
+.watch { display: flex; flex-direction: column; align-items: center; }
+.face {
+  width: 328px;
+  height: 402px;
+  background: var(--bg);
+  border-radius: 92px;
+  box-shadow: 0 0 0 14px #0c0f0a, 0 0 0 16px #3b4734, 0 24px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 24px;
+}
+.bar { display: flex; gap: 40px; align-items: center; font-size: 16px; }
+.portrait { margin-top: 18px; }
+.title { font-size: 16px; text-align: center; line-height: 1.4; margin-top: 12px; }
+.acc { font-size: 9px; color: var(--dim); margin-top: 10px; }
+.dots { display: flex; gap: 26px; align-items: center; margin-top: 14px; }
+.dots i { width: 4px; height: 4px; background: var(--white); display: block; }
+.dots i.on { width: 10px; height: 10px; }
+.bal { display: flex; gap: 10px; align-items: center; font-size: 11px; margin-top: 16px; }
+.caption { font-size: 9px; color: #8fa37f; margin-top: 30px; }
+
+.panel { width: 520px; max-width: 100%; }
+h1 { font-size: 22px; font-weight: normal; margin: 4px 0 14px; color: var(--bg); }
+p { font-size: 10px; line-height: 1.9; }
+.dim { color: #b9c9ad; }
+.hint { color: #8fa37f; }
+.box {
+  background: var(--bg);
+  padding: 16px 18px 18px;
+  margin: 0 0 18px;
+  box-shadow: 0 -4px 0 0 var(--bg), 0 4px 0 0 var(--bg), -4px 0 0 0 var(--bg), 4px 0 0 0 var(--bg);
+}
+.k { font-size: 9px; color: var(--label); margin: 8px 0 6px; }
+.k:first-child { margin-top: 0; }
+.v { font-size: 11px; line-height: 1.7; word-break: break-all; }
+.mono { font-size: 9px; }
+.greeting { margin-bottom: 12px; }
+input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--night);
+  background: #e4f7d4;
+  border: 0;
+  padding: 10px;
+  margin: 6px 0 4px;
+  outline: 3px solid transparent;
+}
+input:focus { outline-color: var(--white); }
+
+.btn {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--white);
+  background: transparent;
+  border: 0;
+  margin: 10px 4px 2px;
+  padding: 14px 18px 20px;
+  cursor: pointer;
+  box-shadow: 0 -3px 0 0 var(--white), 0 3px 0 0 var(--white), -3px 0 0 0 var(--white), 3px 0 0 0 var(--white);
+  background-image: repeating-linear-gradient(90deg, var(--white) 0 3px, transparent 3px 6px),
+    linear-gradient(var(--white), var(--white));
+  background-size: calc(100% - 12px) 3px, 100% 3px;
+  background-position: 6px calc(100% - 3px), 0 100%;
+  background-repeat: no-repeat;
+}
+.btn:hover { background-color: rgba(255, 255, 255, 0.14); }
+.btn:active { background-color: var(--white); color: var(--bg); }
+.btn[disabled] { opacity: 0.5; cursor: wait; }
+.btn.big { font-size: 15px; padding: 20px 26px 26px; margin-top: 18px; }
+.btn.small { font-size: 9px; color: #b9c9ad; }
+
+.status { font-size: 9px; line-height: 2; min-height: 10px; margin: 6px 0 12px; word-break: break-all; }
+.status.ok { color: var(--bg); }
+.status.err { color: var(--alert); }
+.status.wait { color: var(--white); }
+.status a { color: var(--white); }
+.ell::after { animation: dots 1.2s steps(4) infinite; content: ""; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+.peek { position: fixed; left: -12px; bottom: -8px; width: 107px; pointer-events: none; }

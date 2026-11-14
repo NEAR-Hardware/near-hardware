@@ -1,0 +1,99 @@
+/* Same look as the watch: #94BE75 green, white Press Start 2P, pixel buttons */
+@font-face {
+  font-family: "PressStart2P";
+  src: url("fonts/PressStart2P-Regular.ttf") format("truetype");
+}
+:root {
+  --bg: #94be75;
+  --white: #fff;
+  --dim: #def0cd;
+  --label: #2c5622;
+  --alert: #ffd6c4;
+  --dark: #09161c;
+  --light: #e4f7d4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: #1d2418;
+  display: grid;
+  place-items: center;
+  font-family: "PressStart2P", monospace;
+  color: var(--white);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+.px { image-rendering: pixelated; }
+.face {
+  width: 372px;
+  height: 610px;
+  background: var(--bg);
+  border-radius: 64px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 22px;
+  overflow: hidden;
+  position: relative;
+}
+.bar { display: flex; justify-content: center; align-items: center; gap: 46px; font-size: 18px; height: 30px; }
+.bar img { margin-top: -2px; }
+#view { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 18px; min-height: 0; }
+.foot { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 11px; height: 26px; }
+
+h1 { font-size: 20px; margin: 6px 0 14px; line-height: 1.4; font-weight: normal; }
+h1.big { font-size: 34px; margin: 8px 0 18px; }
+p { font-size: 10px; line-height: 1.9; margin: 0 0 10px; }
+.dim { color: var(--dim); }
+.alert { color: var(--alert); }
+.site { font-size: 9px; color: var(--dim); margin-bottom: 10px; word-break: break-all; }
+.mascot { margin: 6px 0 10px; }
+
+.card {
+  width: 100%;
+  text-align: left;
+  font-size: 9px;
+  line-height: 1.9;
+  padding: 10px 12px;
+  margin: 6px 0 12px;
+  background: rgba(9, 22, 28, 0.08);
+  max-height: 150px;
+  overflow: auto;
+  word-break: break-all;
+}
+.card .k { color: var(--label); }
+.card .warn { color: var(--alert); }
+
+/* pixel button: box-shadow border gives the notched corners, a dotted strip at the bottom */
+.btn {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--white);
+  background: transparent;
+  border: 0;
+  margin: 8px 6px;
+  padding: 14px 18px 20px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 -3px 0 0 var(--white), 0 3px 0 0 var(--white), -3px 0 0 0 var(--white), 3px 0 0 0 var(--white);
+  background-image: repeating-linear-gradient(90deg, var(--white) 0 3px, transparent 3px 6px),
+    linear-gradient(var(--white), var(--white));
+  background-size: calc(100% - 12px) 3px, 100% 3px;
+  background-position: 6px calc(100% - 3px), 0 100%;
+  background-repeat: no-repeat;
+}
+.btn:hover { background-color: rgba(255, 255, 255, 0.12); }
+.btn:active { background-color: var(--white); color: var(--bg); }
+.btn.alert { --white: var(--alert); color: var(--alert); }
+.btn[disabled] { opacity: 0.5; cursor: default; }
+.row { display: flex; gap: 8px; justify-content: center; }
+
+a { color: var(--white); }
+.link { font-size: 9px; word-break: break-all; line-height: 1.8; }
+
+.dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+@keyframes dots {
+  0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; }
+}
+.blink { animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.35; } }
+.peek { position: absolute; left: -10px; bottom: -6px; image-rendering: pixelated; }

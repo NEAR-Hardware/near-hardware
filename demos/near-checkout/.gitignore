@@ -1,0 +1,14 @@
+node_modules/
+firmware/.pio/
+firmware/sim/sim
+firmware/sim/*.o
+.DS_Store
+# secrets: Wi-Fi password, optional 1Click partner key
+firmware/include/secrets.h
+tools/.env
+# real 1Click quotes hold real deposit addresses: keep them out of git
+tools/receipts/
+tools/fixtures/quote-live.json
+tools/screenshots/
+# the vendor examples are 430 MB; re-clone them (see RECIPE.md)
+vendor/

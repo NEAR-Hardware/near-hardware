@@ -1,0 +1,96 @@
+{
+  "board": {
+    "name": "ESP32-S3-Touch-AMOLED-2.06",
+    "headers": [
+      {
+        "id": "PADS",
+        "side": "left",
+        "label": "Bottom-edge solder pads (back of PCB)",
+        "pins": [
+          { "id": "VBUS", "label": "VBUS (USB 5V)", "kind": "power" },
+          { "id": "GND1", "label": "GND", "kind": "ground" },
+          { "id": "GPIO20", "label": "D+/IO20", "kind": "other", "functions": ["USB_D+", "ADC2_CH9", "U1CTS"], "used": "native USB D+ (upload + serial monitor)" },
+          { "id": "GPIO19", "label": "D-/IO19", "kind": "other", "functions": ["USB_D-", "ADC2_CH8", "U1RTS"], "used": "native USB D- (upload + serial monitor)" },
+          { "id": "GPIO15", "label": "IO15 (SDA)", "kind": "i2c", "functions": ["I2C SDA", "ADC2_CH4", "U0RTS"], "used": "shared I2C SDA: touch, IMU, RTC, PMIC, codecs" },
+          { "id": "GPIO14", "label": "IO14 (SCL)", "kind": "i2c", "functions": ["I2C SCL", "ADC2_CH3", "TOUCH14"], "used": "shared I2C SCL: touch, IMU, RTC, PMIC, codecs" },
+          { "id": "GPIO44", "label": "RXD/IO44", "kind": "gpio", "functions": ["U0RXD", "CLK_OUT2"] },
+          { "id": "GPIO43", "label": "TXD/IO43", "kind": "gpio", "functions": ["U0TXD", "CLK_OUT1"] },
+          { "id": "GND2", "label": "GND", "kind": "ground" },
+          { "id": "3V3", "label": "3V3", "kind": "power" }
+        ]
+      },
+      {
+        "id": "CONN",
+        "side": "right",
+        "label": "On-board connectors (back of PCB)",
+        "pins": [
+          { "id": "BAT_P", "label": "BAT +", "kind": "power", "used": "LiPo battery (J1, MX1.25)" },
+          { "id": "BAT_N", "label": "BAT -", "kind": "ground", "used": "LiPo battery (J1, MX1.25)" },
+          { "id": "MOTOR_P", "label": "MOTOR + (P1)", "kind": "other", "used": "vibration motor" },
+          { "id": "MOTOR_N", "label": "MOTOR - (P2)", "kind": "other", "used": "vibration motor (switched by Q1 from GPIO18)" },
+          { "id": "SPK_P", "label": "SPK + (P5)", "kind": "other", "used": "speaker (NS4150B amp)" },
+          { "id": "SPK_N", "label": "SPK - (P6)", "kind": "other", "used": "speaker (NS4150B amp)" }
+        ]
+      }
+    ],
+    "onboard": [
+      { "name": "AMOLED display (CO5300, QSPI): SIO0-3, SCLK, CS, RESET, TE", "pins": ["GPIO4", "GPIO5", "GPIO6", "GPIO7", "GPIO11", "GPIO12", "GPIO8", "GPIO13"] },
+      { "name": "Touch (FT3168, I2C): SDA, SCL, INT, RST", "pins": ["GPIO15", "GPIO14", "GPIO38", "GPIO9"] },
+      { "name": "IMU (QMI8658C, I2C 0x6B): SDA, SCL, INT1", "pins": ["GPIO15", "GPIO14", "GPIO21"] },
+      { "name": "RTC (PCF85063ATL, I2C): SDA, SCL, INT", "pins": ["GPIO15", "GPIO14", "GPIO39"] },
+      { "name": "PMIC (AXP2101, I2C)", "pins": ["GPIO15", "GPIO14"] },
+      { "name": "Audio: ES8311 codec + ES7210 mic ADC (I2C 0x40) + NS4150B amp: MCLK, SCLK, LRCK, DSDIN, ASDOUT, PA_CTRL", "pins": ["GPIO16", "GPIO41", "GPIO45", "GPIO40", "GPIO42", "GPIO46", "GPIO15", "GPIO14"] },
+      { "name": "microSD (SPI): MOSI, SCK, MISO, CS", "pins": ["GPIO1", "GPIO2", "GPIO3", "GPIO17"] },
+      { "name": "Vibration motor driver (Q1 MMBT3904)", "pins": ["GPIO18"] },
+      { "name": "BOOT button (low = pressed)", "pins": ["GPIO0"] },
+      { "name": "PWR button (high = pressed; also AXP2101 PWRON)", "pins": ["GPIO10"] },
+      { "name": "Native USB-C", "pins": ["GPIO19", "GPIO20"] },
+      { "name": "32 MB flash (GD25Q256) + 8 MB octal PSRAM (internal SPI bus, not broken out)", "pins": ["GPIO26", "GPIO27", "GPIO28", "GPIO29", "GPIO30", "GPIO31", "GPIO32", "GPIO33", "GPIO34", "GPIO35", "GPIO36", "GPIO37"] }
+    ]
+  },
+  "parts": [
+    {
+      "id": "pulldown",
+      "name": "10 kΩ resistor (pull-down)",
+      "kind": "resistor",
+      "pins": ["1", "2"],
+      "note": "Holds the relay input low (lamp off) while the board boots, resets or is being flashed"
+    },
+    {
+      "id": "relay",
+      "name": "Enclosed mains relay with low-voltage input (e.g. Digital Loggers IoT Power Relay II)",
+      "kind": "relay",
+      "pins": ["IN_POS", "IN_NEG", "NORM_OFF", "PLUG"],
+      "note": "IN_POS/IN_NEG = the + / - screw terminals on the control input (opto-isolated, triggers from 3.3-48 V DC, polarity matters). NORM_OFF = a 'normally OFF' outlet. PLUG = the relay's own mains cord. US 120 V product."
+    },
+    {
+      "id": "lamp",
+      "name": "Desk lamp",
+      "kind": "mains load",
+      "pins": ["PLUG"],
+      "note": "Unmodified: plugs into the relay box, cord not cut"
+    },
+    {
+      "id": "wall",
+      "name": "Wall outlet",
+      "kind": "mains supply",
+      "pins": ["SOCKET"]
+    }
+  ],
+  "wires": [
+    { "from": "board.GPIO44", "to": "relay.IN_POS", "kind": "signal", "label": "lamp on/off (HIGH = on)" },
+    { "from": "board.GND2", "to": "relay.IN_NEG", "kind": "ground" },
+    { "from": "board.GPIO44", "to": "pulldown.1", "kind": "signal" },
+    { "from": "pulldown.2", "to": "board.GND2", "kind": "ground" },
+    { "from": "lamp.PLUG", "to": "relay.NORM_OFF", "kind": "mains", "label": "lamp plugs in here" },
+    { "from": "relay.PLUG", "to": "wall.SOCKET", "kind": "mains", "label": "relay's own cord" }
+  ],
+  "notes": [
+    "MAINS VOLTAGE CAN KILL. In this plan you never open or wire anything at mains voltage: the lamp plugs into the relay box's 'normally OFF' outlet and the relay box plugs into the wall. Don't cut the lamp cord or use a bare open-frame relay board for this. Outside the US, use a locally certified equivalent or a smart plug.",
+    "This board has no pin header. The only user I/O is a row of 10 solder pads along the bottom edge on the back of the PCB, inside the watch case. They're listed in the order printed on the silkscreen, read with the back of the board facing you (source: Waveshare schematic V1.0, bottom-layer view).",
+    "Only RXD/IO44 and TXD/IO43 are free for general use. The firmware sends Serial over native USB (ARDUINO_USB_CDC_ON_BOOT=1), so UART0 is spare. IO43 prints the ROM boot log at every reset and would flicker the lamp, so the relay uses IO44, which is an input during boot.",
+    "IO14/IO15 are the board's shared I2C bus: you can add 3.3 V I2C sensors there (check for address clashes), but they can't be used as plain GPIO. D+/D- are native USB: wiring to them breaks uploads and the serial monitor.",
+    "3V3 is the AXP2101 DCDC1 rail. VBUS is USB 5 V and is only live while USB-C is plugged in. No board power goes to the relay: its control input is opto-isolated and draws only a few mA, well within what an ESP32-S3 pin can drive, so no transistor is needed.",
+    "Solder short, thin leads to the IO44 and GND pads (the 10 kΩ can sit right at the pads), add strain relief, and run a 2-wire cable to the relay's screw terminal: + to IO44, - to GND."
+  ]
+}
