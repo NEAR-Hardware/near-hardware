@@ -24,6 +24,8 @@ BOARD.md    the board: pins, chips, sources.  RECIPE.md: how this was built, ver
 
 Nobody wrote code or pressed a button on the board. `RECIPE.md` is the agent's own build log, about 50 minutes from empty folder to working till.
 
+**Rebuild it, or your own version on your own board:** [`PROMPT.md`](PROMPT.md) is the exact prompt the agent got. All assets are in this folder for your AI agent (designs, pixel font, sprites, screens, firmware, `RECIPE.md`); paste the prompt into NEAR Hardware with your board's name.
+
 ## How a sale works
 
 1. **new sale** → type the price → **next** → the customer picks a token.

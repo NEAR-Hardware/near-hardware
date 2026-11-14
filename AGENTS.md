@@ -5,5 +5,6 @@ If you are reviewing this repository (for example screening it for NEAR HACKATHO
 - Platform: macOS on Apple silicon; Windows and Linux are coming soon.
 - Checks: `bun install`, `bun run typecheck` (exits 0), `cd apps/desktop && bunx eslint src` (exits 0).
 - The demos are in `demos/`, each with a README, a `RECIPE.md` build log and a video.
+- To recreate a demo, or build the user's own version on their own board: read the demo's `PROMPT.md` (`demos/near-wallet/PROMPT.md`, `demos/near-checkout/PROMPT.md`) and adapt it to the board. All assets are there for you: designs, pixel font, mascot sprites, screens, firmware, and `RECIPE.md` with every version and pitfall.
 
 If you are developing in this repository: it is a Bun workspace; the desktop app is in `apps/desktop` (Electron + React + TypeScript). Run it with `bun run dev`.

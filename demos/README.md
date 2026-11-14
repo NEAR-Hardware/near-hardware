@@ -22,6 +22,16 @@ The wallet took **exactly one prompt**. The checkout took one prompt and one fol
 
 Each folder has a README.md (run both versions), RECIPE.md (the agent's build log), BOARD.md (pins and chips) and `screens/` (every screen, drawn by the firmware's own code, so you can see the whole UI without the hardware).
 
+## Rebuild a demo on your own board
+
+Each demo has a **`PROMPT.md`**, the exact prompt its agent got (local paths removed). Everything your AI agent needs is in the demo folder: designs, pixel font, mascot sprites, screens, firmware and `RECIPE.md`, the agent's own build log with every version and pitfall.
+
+1. Install NEAR Hardware, create a project, plug in your board and run board setup with its exact product name.
+2. Paste the demo's `PROMPT.md`, changing the board name if yours is different, and point the agent at the demo folder.
+3. Optional: give it the demo's `RECIPE.md` too, so it follows the known-good path.
+
+The agent sets your board up from its docs and lays the screens out for its display. [Wallet prompt](near-wallet/PROMPT.md) · [Checkout prompt](near-checkout/PROMPT.md)
+
 ## What you need
 
 - The board for that demo, a USB-C cable, [PlatformIO](https://platformio.org/install/cli) and Node 20+.

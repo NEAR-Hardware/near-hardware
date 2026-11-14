@@ -148,6 +148,8 @@ Each demo was built **autonomously** inside NEAR Hardware: the board was plugged
   </tr>
 </table>
 
+> **Rebuild a demo, or make your own on your own board.** Each demo has a **`PROMPT.md`**: the exact prompt its agent got. Every asset is in the demo folder for your AI agent: designs, pixel font, mascot sprites, screens, firmware and the agent's `RECIPE.md` build log. Open NEAR Hardware, plug in your board, paste the prompt (change the board name) and let your agent build it. [Wallet prompt](demos/near-wallet/PROMPT.md) · [Checkout prompt](demos/near-checkout/PROMPT.md)
+
 <p align="center"><img src="images/readme/wallet-screens.png" alt="The watch wallet's screens" width="100%" /><br/><sub>The watch wallet's screens, drawn by its own firmware: home, generating a key with the hardware RNG, PIN, vault, transaction review, signed.</sub></p>
 
 <p align="center"><img src="images/readme/checkout-screens.png" alt="The checkout terminal's screens" width="100%" /><br/><sub>The checkout's screens: home, price, choose a token, NEAR Intents quote with a payment QR, payment seen, paid.</sub></p>

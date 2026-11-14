@@ -25,6 +25,8 @@ design/     The reference designs
 
 The only touches on the watch were a person approving signatures with the PIN, which is what a hardware wallet is for. `RECIPE.md` is the agent's own build log. (The mainnet build option was added afterwards.)
 
+**Rebuild it, or your own version on your own board:** [`PROMPT.md`](PROMPT.md) is the exact prompt the agent got. All assets are in this folder for your AI agent (designs, pixel font, sprites, screens, firmware, `RECIPE.md`); paste the prompt into NEAR Hardware with your board's name.
+
 ## Testnet (start here)
 
 1. **Flash the watch**: `cd firmware && pio run -e testnet -t upload --upload-port /dev/cu.usbmodem101` (`testnet` is the default env, so plain `pio run` builds it too)

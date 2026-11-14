@@ -72,6 +72,8 @@ Both were built inside NEAR Hardware by one Claude Code agent (Opus 5.5), with z
 | [NEAR Hardware Wallet](demos/near-wallet/) (ESP32-S3 2.06" AMOLED watch) | On-device key generation, an on-device Borsh transaction decoder, PIN approval, NEAR Connect integration | Testnet transaction signed on the watch: [`CPtV4ezeP5tpNaKdSQgyGtzdHx6T7fCezTdKWNCbq4G6`](https://testnet.nearblocks.io/txns/CPtV4ezeP5tpNaKdSQgyGtzdHx6T7fCezTdKWNCbq4G6); [video](demos/near-wallet/demo.mp4); 26 screens in `screens/`; testnet and mainnet firmware builds compile, simulator tests pass |
 | [NEAR Checkout](demos/near-checkout/) (ESP32-S3 3.5" touch display) | Cross-chain payments settled by NEAR Intents into the merchant's NEAR account; quote signatures verified on the device | [video](demos/near-checkout/demo.mp4); full sales run on the device; mainnet path checked with real quotes and no funds moved; 17 screens in `screens/` |
 
+**To recreate a demo (or your own version on your own board):** read the demo's `PROMPT.md` ([wallet](demos/near-wallet/PROMPT.md), [checkout](demos/near-checkout/PROMPT.md)), the prompt its agent got. All assets are in the demo folder for an AI agent: designs, pixel font, mascot sprites, screens, firmware and `RECIPE.md`. In NEAR Hardware: plug in the board, run board setup, paste the prompt with your board's name.
+
 NEAR Intents has no testnet (HACKATHON.md Q-007), so the checkout's safe version is **Demo mode**: real quotes, payment simulated from the Mac. **LIVE** mode takes real payments.
 
 ## Tracks it fits
