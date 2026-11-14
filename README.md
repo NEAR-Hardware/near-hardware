@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://github.com/NEAR-Hardware/near-hardware/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/NEAR-Hardware/near-hardware?color=ff6a1a&label=release" /></a>
   <img alt="macOS, Apple silicon" src="https://img.shields.io/badge/macOS-Apple%20silicon-1a1a1a" />
+  <img alt="Windows and Linux coming soon" src="https://img.shields.io/badge/Windows%20%26%20Linux-coming%20soon-8d8a85" />
   <img alt="NEAR" src="https://img.shields.io/badge/NEAR-mainnet%20%2B%20testnet-00ec97" />
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-1a1a1a" /></a>
   <img alt="Built at NEAR HACKATHON" src="https://img.shields.io/badge/built%20at-NEAR%20HACKATHON-ff6a1a" />
@@ -31,7 +32,8 @@
   <a href="#two-devices-built-by-the-agent">Demos</a> ·
   <a href="#near-built-in">NEAR, built in</a> ·
   <a href="#try-it-in-10-minutes">Try it</a> ·
-  <a href="media/near-hardware-launch.mp4">Launch video</a>
+  <a href="media/near-hardware-launch.mp4">Launch video</a> ·
+  <a href="JUDGES.md"><b>Judges &amp; AI reviewers</b></a>
 </p>
 
 <p align="center">
@@ -170,6 +172,8 @@ Each demo was built **autonomously** inside NEAR Hardware: the board was plugged
 
 ## Install
 
+> **Platforms:** macOS on Apple silicon today. **Windows and Linux support is coming soon.**
+
 On a Mac with Apple silicon (M1 or later, macOS 12+), in Terminal:
 
 ```sh
@@ -193,6 +197,12 @@ No hardware needed for steps 1 to 4.
 3. **New Project** → **New chat** → **Continue without a board**, then ask: *"Read the near-contracts skill, write a Rust counter contract, deploy it to a new sub-account of my testnet account, and call increment."* → approve the prompts → the chat shows the transactions with explorer links.
 4. **Ask a NEAR question:** *"Use near_docs_search: how does a 1Click EXACT_OUTPUT quote work?"* → answered from the bundled docs, offline.
 5. **With a board:** plug it in, start a new chat → it's detected → type its product name → **Start board setup**. Then build one of the [demos](demos/).
+
+---
+
+## For judges and AI reviewers
+
+**[JUDGES.md](JUDGES.md)** has the quickest setup, checks that run without the GUI, a map of every feature to its code with how to verify it and its test status, every NEAR integration, and the hackathon disclosures.
 
 ---
 
