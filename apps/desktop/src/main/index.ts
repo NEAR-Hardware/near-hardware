@@ -10,7 +10,9 @@ import { registerIpcHandlers } from './ipc'
 import { setAppMenu } from './menu'
 import { loadRenderer } from './renderer'
 import { closeFloatingScreens, registerScreenIpc } from './screenWindow'
+import { registerAttentionIpc } from './attention'
 import { registerContractToolsIpc } from './contractTools'
+import { registerPiIpc } from './hardware/pi'
 import { registerNearIpc } from './near/accounts'
 import { registerSetupIpc, restoreProfileAfterMove } from './setup'
 
@@ -38,7 +40,9 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      // The attention chime plays without a click first
+      autoplayPolicy: 'no-user-gesture-required'
     }
   })
 
@@ -86,6 +90,8 @@ app.whenReady().then(async () => {
   registerSetupIpc()
   registerNearIpc()
   registerContractToolsIpc()
+  registerAttentionIpc()
+  registerPiIpc()
   // Agents' MCP servers call into the app through this local bridge
   await startBridge()
 

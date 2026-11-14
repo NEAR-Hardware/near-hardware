@@ -3,7 +3,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, realpath, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import type { EnvironmentId } from '../shared/environments'
-import type { BoardProfile, Chat, CreateProjectResult, Project } from '../shared/projects'
+import type {
+  BoardProfile,
+  Chat,
+  CreateProjectResult,
+  Project,
+  SshTarget
+} from '../shared/projects'
 import { sanitizeScreenSpec } from '../shared/screens'
 import { readSettings, updateSettings, type Settings } from './settings'
 
@@ -156,6 +162,7 @@ export async function updateProjectBoard(
       .map((key) => [key, String(patch[key]).trim()])
   )
   const screen = sanitizeScreenSpec(patch.screen)
+  const ssh = sanitizeSshTarget(patch.ssh)
   let board: BoardProfile | undefined
   await updateSettings((settings) =>
     updateProject(settings, projectId, (p) => {
@@ -163,12 +170,29 @@ export async function updateProjectBoard(
         ...(replace ? {} : p.board),
         ...clean,
         ...(screen !== undefined && { screen }),
+        ...(ssh && { ssh }),
         name: String(clean.name ?? p.board?.name ?? '')
       }
       return { ...p, board }
     })
   )
   return board
+}
+
+function sanitizeSshTarget(value: unknown): SshTarget | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const { user, host, port, hostname, model, os } = value as Record<string, unknown>
+  if (typeof user !== 'string' || typeof host !== 'string' || !user || !host) return undefined
+  const text = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : undefined
+  return {
+    user,
+    host,
+    port: Number.isInteger(port) ? Number(port) : 22,
+    hostname: text(hostname),
+    model: text(model),
+    os: text(os)
+  }
 }
 
 export async function updateChat(

@@ -82,6 +82,10 @@ const api: NearHardwareApi = {
     onData: (listener) => subscribe('terminal:data', listener),
     onExit: (listener) => subscribe('terminal:exit', listener)
   },
+  pi: {
+    connect: (projectId, input) => ipcRenderer.invoke('pi:connect', projectId, input),
+    status: (projectId) => ipcRenderer.invoke('pi:status', projectId)
+  },
   contractTools: {
     status: () => ipcRenderer.invoke('contract-tools:status')
   },
@@ -120,7 +124,9 @@ const api: NearHardwareApi = {
     fit: (aspect) => ipcRenderer.invoke('screen:fit', aspect)
   },
   showMenu: (items) => ipcRenderer.invoke('menu:show', items),
-  onMenuCommand: (listener) => subscribe<MenuCommand>('menu:command', listener)
+  onMenuCommand: (listener) => subscribe<MenuCommand>('menu:command', listener),
+  requestAttention: () => ipcRenderer.invoke('app:request-attention'),
+  onChime: (listener) => subscribe('app:chime', listener)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

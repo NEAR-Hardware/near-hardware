@@ -20,6 +20,7 @@ import nearWebAppsSkill from '../../../resources/skills/near-web-apps/SKILL.md?a
 import { broadcast } from '../broadcast'
 import { NEAR_TOOLS } from '../near/agentTools'
 import { getProject, updateChat, updateProjectBoard } from '../projects'
+import { sshCommand } from './pi'
 import { closePort, listDevices, readPort, writePort } from './serial'
 
 export type ToolContext = { projectId: string; chatId: string }
@@ -136,9 +137,14 @@ const TOOLS: ToolDefinition[] = [
   {
     name: 'get_board',
     description:
-      'Get this project’s board profile: the exact board name the user entered, the serial port, and anything saved with save_board_profile.',
+      'Get this project’s board profile: the exact board name the user entered, the serial port, and anything saved with save_board_profile. For a Raspberry Pi it includes `ssh.command`, the exact ssh command (with NEAR Hardware’s key, no password) to run commands on the Pi.',
     inputSchema: { type: 'object', properties: {} },
-    run: async (_args, { projectId }) => (await getProject(projectId)).board ?? null
+    run: async (_args, { projectId }) => {
+      const board = (await getProject(projectId)).board
+      if (!board?.ssh) return board ?? null
+      // A Pi: give the exact command that reaches it with the app's key
+      return { ...board, ssh: { ...board.ssh, command: sshCommand(board.ssh) } }
+    }
   },
   {
     name: 'save_board_profile',

@@ -81,6 +81,19 @@ Legend: `[x]` done and tested · `[~]` in progress / partially done · `[ ]` not
 - [x] **NEAR AI Cloud, IronClaw and Agent Market** docs bundled (sources `nearai` 134 pages, `ironclaw` 47, `market` 12; 465 pages, 7.5 MB in all) and skills `near-ai`, `near-ironclaw`, `near-agent-market`. Checked live without an account: NEAR AI's model list (64), model prices and attestation report; Agent Market's public agent search, x402 discovery and OpenAPI spec. Everything that needs a NEAR AI key or an Agent Market token is from the docs only.
 - [ ] Not yet tried: Touch ID reveal and Remove (native prompts); mainnet transactions and an Intents swap (the mainnet account has 0 NEAR); NEAR AI, IronClaw and Agent Market with real accounts.
 
+## 8. Raspberry Pi over SSH
+
+- [x] "USB board / Raspberry Pi" choice in the board card; the Pi form takes an SSH address (`user@host[:port]`, `ssh -p N user@host` also works) and a password. The app makes its own ed25519 key (in its data folder, with its own known_hosts so `~/.ssh` is untouched) and uses the password once, through `SSH_ASKPASS`, to add the key to the Pi's `authorized_keys`; the password isn't stored. The header chip shows `user@host`, checked every 8 s over SSH: green when it answers, red otherwise, with model, OS or the reason in the tooltip. `get_board` gives agents the exact `ssh` command; the agent guide has a Raspberry Pi section (no flashing; copy files with scp; ask before apt or reboots).
+- [x] Verified without a Pi: clear errors for a bad address, an unknown host, nothing listening, and a missing password; the key-install command adds the key exactly once with mode 600 in bash, sh and zsh; against a local key-only SSH server the app connected, saved the board, showed a green chip, turned red 2 s after the server stopped, and `get_board` returned the ssh command.
+- [ ] Not yet tried: a real Raspberry Pi, and the password step against a real SSH server (needs a Pi).
+
+## 9. Attention and screen polish
+
+- [x] **"Needs you" popups with a chime**: when an agent asks permission or finishes a turn in a chat you aren't looking at, a card slides in at the top right (agent, what it wants, chat · project, Open, dismiss) with a soft two-note chime made in Web Audio, and the dock bounces if the app is in the background. Permission cards close when the request is answered anywhere; "finished" cards leave after 15 s. NEAR approval prompts chime too. Verified in the app: a background chat's `touch` request raised "Claude Code needs your OK" with the command; denying it closed that card and raised "Claude Code finished"; the file was never created.
+- [x] **Screen designs take turns**: with several designs, the preview (docked and floating) moves to the next one every 4 s and holds while the pointer is over it; picking one from the list still works. Verified with a real pointer: 08-vault → 08b → 08c cycling, held on one design for 12 s while hovered, resumed after.
+- [x] **Collapsible projects**: the folder icon folds a project's chats (chevron on hover), remembered across restarts; a folded project still shows the chat that's open.
+- [x] Model picker shows the named model (e.g. Opus 5.5) instead of "Default" when both resolve to the same model.
+
 ## Next
 
 - Cursor chat: install and sign in to Cursor's agent CLI (`agent login`), then test the ACP adapter live.

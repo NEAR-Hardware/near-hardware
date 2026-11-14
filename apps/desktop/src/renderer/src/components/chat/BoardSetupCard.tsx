@@ -3,6 +3,7 @@ import { Cpu, LoaderCircle, TriangleAlert, Usb } from 'lucide-react'
 import type { DeviceInfo } from '../../../../shared/hardware'
 import type { Project } from '../../../../shared/projects'
 import { describeDevice, findBoardDevice, useDevices } from '../../hooks/useDevices'
+import RaspberryPiIcon from '../RaspberryPiIcon'
 
 // Espressif's native USB comes first: most boards here are ESP32s
 const rank = (device: DeviceInfo): number =>
@@ -29,6 +30,8 @@ function BoardSetupCard({
   onContinue
 }: BoardSetupCardProps): React.JSX.Element {
   const saved = project.board?.name ? project.board : undefined
+  // A USB board, or a Raspberry Pi reached over SSH
+  const [kind, setKind] = useState<'usb' | 'pi'>(saved?.ssh ? 'pi' : 'usb')
   const devices = [...useDevices()].sort((a, b) => rank(a) - rank(b))
   const [name, setName] = useState(saved?.name ?? '')
   const [port, setPort] = useState<string>()
@@ -64,12 +67,42 @@ function BoardSetupCard({
     )
   }
 
+  const kindChoice = (
+    <div className="board-kind" role="radiogroup" aria-label="Kind of board">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={kind === 'usb'}
+        className={kind === 'usb' ? 'checked' : undefined}
+        onClick={() => setKind('usb')}
+      >
+        <Usb size={14} strokeWidth={1.75} /> USB board
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={kind === 'pi'}
+        className={kind === 'pi' ? 'checked' : undefined}
+        onClick={() => setKind('pi')}
+      >
+        <RaspberryPiIcon size={14} brand /> Raspberry Pi
+      </button>
+    </div>
+  )
+
+  if (kind === 'pi') {
+    return (
+      <PiSetup project={project} choice={kindChoice} onStart={onStart} onContinue={onContinue} />
+    )
+  }
+
   return (
     <form className="board-setup" onSubmit={start}>
       <div className="board-setup-head">
         <Cpu size={18} strokeWidth={1.75} />
         <h2>Which board are you building on?</h2>
       </div>
+      {kindChoice}
       <p>
         Paste the board’s{' '}
         <strong>exact product name from the manufacturer’s official website</strong> or store page.{' '}
@@ -143,6 +176,121 @@ function BoardSetupCard({
           when you’re ready.
         </p>
       )}
+    </form>
+  )
+}
+
+type PiSetupProps = {
+  project: Project
+  choice: React.ReactNode
+  onStart: (kickoff: string) => void
+  onContinue: () => void
+}
+
+// A Raspberry Pi on the network: its SSH address and password, used once to
+// add NEAR Hardware's SSH key to the Pi (the password isn't saved)
+function PiSetup({ project, choice, onStart, onContinue }: PiSetupProps): React.JSX.Element {
+  const saved = project.board?.ssh
+  const savedTarget = saved
+    ? `${saved.user}@${saved.host}${saved.port !== 22 ? `:${saved.port}` : ''}`
+    : ''
+  const [target, setTarget] = useState(savedTarget)
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+  const samePi = !!saved && target.trim() === savedTarget
+
+  const connect = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault()
+    if (!target.trim() || busy) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      const result = await window.api.pi.connect(project.id, { target, password })
+      setPassword('')
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      if (samePi) {
+        onContinue()
+        return
+      }
+      const ssh = result.board.ssh!
+      onStart(
+        `Set up my Raspberry Pi: “${result.board.name}”${ssh.os ? ` running ${ssh.os}` : ''}, at ${ssh.user}@${ssh.host}. It's on the network, not USB: use get_board for the exact ssh command that reaches it. Check what it has (OS, Python, GPIO libraries, free space), save what you learn with save_board_profile, then tell me it's ready and what we could build on it.`
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="board-setup" onSubmit={connect}>
+      <div className="board-setup-head">
+        <RaspberryPiIcon size={18} brand />
+        <h2>Connect your Raspberry Pi</h2>
+      </div>
+      {choice}
+      <p>
+        The Pi needs to be on the same network as this Mac, with SSH turned on (Raspberry Pi
+        Imager’s settings, or <code>sudo raspi-config</code> › Interface Options › SSH).
+      </p>
+      <label className="field">
+        <span>SSH address</span>
+        <input
+          value={target}
+          required
+          autoFocus
+          spellCheck={false}
+          autoCapitalize="off"
+          autoCorrect="off"
+          placeholder="rythmn@raspberrypi.local"
+          onChange={(event) => {
+            setTarget(event.target.value)
+            setError(undefined)
+          }}
+        />
+        <span className="field-hint">
+          <span>
+            What you’d type after <code>ssh</code>: the user, an @, and the Pi’s name or IP address.
+            Add <code>:port</code> if it isn’t 22.
+          </span>
+        </span>
+      </label>
+      <label className="field">
+        <span>Password{samePi ? ' (only if NEAR Hardware asks again)' : ''}</span>
+        <input
+          type="password"
+          value={password}
+          autoComplete="off"
+          placeholder="The Pi user’s password"
+          onChange={(event) => {
+            setPassword(event.target.value)
+            setError(undefined)
+          }}
+        />
+        <span className="field-hint">
+          Used once to add NEAR Hardware’s SSH key to the Pi, so you and your agent connect without
+          it afterwards. It isn’t saved.
+        </span>
+      </label>
+      {error && (
+        <p className="field-hint board-setup-error">
+          <TriangleAlert size={12} /> {error}
+        </p>
+      )}
+      <div className="board-setup-actions">
+        <button className="btn primary" type="submit" disabled={!target.trim() || busy}>
+          {busy && <LoaderCircle size={13} className="spin" />}
+          {busy ? 'Connecting…' : samePi ? 'Continue with this Pi' : 'Connect'}
+        </button>
+        {!project.board?.name && (
+          <button className="btn board-setup-skip" type="button" onClick={onContinue}>
+            Continue without a board
+          </button>
+        )}
+      </div>
     </form>
   )
 }

@@ -9,6 +9,7 @@ import FileEditor from './components/editor/FileEditor'
 import EnvironmentsView from './components/EnvironmentsView'
 import FilesPanel from './components/FilesPanel'
 import AccountsView from './components/near/AccountsView'
+import AttentionToasts from './components/AttentionToasts'
 import NewProjectDialog from './components/NewProjectDialog'
 import PanelResizer from './components/PanelResizer'
 import ProjectHome from './components/ProjectHome'
@@ -405,6 +406,11 @@ function App(): React.JSX.Element {
       {newProjectOpen && (
         <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={openProject} />
       )}
+      <AttentionToasts
+        projects={projects ?? []}
+        view={view}
+        onOpen={(projectId, chatId) => navigate({ kind: 'project', projectId, chatId })}
+      />
       {toast && (
         <div className="toast" role="status">
           <Usb size={14} /> {toast}

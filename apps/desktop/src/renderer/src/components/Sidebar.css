@@ -215,3 +215,55 @@
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+
+/* A project's folder icon folds its chats away: open folder while they show */
+.project-toggle-space {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.project-toggle {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--icon);
+  transform: translateY(-50%);
+  cursor: default;
+}
+
+.project-toggle:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.project-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* On hover the folder turns into a chevron that shows which way it folds */
+.project-toggle-chevron {
+  display: none;
+  transition: transform 120ms ease;
+}
+
+.project-toggle:hover svg:first-child {
+  display: none;
+}
+
+.project-toggle:hover .project-toggle-chevron {
+  display: block;
+}
+
+.sidebar-project:not(.collapsed) .project-toggle-chevron {
+  transform: rotate(90deg);
+}

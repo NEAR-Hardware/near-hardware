@@ -5,7 +5,9 @@ import { YOLO_MODE, type RateLimitWindow, type SendMessageInput } from '../../..
 import type { BoardProfile, Chat, Project } from '../../../../shared/projects'
 import { useChat } from '../../hooks/useChat'
 import { findBoardDevice, useDevices } from '../../hooks/useDevices'
+import { usePiStatus } from '../../hooks/usePiStatus'
 import AgentIcon from '../AgentIcon'
+import RaspberryPiIcon from '../RaspberryPiIcon'
 import WiringView from '../wiring/WiringView'
 import BoardSetupCard from './BoardSetupCard'
 import Composer from './Composer'
@@ -55,8 +57,50 @@ function writeDraft(chatId: string, draft: string): void {
   }
 }
 
+// A USB board's chip, or a Pi's when the board is reached over SSH
+function BoardChip({
+  projectId,
+  board
+}: {
+  projectId: string
+  board?: BoardProfile
+}): React.JSX.Element {
+  return board?.ssh ? (
+    <PiChip projectId={projectId} board={board} />
+  ) : (
+    <UsbBoardChip board={board} />
+  )
+}
+
+// Grey until the first check, then green while the Pi answers over SSH and red when it doesn't
+function PiChip({
+  projectId,
+  board
+}: {
+  projectId: string
+  board: BoardProfile
+}): React.JSX.Element {
+  const status = usePiStatus(projectId, board.ssh!)
+  const ssh = board.ssh!
+  const id = `${ssh.user}@${ssh.host}`
+  const state = !status ? 'unknown' : status.connected ? 'connected' : 'disconnected'
+  const about = [status?.model ?? ssh.model, status?.os ?? ssh.os].filter(Boolean).join(' · ')
+  const title =
+    state === 'unknown'
+      ? `${id}: checking…`
+      : state === 'connected'
+        ? `${id}: connected over SSH${about ? ` (${about})` : ''}`
+        : `${id}: not reachable. ${status?.error ?? ''}`
+  return (
+    <span className={`agent-chip board-chip ${state}`} title={title}>
+      <RaspberryPiIcon size={13} />
+      <span className="board-chip-name">{id}</span>
+    </span>
+  )
+}
+
 // Grey until we know the board, then green while it's plugged in and red when it isn't
-function BoardChip({ board }: { board?: BoardProfile }): React.JSX.Element {
+function UsbBoardChip({ board }: { board?: BoardProfile }): React.JSX.Element {
   const device = findBoardDevice(board, useDevices())
   const state = !board?.name ? 'unknown' : device ? 'connected' : 'disconnected'
   const title =
@@ -127,7 +171,7 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
     <div className="chat-view">
       <header className="chat-header">
         <h1 title={chat.title}>{chat.title}</h1>
-        <BoardChip board={project.board} />
+        <BoardChip projectId={project.id} board={project.board} />
         <span className="agent-chip">
           <AgentIcon id={chat.environmentId} size={12} tile={false} />
           {environment.name}

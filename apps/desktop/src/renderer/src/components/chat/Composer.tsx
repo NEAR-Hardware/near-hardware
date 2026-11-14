@@ -170,9 +170,12 @@ function Composer({
 
   const running = status === 'running'
   const canSend = draft.trim().length > 0 || images.length > 0
-  const currentModel = info.models.find(
-    (m) => m.value === info.model || m.resolvedModel === info.model
-  )
+  // An exact match, else the named model the CLI resolved to (e.g. claude-opus-5-5 is "Opus 5.5"),
+  // and "Default" only last, since it often resolves to the same model
+  const currentModel =
+    info.models.find((m) => m.value === info.model) ??
+    info.models.find((m) => m.value !== 'default' && m.resolvedModel === info.model) ??
+    info.models.find((m) => m.resolvedModel === info.model)
 
   return (
     <div

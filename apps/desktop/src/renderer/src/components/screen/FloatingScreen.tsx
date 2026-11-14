@@ -13,7 +13,7 @@ const FALLBACK: ScreenSpec = { width: 410, height: 502, shape: 'rounded' }
 // the edges, close it to put the screen back in the files panel
 function FloatingScreen({ projectId }: { projectId: string }): React.JSX.Element {
   const [project, setProject] = useState<Project>()
-  const { designs, active, content, select } = useScreenDesigns(projectId)
+  const { designs, active, content, select, setPaused } = useScreenDesigns(projectId)
   const spec = project?.board?.screen ?? FALLBACK
   const { outerWidth, outerHeight } = deviceGeometry(spec)
   const aspect = outerWidth / outerHeight
@@ -61,7 +61,11 @@ function FloatingScreen({ projectId }: { projectId: string }): React.JSX.Element
   })
 
   return (
-    <div className="floating-screen">
+    <div
+      className="floating-screen"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
       <DeviceFrame
         spec={spec}
         content={content}

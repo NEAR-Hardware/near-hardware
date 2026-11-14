@@ -809,6 +809,40 @@
   background: var(--card);
 }
 
+/* USB board or Raspberry Pi */
+.board-kind {
+  display: flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+}
+
+.board-kind button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: default;
+}
+
+.board-kind button:hover {
+  color: var(--text);
+}
+
+.board-kind button.checked {
+  background: var(--active);
+  color: var(--text);
+}
+
 .board-setup-head {
   display: flex;
   align-items: center;
@@ -836,6 +870,10 @@
 }
 
 .field > .field-hint.warning {
+  color: var(--warning);
+}
+
+.board-setup-error {
   color: var(--warning);
 }
 

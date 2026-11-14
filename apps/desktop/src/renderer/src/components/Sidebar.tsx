@@ -1,6 +1,8 @@
+import { useCallback, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronRight,
   Ellipsis,
   Folder,
   FolderOpen,
@@ -113,6 +115,7 @@ function Sidebar({
   onProjectMenu,
   onChatMenu
 }: SidebarProps): React.JSX.Element {
+  const [collapsed, toggleProject] = useCollapsedProjects()
   return (
     <aside className="sidebar" inert={!open}>
       <div className="sidebar-content">
@@ -150,6 +153,8 @@ function Sidebar({
                   project={project}
                   view={view}
                   now={now}
+                  collapsed={collapsed.has(project.id)}
+                  onToggle={toggleProject}
                   onNavigate={onNavigate}
                   onProjectMenu={onProjectMenu}
                   onChatMenu={onChatMenu}
@@ -285,26 +290,62 @@ type ProjectItemProps = {
   project: Project
   view: View
   now: number
+  collapsed: boolean
+  onToggle: (projectId: string) => void
   onNavigate: (view: View) => void
   onProjectMenu: (project: Project) => void
   onChatMenu: (project: Project, chat: Chat) => void
+}
+
+// Projects whose chat list is folded away, remembered across restarts
+const COLLAPSED_KEY = 'near-hardware.collapsed-projects'
+
+function loadCollapsed(): Set<string> {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? '[]')
+    return new Set(Array.isArray(saved) ? saved.filter((id) => typeof id === 'string') : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function useCollapsedProjects(): [Set<string>, (projectId: string) => void] {
+  const [collapsed, setCollapsed] = useState(loadCollapsed)
+  const toggle = useCallback((projectId: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current)
+      if (next.has(projectId)) next.delete(projectId)
+      else next.add(projectId)
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]))
+      } catch {
+        // Only a convenience
+      }
+      return next
+    })
+  }, [])
+  return [collapsed, toggle]
 }
 
 function ProjectItem({
   project,
   view,
   now,
+  collapsed,
+  onToggle,
   onNavigate,
   onProjectMenu,
   onChatMenu
 }: ProjectItemProps): React.JSX.Element {
   const isCurrent = view.kind === 'project' && view.projectId === project.id
   const currentChatId = isCurrent ? view.chatId : undefined
-  const chats = [...project.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const sorted = [...project.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  // Folded away, except the chat that's open
+  const chats = collapsed ? sorted.filter((c) => c.id === currentChatId) : sorted
   const openHome = (): void => onNavigate({ kind: 'project', projectId: project.id })
 
   return (
-    <div className="sidebar-project">
+    <div className={`sidebar-project${collapsed ? ' collapsed' : ''}`}>
       <div
         className="nav-row"
         onContextMenu={(event) => {
@@ -317,12 +358,23 @@ function ProjectItem({
           title={project.path}
           onClick={openHome}
         >
-          {isCurrent ? (
-            <FolderOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-          ) : (
-            <Folder size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-          )}
+          {/* The toggle button below sits on top of this space */}
+          <span className="project-toggle-space" />
           <span className="nav-item-label">{project.name}</span>
+        </button>
+        <button
+          className="project-toggle"
+          aria-label={`${collapsed ? 'Show' : 'Hide'} chats in ${project.name}`}
+          aria-expanded={!collapsed}
+          title={collapsed ? `Show ${project.chats.length} chats` : 'Hide chats'}
+          onClick={() => onToggle(project.id)}
+        >
+          {collapsed ? (
+            <Folder size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          ) : (
+            <FolderOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          )}
+          <ChevronRight size={11} strokeWidth={2} className="project-toggle-chevron" />
         </button>
         <div className="nav-row-actions">
           <button

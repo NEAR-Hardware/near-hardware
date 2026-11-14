@@ -42,7 +42,7 @@ const designPrompt = (spec: ScreenSpec): string =>
 function ScreenPane({ project }: { project: Project }): React.JSX.Element {
   const [layout, setLayout] = useState(loadLayout)
   const [floating, setFloating] = useState<string[]>([])
-  const { designs, active, content, select } = useScreenDesigns(project.id)
+  const { designs, active, content, select, setPaused } = useScreenDesigns(project.id)
   const drag = useRef<{ startY: number; startHeight: number } | null>(null)
   const spec = project.board?.screen
   const isFloating = floating.includes(project.id)
@@ -76,6 +76,9 @@ function ScreenPane({ project }: { project: Project }): React.JSX.Element {
       className={`screen-pane${layout.open ? '' : ' collapsed'}`}
       style={layout.open ? { height: layout.height } : undefined}
       aria-label="Screen"
+      // Several designs take turns; hovering keeps the current one up
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
       {layout.open && (
         <div

@@ -27,7 +27,30 @@ export type BoardProfile = {
   summary?: string
   // The display, if any: null when the board has none, missing while unknown
   screen?: ScreenSpec | null
+  // A Raspberry Pi (or other Linux board) reached over SSH instead of USB
+  ssh?: SshTarget
 }
+
+export type SshTarget = {
+  user: string
+  host: string
+  port: number
+  // What the Pi reported when it was connected
+  hostname?: string
+  model?: string
+  os?: string
+}
+
+// A Pi's reachability, checked over SSH with the app's key
+export type PiStatus = {
+  connected: boolean
+  hostname?: string
+  model?: string
+  os?: string
+  error?: string
+}
+
+export type PiConnectResult = { ok: true; board: BoardProfile } | { ok: false; message: string }
 
 export type Project = {
   id: string

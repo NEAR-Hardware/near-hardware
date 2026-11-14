@@ -4,6 +4,7 @@
 // never ask, since NEAR itself holds them to what the user approved.
 import { app, BrowserWindow, dialog } from 'electron'
 import { NETWORK_LABEL, type NearNetwork } from '../../shared/near'
+import { broadcast } from '../broadcast'
 import { listAccounts, setAutoApproveTestnet } from './accounts'
 
 export type ApprovalRequest = {
@@ -33,7 +34,8 @@ export async function requestApproval(request: ApprovalRequest): Promise<boolean
   const run = queue.then(async () => {
     const window = mainWindow()
     if (!window) return false
-    // Get the user's attention if they're in another app
+    // Chime, and bounce the dock until they look if they're in another app
+    broadcast('app:chime')
     if (!window.isFocused()) app.dock?.bounce('critical')
     const mainnet = request.network === 'mainnet'
     const { response, checkboxChecked } = await dialog.showMessageBox(window, {

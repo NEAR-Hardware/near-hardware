@@ -25,6 +25,8 @@ import type {
   FileEntry,
   FilesChangedEvent,
   MenuItemSpec,
+  PiConnectResult,
+  PiStatus,
   Project
 } from './projects'
 
@@ -150,6 +152,14 @@ export interface NearHardwareApi {
     onData(listener: (event: { id: string; data: string }) => void): () => void
     onExit(listener: (event: { id: string; exitCode: number }) => void): () => void
   }
+  // Raspberry Pi over SSH: connect installs the app's key with the password (not stored)
+  pi: {
+    connect(
+      projectId: string,
+      input: { target: string; password: string }
+    ): Promise<PiConnectResult>
+    status(projectId: string): Promise<PiStatus>
+  }
   // Rust, cargo-near and NEAR CLI for smart contracts; install runs in a terminal
   contractTools: {
     status(): Promise<ContractToolsStatus>
@@ -172,4 +182,8 @@ export interface NearHardwareApi {
   // Native context menu; resolves to the chosen item's id, or null if dismissed
   showMenu(items: MenuItemSpec[]): Promise<string | null>
   onMenuCommand(listener: (command: MenuCommand) => void): () => void
+  // "An agent needs you": bounce the dock if the app is in the background
+  requestAttention(): Promise<void>
+  // The main process asks the window to play its attention chime (e.g. a NEAR approval)
+  onChime(listener: () => void): () => void
 }

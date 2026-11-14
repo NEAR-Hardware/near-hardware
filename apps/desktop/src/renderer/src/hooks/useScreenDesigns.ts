@@ -7,6 +7,8 @@ export type ScreenDesign = { path: string; name: string }
 export type DesignContent = { kind: 'html'; html: string } | { kind: 'image'; src: string }
 
 const DESIGN_FILE = /\.(html?|svg|png|jpe?g|gif|webp|bmp)$/i
+// With several designs, each shows this long before the next one
+const CYCLE_MS = 4000
 const selectionKey = (projectId: string): string => `near-hardware.screen-design.${projectId}`
 
 function readSelection(projectId: string): string | null {
@@ -20,16 +22,22 @@ function readSelection(projectId: string): string | null {
 const inDesigns = (path: string): boolean =>
   path === DESIGNS_DIR || path.startsWith(`${DESIGNS_DIR}/`)
 
-// The project's screen designs and the selected one's content, kept live as the
-// agent edits them. The selection is shared with the floating screen window.
+// The project's screen designs and the shown one's content, kept live as the
+// agent edits them. Several designs take turns every few seconds unless paused
+// (e.g. while the pointer is over the preview). The picked design is shared
+// with the floating screen window; the cycling isn't.
 export function useScreenDesigns(projectId: string): {
   designs: ScreenDesign[]
   active: ScreenDesign | undefined
   content: DesignContent | null
   select: (path: string) => void
+  setPaused: (paused: boolean) => void
 } {
   const [designs, setDesigns] = useState<ScreenDesign[]>([])
   const [selected, setSelected] = useState(() => readSelection(projectId))
+  // The design cycling has moved on to, if any
+  const [shown, setShown] = useState<string | null>(null)
+  const [paused, setPaused] = useState(false)
   const [revision, setRevision] = useState(0)
   const [loaded, setLoaded] = useState<{ path: string; content: DesignContent | null }>()
 
@@ -66,8 +74,21 @@ export function useScreenDesigns(projectId: string): {
     }
   }, [projectId])
 
-  const active = designs.find((design) => design.path === selected) ?? designs[0]
+  const active =
+    designs.find((design) => design.path === shown) ??
+    designs.find((design) => design.path === selected) ??
+    designs[0]
   const activePath = active?.path
+
+  // Move to the next design after a while; any change of design restarts the wait
+  useEffect(() => {
+    if (designs.length < 2 || paused || !activePath) return
+    const timer = setTimeout(() => {
+      const index = designs.findIndex((design) => design.path === activePath)
+      setShown(designs[(index + 1) % designs.length].path)
+    }, CYCLE_MS)
+    return () => clearTimeout(timer)
+  }, [designs, paused, activePath])
 
   useEffect(() => {
     if (!activePath) return
@@ -89,6 +110,7 @@ export function useScreenDesigns(projectId: string): {
 
   const select = (path: string): void => {
     setSelected(path)
+    setShown(path)
     try {
       localStorage.setItem(selectionKey(projectId), path)
     } catch {
@@ -99,7 +121,9 @@ export function useScreenDesigns(projectId: string): {
   return {
     designs,
     active,
-    content: active && loaded?.path === active.path ? loaded.content : null,
-    select
+    // Keeps the last design's content while the next one loads, so cycling doesn't flash
+    content: loaded && designs.some((d) => d.path === loaded.path) ? loaded.content : null,
+    select,
+    setPaused
   }
 }
