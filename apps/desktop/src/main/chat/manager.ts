@@ -15,6 +15,7 @@ import {
 } from '../../shared/chat'
 import { getEnvironment } from '../../shared/environments'
 import hardwareAgentGuide from '../../../resources/hardware-agent.md?asset'
+import { broadcast } from '../broadcast'
 import { getSearchPath } from '../environments'
 import { mcpServerLaunch } from '../hardware/bridge'
 import { getProject, updateChat } from '../projects'
@@ -172,12 +173,19 @@ function getChat(projectId: string, chatId: string): Promise<OpenChat> {
   if (open) return Promise.resolve(open)
   let load = loading.get(chatId)
   if (!load) {
-    load = loadTranscript(chatId).then((state) => {
-      const chat: OpenChat = { projectId, chatId, state, saving: Promise.resolve() }
-      chats.set(chatId, chat)
-      loading.delete(chatId)
-      return chat
-    })
+    // Only chats that belong to the project; never create a transcript for a stray id
+    load = getProject(projectId)
+      .then((project) => {
+        if (!project.chats.some((c) => c.id === chatId)) throw new Error('Chat not found')
+        return loadTranscript(chatId)
+      })
+      .then((state) => {
+        const chat: OpenChat = { projectId, chatId, state, saving: Promise.resolve() }
+        chats.set(chatId, chat)
+        loading.delete(chatId)
+        return chat
+      })
+    load.catch(() => loading.delete(chatId))
     loading.set(chatId, load)
   }
   return load
@@ -221,7 +229,7 @@ export async function sendMessage(
     ...(isFirst &&
       firstLine && { title: firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine })
   })
-  if (window && !window.isDestroyed()) window.send('projects:changed')
+  broadcast('projects:changed')
 
   const session = await ensureSession(chat)
   await session?.send(input)

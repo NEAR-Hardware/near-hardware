@@ -7,6 +7,7 @@ import type {
   SessionInfo,
   UsageInfo
 } from '../../../../shared/chat'
+import { YOLO_MODE } from '../../../../shared/chat'
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
 // Claude's per-image limit; the others are in the same range
@@ -280,7 +281,7 @@ function Composer({
 
           {info.permissionModes.length > 0 && (
             <select
-              className="composer-select"
+              className={`composer-select${info.permissionMode === YOLO_MODE ? ' yolo' : ''}`}
               aria-label="Permission mode"
               title={
                 info.permissionModes.find((m) => m.value === info.permissionMode)?.description ??

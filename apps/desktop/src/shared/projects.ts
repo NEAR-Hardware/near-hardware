@@ -1,3 +1,4 @@
+import type { ScreenSpec } from './screens'
 import type { EnvironmentId } from './environments'
 
 // A conversation with one connected coding agent, run inside its project's folder
@@ -24,6 +25,8 @@ export type BoardProfile = {
   platformioBoard?: string
   framework?: string
   summary?: string
+  // The display, if any: null when the board has none, missing while unknown
+  screen?: ScreenSpec | null
 }
 
 export type Project = {

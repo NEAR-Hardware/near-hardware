@@ -3,6 +3,7 @@ import { Files, PanelRight } from 'lucide-react'
 import type { FileEntry, Project } from '../../../shared/projects'
 import { basename, joinPath, revealLabel } from '../format'
 import FileIcon from './FileIcon'
+import ScreenPane from './screen/ScreenPane'
 import './FilesPanel.css'
 
 type FilesPanelProps = {
@@ -46,6 +47,7 @@ function FilesPanel({
           activePath={activePath}
           onOpenFile={onOpenFile}
         />
+        <ScreenPane key={`screen-${project.id}`} project={project} />
       </div>
     </aside>
   )

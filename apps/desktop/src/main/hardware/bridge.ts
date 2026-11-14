@@ -1,11 +1,12 @@
 // Local bridge between the NEAR Hardware MCP server (spawned by each agent CLI)
 // and the app. Bound to 127.0.0.1 with a random token so only our MCP server
 // can call it. The MCP server lives in resources/near-hardware-mcp.mjs.
-import { app, type WebContents } from 'electron'
+import { app } from 'electron'
 import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import mcpScript from '../../../resources/near-hardware-mcp.mjs?asset'
+import { broadcast } from '../broadcast'
 import { getProject, updateChat, updateProjectBoard } from '../projects'
 import { closePort, listDevices, readPort, writePort } from './serial'
 
@@ -19,12 +20,6 @@ type ToolDefinition = {
 
 const token = randomBytes(24).toString('hex')
 let bridgeUrl: string | undefined
-let window: WebContents | null = null
-
-export const setBridgeWindow = (sender: WebContents): void => {
-  window = sender
-}
-
 const LINE_ENDINGS: Record<string, string> = { none: '', lf: '\n', crlf: '\r\n', cr: '\r' }
 const capped = (text: string, max = 8000): string =>
   text.length > max ? `${text.slice(-max)}\n(showing the last ${max} characters)` : text
@@ -48,7 +43,7 @@ const TOOLS: ToolDefinition[] = [
         .slice(0, 80)
       if (!clean) throw new Error('Title is empty')
       await updateChat(projectId, chatId, { title: clean })
-      window?.send('projects:changed')
+      broadcast('projects:changed')
       return `Chat renamed to “${clean}”.`
     }
   },
@@ -69,7 +64,7 @@ const TOOLS: ToolDefinition[] = [
   {
     name: 'save_board_profile',
     description:
-      'Save what you learned about the board to the project (shown in the app). Call it at the end of board onboarding.',
+      'Save what you learned about the board to the project (shown in the app). Call it at the end of board onboarding, and whenever you learn the board’s display details.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -82,12 +77,34 @@ const TOOLS: ToolDefinition[] = [
         },
         framework: { type: 'string', description: 'e.g. arduino or espidf' },
         port: { type: 'string', description: 'Serial port the board is on' },
-        summary: { type: 'string', description: 'One or two sentences about the board' }
+        summary: { type: 'string', description: 'One or two sentences about the board' },
+        screen: {
+          type: ['object', 'null'],
+          description:
+            'The board’s display, drawn by the app’s screen preview; null if the board has no display. Sizes in panel pixels, in the orientation the firmware uses.',
+          properties: {
+            width: { type: 'number' },
+            height: { type: 'number' },
+            shape: {
+              type: 'string',
+              enum: ['rect', 'rounded', 'circle'],
+              description: 'rounded = rectangle with rounded corners, like most watch panels'
+            },
+            cornerRadius: {
+              type: 'number',
+              description: 'Corner radius in panel pixels, for shape "rounded"'
+            },
+            diagonal: { type: 'number', description: 'Diagonal in inches, e.g. 2.06' },
+            panel: { type: 'string', description: 'e.g. AMOLED, IPS LCD, OLED, e-paper' },
+            controller: { type: 'string', description: 'Display driver IC, e.g. CO5300' }
+          },
+          required: ['width', 'height', 'shape']
+        }
       }
     },
     run: async (args, { projectId }) => {
       const board = await updateProjectBoard(projectId, args)
-      window?.send('projects:changed')
+      broadcast('projects:changed')
       return board
     }
   },

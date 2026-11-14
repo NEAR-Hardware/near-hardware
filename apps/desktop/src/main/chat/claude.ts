@@ -19,6 +19,7 @@ import type {
   RateLimitWindow,
   SendMessageInput
 } from '../../shared/chat'
+import { YOLO_MODE, YOLO_OPTION } from '../../shared/chat'
 import { describeTool, toolResultText } from './tools'
 import type { AdapterContext, AgentSession } from './types'
 
@@ -26,8 +27,13 @@ const PERMISSION_MODES: PermissionModeOption[] = [
   { value: 'default', label: 'Ask', description: 'Ask before edits and commands' },
   { value: 'acceptEdits', label: 'Accept edits', description: 'Edit files without asking' },
   { value: 'plan', label: 'Plan', description: 'Plan first, change nothing' },
-  { value: 'auto', label: 'Auto', description: 'A safety classifier approves actions' }
+  { value: 'auto', label: 'Auto', description: 'A safety classifier approves actions' },
+  YOLO_OPTION
 ]
+
+// YOLO is Claude Code's own bypassPermissions mode
+const toSdkMode = (mode: string): string => (mode === YOLO_MODE ? 'bypassPermissions' : mode)
+const fromSdkMode = (mode: string): string => (mode === 'bypassPermissions' ? YOLO_MODE : mode)
 
 const RATE_LIMIT_LABELS: Record<string, string> = {
   five_hour: '5-hour limit',
@@ -155,7 +161,9 @@ export class ClaudeSession implements AgentSession {
         env: this.context.env,
         resume: this.sessionId,
         model: this.model,
-        permissionMode: this.permissionMode as never,
+        permissionMode: toSdkMode(this.permissionMode) as never,
+        // Lets the user switch into YOLO mid-session
+        allowDangerouslySkipPermissions: true,
         includePartialMessages: true,
         // Load the user's and project's CLAUDE.md, settings and custom /commands
         settingSources: ['user', 'project', 'local'],
@@ -237,8 +245,8 @@ export class ClaudeSession implements AgentSession {
         } else if (message.subtype === 'compact_boundary') {
           this.notice('info', 'Conversation compacted to free up context.')
         } else if (message.subtype === 'status' && message.permissionMode) {
-          this.permissionMode = message.permissionMode
-          emit({ type: 'info', info: { permissionMode: message.permissionMode } })
+          this.permissionMode = fromSdkMode(message.permissionMode)
+          emit({ type: 'info', info: { permissionMode: this.permissionMode } })
         }
         return
 
@@ -381,6 +389,9 @@ export class ClaudeSession implements AgentSession {
         message: 'Ask the user this question as a normal chat message instead.'
       })
     }
+    if (this.permissionMode === YOLO_MODE) {
+      return Promise.resolve({ behavior: 'allow', updatedInput: input })
+    }
     const requestId = randomUUID()
     const item: Extract<ChatItem, { kind: 'permission' }> = {
       kind: 'permission',
@@ -460,7 +471,10 @@ export class ClaudeSession implements AgentSession {
   async setPermissionMode(mode: string): Promise<void> {
     this.permissionMode = mode
     this.context.emit({ type: 'info', info: { permissionMode: mode } })
-    await this.query?.setPermissionMode(mode as never)
+    if (mode === YOLO_MODE) {
+      for (const itemId of [...this.permissions.keys()]) this.respondToPermission(itemId, 'allow')
+    }
+    await this.query?.setPermissionMode(toSdkMode(mode) as never)
   }
 
   async refreshUsage(): Promise<void> {

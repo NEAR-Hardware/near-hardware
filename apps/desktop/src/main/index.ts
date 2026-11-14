@@ -3,11 +3,13 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { closeAllChats } from './chat/manager'
-import { setBridgeWindow, startBridge } from './hardware/bridge'
+import { startBridge } from './hardware/bridge'
 import { closeAllTerminals } from './hardware/ipc'
 import { closeAllPorts, setSerialEventSink } from './hardware/serial'
 import { registerIpcHandlers } from './ipc'
 import { setAppMenu } from './menu'
+import { loadRenderer } from './renderer'
+import { closeFloatingScreens, registerScreenIpc } from './screenWindow'
 
 function createWindow(): void {
   // Create the browser window.
@@ -34,7 +36,6 @@ function createWindow(): void {
     }
   })
 
-  setBridgeWindow(mainWindow.webContents)
   setSerialEventSink((channel, payload) => {
     if (!mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload)
   })
@@ -48,13 +49,10 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  // Floating screens belong to this window
+  mainWindow.on('closed', closeFloatingScreens)
+
+  loadRenderer(mainWindow)
 }
 
 // This method will be called when Electron has finished
@@ -78,6 +76,7 @@ app.whenReady().then(async () => {
 
   setAppMenu()
   registerIpcHandlers()
+  registerScreenIpc()
   // Agents' MCP servers call into the app through this local bridge
   await startBridge()
 

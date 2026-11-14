@@ -1,5 +1,7 @@
 import { BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron'
 import { is } from '@electron-toolkit/utils'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { PermissionDecision, SendMessageInput } from '../shared/chat'
 import type { MenuItemSpec } from '../shared/projects'
 import {
@@ -159,6 +161,24 @@ export function registerIpcHandlers(): void {
       sendMessage(projectId, chatId, input)
   )
 
+  // Native warning before an agent may act without asking
+  ipcMain.handle('chat:confirm-yolo', async (event, agentName: string) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const options = {
+      type: 'warning' as const,
+      message: 'Turn on YOLO mode?',
+      detail: `${agentName} will run commands, edit and delete files, and use the web without asking you first. Only use it in projects you trust.`,
+      buttons: ['Turn On YOLO', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      checkboxLabel: 'Don’t ask again'
+    }
+    const { response, checkboxChecked } = window
+      ? await dialog.showMessageBox(window, options)
+      : await dialog.showMessageBox(options)
+    return { confirmed: response === 0, dontAskAgain: response === 0 && checkboxChecked }
+  })
+
   ipcMain.handle('chat:interrupt', (_event, chatId: string) => interruptChat(chatId))
 
   ipcMain.handle('chat:set-model', (_event, chatId: string, model: string) =>
@@ -175,8 +195,13 @@ export function registerIpcHandlers(): void {
       respondToPermission(chatId, itemId, decision)
   )
 
-  ipcMain.handle('files:list', async (_event, projectId: string, dir: string) =>
-    listDirectory((await getProject(projectId)).path, dir)
+  ipcMain.handle(
+    'files:list',
+    async (_event, projectId: string, dir: string, options?: { optional?: boolean }) => {
+      const root = (await getProject(projectId)).path
+      if (options?.optional && !existsSync(join(root, dir))) return []
+      return listDirectory(root, dir)
+    }
   )
 
   ipcMain.handle('files:read', async (_event, projectId: string, path: string) =>
@@ -216,7 +241,7 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('files:watch', async (event, projectId: string | null) => {
-    if (!projectId) return stopWatching()
+    if (!projectId) return stopWatching(event.sender)
     watchProject(projectId, (await getProject(projectId)).path, event.sender)
   })
 

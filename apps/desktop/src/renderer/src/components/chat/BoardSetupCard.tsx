@@ -17,7 +17,7 @@ type BoardSetupCardProps = {
   agentName: string
   // A new or different board: save it and send the onboarding kickoff
   onStart: (kickoff: string) => void
-  // Same board as the project already has: just open the composer
+  // Same board as the project already has, or no board for now: just open the composer
   onContinue: () => void
 }
 
@@ -60,7 +60,7 @@ function BoardSetupCard({
       ? ` It’s connected at ${device.path} (USB ${device.vendorId}:${device.productId}, ${describeDevice(device)}).`
       : ' It isn’t connected yet.'
     onStart(
-      `Set up my board: “${boardName}”.${where} Follow the board onboarding stages from the NEAR Hardware guide.`
+      `Set up my board: “${boardName}”.${where} Follow the board onboarding stages from the NEAR Hardware guide: identify, research, understand, screen, PlatformIO, then flash and verify.`
     )
   }
 
@@ -126,12 +126,23 @@ function BoardSetupCard({
           </div>
         )}
       </div>
-      <div>
+      <div className="board-setup-actions">
         <button className="btn primary" type="submit" disabled={!boardName || busy}>
           {busy && <LoaderCircle size={13} className="spin" />}
           {sameBoard ? 'Continue with this board' : 'Start board setup'}
         </button>
+        {!saved && (
+          <button className="btn board-setup-skip" type="button" onClick={onContinue}>
+            Continue without a board
+          </button>
+        )}
       </div>
+      {!saved && (
+        <p className="board-setup-note">
+          Not sure which board yet? Talk through ideas, parts and wiring first, and add the board
+          when you’re ready.
+        </p>
+      )}
     </form>
   )
 }

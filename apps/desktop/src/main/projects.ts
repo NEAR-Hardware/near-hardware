@@ -4,6 +4,7 @@ import { mkdir, readdir, realpath, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import type { EnvironmentId } from '../shared/environments'
 import type { BoardProfile, Chat, CreateProjectResult, Project } from '../shared/projects'
+import { sanitizeScreenSpec } from '../shared/screens'
 import { readSettings, updateSettings, type Settings } from './settings'
 
 export async function defaultProjectLocation(): Promise<string> {
@@ -128,7 +129,8 @@ export async function createChat(projectId: string, environmentId: EnvironmentId
   return chat
 }
 
-// Merges fields into the project's board profile; only known string fields are kept.
+// Merges fields into the project's board profile; only known string fields and a
+// valid screen spec are kept.
 // replace starts a fresh profile instead (the user switched boards).
 export async function updateProjectBoard(
   projectId: string,
@@ -153,12 +155,14 @@ export async function updateProjectBoard(
       .filter((key) => typeof patch[key] === 'string')
       .map((key) => [key, String(patch[key]).trim()])
   )
+  const screen = sanitizeScreenSpec(patch.screen)
   let board: BoardProfile | undefined
   await updateSettings((settings) =>
     updateProject(settings, projectId, (p) => {
       board = {
         ...(replace ? {} : p.board),
         ...clean,
+        ...(screen !== undefined && { screen }),
         name: String(clean.name ?? p.board?.name ?? '')
       }
       return { ...p, board }

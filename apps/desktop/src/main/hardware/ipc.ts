@@ -9,6 +9,7 @@ import { delimiter, join } from 'node:path'
 import { promisify } from 'node:util'
 import { spawn as spawnPty, type IPty } from 'node-pty'
 import { getSearchPath } from '../environments'
+import { broadcast } from '../broadcast'
 import { getProject, updateProjectBoard } from '../projects'
 import { closePort, listDevices, openPort, writePort, type DeviceInfo } from './serial'
 
@@ -123,9 +124,9 @@ export function registerHardwareIpc(): void {
 
   ipcMain.handle(
     'projects:set-board',
-    async (event, projectId: string, board: Record<string, unknown>, replace?: boolean) => {
+    async (_event, projectId: string, board: Record<string, unknown>, replace?: boolean) => {
       const saved = await updateProjectBoard(projectId, board, replace === true)
-      event.sender.send('projects:changed')
+      broadcast('projects:changed')
       return saved
     }
   )

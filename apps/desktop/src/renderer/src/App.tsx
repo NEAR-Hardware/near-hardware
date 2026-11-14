@@ -89,6 +89,14 @@ function App(): React.JSX.Element {
     if (next.kind === 'project') editor.showChat(next.projectId)
   }
 
+  // Other views can open a project file in a tab, e.g. the Wiring view's wiring.json
+  useEffect(() => {
+    const onOpenFile = (event: Event): void =>
+      editor.open((event as CustomEvent<string>).detail, false)
+    window.addEventListener('near-hardware:open-file', onOpenFile)
+    return () => window.removeEventListener('near-hardware:open-file', onOpenFile)
+  }, [editor])
+
   // File → Save (⌘S) and Close Tab (⌘W) from the app menu
   useEffect(
     () =>

@@ -10,6 +10,7 @@ import type {
   PermissionModeOption,
   SendMessageInput
 } from '../../shared/chat'
+import { YOLO_MODE, YOLO_OPTION } from '../../shared/chat'
 import type { AdapterContext, AgentSession } from './types'
 
 const REQUEST_TIMEOUT_MS = 60_000
@@ -60,6 +61,13 @@ const TOOL_NAMES: Record<string, string> = {
   switch_mode: 'Mode'
 }
 
+// Shown with YOLO when the agent has no modes of its own
+const ASK_OPTION: PermissionModeOption = {
+  value: 'ask',
+  label: 'Ask',
+  description: 'Asks before actions that need permission'
+}
+
 const PLAN_MARKS: Record<string, string> = { completed: '☑', in_progress: '◐', pending: '☐' }
 
 // Shapes a tool call's input for the chat: diffs as old/new text, else raw input
@@ -103,10 +111,16 @@ export class AcpSession implements AgentSession {
       rpcId: number | string
       item: Extract<ChatItem, { kind: 'permission' }>
       options: PermissionOption[]
+      // Approved by YOLO mode; never shown as a card
+      silent?: boolean
     }
   >()
   private model?: string
+  // The agent's own mode (e.g. OpenCode's build / plan)
   private mode?: string
+  // YOLO is the app's: it answers every permission request with "allow"
+  private yolo = false
+  private agentHasModes = false
   // ACP has no system prompt, so a new session gets the harness guide with its first prompt
   private needsInstructions = false
 
@@ -116,7 +130,8 @@ export class AcpSession implements AgentSession {
   ) {
     this.sessionId = context.resumeSessionId
     this.model = context.model
-    this.mode = context.permissionMode
+    if (context.permissionMode === YOLO_MODE) this.yolo = true
+    else this.mode = context.permissionMode
   }
 
   start(): Promise<void> {
@@ -226,18 +241,22 @@ export class AcpSession implements AgentSession {
           availableModels: { modelId: string; name: string; description?: string }[]
         }
       | undefined
-    const permissionModes: PermissionModeOption[] | undefined = modes?.availableModes.map((m) => ({
-      value: m.id,
-      label: m.name,
-      description: m.description ?? m.name
-    }))
+    this.agentHasModes = !!modes?.availableModes.length
+    const permissionModes: PermissionModeOption[] = [
+      ...(modes?.availableModes.map((m) => ({
+        value: m.id,
+        label: m.name,
+        description: m.description ?? m.name
+      })) ?? [ASK_OPTION]),
+      YOLO_OPTION
+    ]
     this.context.emit({
       type: 'info',
       info: {
-        ...(permissionModes && {
-          permissionModes,
-          permissionMode: this.mode ?? modes!.currentModeId
-        }),
+        permissionModes,
+        permissionMode: this.yolo
+          ? YOLO_MODE
+          : (this.mode ?? modes?.currentModeId ?? ASK_OPTION.value),
         ...(models && {
           models: models.availableModels.map((m) => ({
             value: m.modelId,
@@ -368,7 +387,7 @@ export class AcpSession implements AgentSession {
       }
       case 'current_mode_update':
         this.mode = String(update.currentModeId)
-        emit({ type: 'info', info: { permissionMode: this.mode } })
+        if (!this.yolo) emit({ type: 'info', info: { permissionMode: this.mode } })
         return
     }
   }
@@ -391,8 +410,9 @@ export class AcpSession implements AgentSession {
         status: 'pending',
         canAlwaysAllow: options.some((o) => o.kind === 'allow_always')
       }
-      this.approvals.set(item.id, { rpcId, item, options })
-      this.context.emit({ type: 'item', item })
+      this.approvals.set(item.id, { rpcId, item, options, silent: this.yolo })
+      if (this.yolo) this.respondToPermission(item.id, 'allow')
+      else this.context.emit({ type: 'item', item })
       return
     }
     // Cursor's plan approval: accept, like approving a plan in the agent's own UI
@@ -427,6 +447,7 @@ export class AcpSession implements AgentSession {
           : { outcome: 'cancelled' }
       }
     })
+    if (approval.silent) return
     this.context.emit({
       type: 'item',
       item: { ...approval.item, status: decision === 'deny' ? 'denied' : 'allowed' }
@@ -509,9 +530,14 @@ export class AcpSession implements AgentSession {
   }
 
   async setPermissionMode(mode: string): Promise<void> {
-    this.mode = mode
     this.context.emit({ type: 'info', info: { permissionMode: mode } })
-    if (!this.sessionId) return
+    this.yolo = mode === YOLO_MODE
+    if (this.yolo) {
+      for (const itemId of [...this.approvals.keys()]) this.respondToPermission(itemId, 'allow')
+      return
+    }
+    this.mode = mode
+    if (!this.sessionId || !this.agentHasModes) return
     await this.request('session/set_mode', { sessionId: this.sessionId, modeId: mode }).catch(
       (error) => this.notice('error', `Couldn’t switch mode: ${(error as Error).message}`)
     )

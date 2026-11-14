@@ -60,6 +60,16 @@ export type PermissionModeOption = {
   description: string
 }
 
+// The same "approve everything" mode for every agent; each adapter maps it to
+// the agent's own (Claude Code's bypassPermissions, Codex full access, …)
+export const YOLO_MODE = 'yolo'
+
+export const YOLO_OPTION: PermissionModeOption = {
+  value: YOLO_MODE,
+  label: 'YOLO',
+  description: 'Approves every request: commands, edits and web, without asking'
+}
+
 export type SessionInfo = {
   // The CLI's own session id, used to resume after a restart
   providerSessionId?: string

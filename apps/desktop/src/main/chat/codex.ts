@@ -12,6 +12,7 @@ import type {
   SendMessageInput,
   SlashCommandInfo
 } from '../../shared/chat'
+import { YOLO_MODE, YOLO_OPTION } from '../../shared/chat'
 import type { AdapterContext, AgentSession } from './types'
 
 const REQUEST_TIMEOUT_MS = 30_000
@@ -32,6 +33,12 @@ const MODES: Record<string, { sandbox: string; sandboxPolicy: object; approvalPo
     sandbox: 'read-only',
     sandboxPolicy: { type: 'readOnly', networkAccess: false },
     approvalPolicy: 'on-request'
+  },
+  // Codex's own --yolo: no sandbox, never asks
+  [YOLO_MODE]: {
+    sandbox: 'danger-full-access',
+    sandboxPolicy: { type: 'dangerFullAccess' },
+    approvalPolicy: 'never'
   }
 }
 
@@ -42,7 +49,8 @@ const PERMISSION_MODES: PermissionModeOption[] = [
     description: 'Edits and runs commands in the project, asks before anything outside it'
   },
   { value: 'ask', label: 'Ask every time', description: 'Asks before every command and edit' },
-  { value: 'read-only', label: 'Read only', description: 'Reads files; asks before any change' }
+  { value: 'read-only', label: 'Read only', description: 'Reads files; asks before any change' },
+  YOLO_OPTION
 ]
 
 const COMMANDS: SlashCommandInfo[] = [
@@ -128,6 +136,8 @@ export class CodexSession implements AgentSession {
       decisions: unknown[]
       // MCP elicitations answer with an action instead of a decision
       elicitation?: boolean
+      // Approved by YOLO mode; never shown as a card
+      silent?: boolean
     }
   >()
   private rateLimits: RateLimitSnapshot = {}
@@ -470,13 +480,15 @@ export class CodexSession implements AgentSession {
         // Without a decisions list, Codex accepts the documented defaults
         canAlwaysAllow: decisions.length === 0 || decisions.includes('acceptForSession')
       }
-      this.approvals.set(item.id, { rpcId, item, decisions })
-      this.context.emit({ type: 'item', item })
+      const silent = this.mode === YOLO_MODE
+      this.approvals.set(item.id, { rpcId, item, decisions, silent })
+      if (silent) this.respondToPermission(item.id, 'allow')
+      else this.context.emit({ type: 'item', item })
       return
     }
     if (method === 'mcpServer/elicitation/request') {
       // Our own tools are safe; approve them without bothering the user
-      if (params.serverName === 'near_hardware') {
+      if (params.serverName === 'near_hardware' || this.mode === YOLO_MODE) {
         this.write({ id: rpcId, result: { action: 'accept', content: {}, _meta: null } })
         return
       }
@@ -527,6 +539,7 @@ export class CodexSession implements AgentSession {
     else if (decision !== 'deny') answer = 'accept'
     else answer = offers('decline') ? 'decline' : 'cancel'
     this.write({ id: approval.rpcId, result: { decision: answer } })
+    if (approval.silent) return
     this.context.emit({
       type: 'item',
       item: { ...approval.item, status: decision === 'deny' ? 'denied' : 'allowed' }
@@ -650,6 +663,9 @@ export class CodexSession implements AgentSession {
     if (!MODES[mode]) return
     this.mode = mode
     this.context.emit({ type: 'info', info: { permissionMode: mode } })
+    if (mode === YOLO_MODE) {
+      for (const itemId of [...this.approvals.keys()]) this.respondToPermission(itemId, 'allow')
+    }
   }
 
   async refreshUsage(): Promise<void> {

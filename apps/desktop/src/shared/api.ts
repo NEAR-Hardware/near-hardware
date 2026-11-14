@@ -61,11 +61,14 @@ export interface NearHardwareApi {
     interrupt(chatId: string): Promise<void>
     setModel(chatId: string, model: string): Promise<void>
     setPermissionMode(chatId: string, mode: string): Promise<void>
+    // Warns before YOLO mode; dontAskAgain when the user ticked the box
+    confirmYolo(agentName: string): Promise<{ confirmed: boolean; dontAskAgain: boolean }>
     respondToPermission(chatId: string, itemId: string, decision: PermissionDecision): Promise<void>
     onEvent(listener: (message: ChatEventMessage) => void): () => void
   }
   files: {
-    list(projectId: string, dir: string): Promise<FileEntry[]>
+    // optional: a missing folder lists as empty instead of failing
+    list(projectId: string, dir: string, options?: { optional?: boolean }): Promise<FileEntry[]>
     read(projectId: string, path: string): Promise<FileContent>
     write(projectId: string, path: string, text: string): Promise<void>
     // Asks whether to save an edited file before its tab closes
@@ -103,6 +106,16 @@ export interface NearHardwareApi {
     status(): Promise<PlatformioStatus>
     install(): Promise<PlatformioStatus>
     onLog(listener: (line: string) => void): () => void
+  }
+  // The board's screen preview in its own floating window
+  screen: {
+    popOut(projectId: string): Promise<void>
+    dock(projectId: string): Promise<void>
+    // Projects whose screen is floating right now
+    floating(): Promise<string[]>
+    onFloatingChange(listener: (projectIds: string[]) => void): () => void
+    // Called by a floating window to match the device's width / height
+    fit(aspect: number): Promise<void>
   }
   // Native context menu; resolves to the chosen item's id, or null if dismissed
   showMenu(items: MenuItemSpec[]): Promise<string | null>

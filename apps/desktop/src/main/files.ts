@@ -86,28 +86,52 @@ export async function writeProjectFile(root: string, path: string, text: string)
   await writeFile(join(folder, basename(path)), text, 'utf8')
 }
 
-let active: { projectId: string; watcher: FSWatcher } | null = null
+// One watcher per project, shared by every window showing it (the main window
+// and any floating screen); each window watches one project at a time
+const watches = new Map<string, { watcher: FSWatcher; senders: Set<WebContents> }>()
+const watching = new Map<WebContents, string>()
+const cleanupRegistered = new WeakSet<WebContents>()
 
-export function stopWatching(): void {
-  active?.watcher.close()
-  active = null
+function closeWatch(projectId: string): void {
+  watches.get(projectId)?.watcher.close()
+  watches.delete(projectId)
+}
+
+export function stopWatching(sender: WebContents): void {
+  const projectId = watching.get(sender)
+  if (projectId === undefined) return
+  watching.delete(sender)
+  const watch = watches.get(projectId)
+  watch?.senders.delete(sender)
+  if (watch && watch.senders.size === 0) closeWatch(projectId)
 }
 
 // Forwards which directories changed so the renderer can re-list the ones it shows
 export function watchProject(projectId: string, root: string, sender: WebContents): void {
-  if (active?.projectId === projectId) return
-  stopWatching()
+  if (watching.get(sender) === projectId) return
+  if (!cleanupRegistered.has(sender)) {
+    cleanupRegistered.add(sender)
+    sender.once('destroyed', () => stopWatching(sender))
+  }
+  stopWatching(sender)
+  watching.set(sender, projectId)
 
+  const existing = watches.get(projectId)
+  if (existing) {
+    existing.senders.add(sender)
+    return
+  }
+
+  const senders = new Set([sender])
   const changed = new Set<string>()
   const paths = new Set<string>()
   let timer: NodeJS.Timeout | undefined
   const flush = (): void => {
     timer = undefined
-    if (sender.isDestroyed()) return stopWatching()
     const event: FilesChangedEvent = { projectId, dirs: [...changed], paths: [...paths] }
     changed.clear()
     paths.clear()
-    sender.send('files:changed', event)
+    for (const target of senders) if (!target.isDestroyed()) target.send('files:changed', event)
   }
 
   try {
@@ -121,8 +145,8 @@ export function watchProject(projectId: string, root: string, sender: WebContent
       // Batch bursts (an agent writing many files) into one update
       timer ??= setTimeout(flush, 150)
     })
-    watcher.on('error', stopWatching)
-    active = { projectId, watcher }
+    watcher.on('error', () => closeWatch(projectId))
+    watches.set(projectId, { watcher, senders })
   } catch {
     // Folder missing or unwatchable: the tree still works, just without live updates
   }

@@ -69,12 +69,13 @@ const api: NearHardwareApi = {
     setModel: (chatId, model) => ipcRenderer.invoke('chat:set-model', chatId, model),
     setPermissionMode: (chatId, mode) =>
       ipcRenderer.invoke('chat:set-permission-mode', chatId, mode),
+    confirmYolo: (agentName) => ipcRenderer.invoke('chat:confirm-yolo', agentName),
     respondToPermission: (chatId, itemId, decision) =>
       ipcRenderer.invoke('chat:respond-permission', chatId, itemId, decision),
     onEvent: (listener) => subscribe<ChatEventMessage>('chat:event', listener)
   },
   files: {
-    list: (projectId, dir) => ipcRenderer.invoke('files:list', projectId, dir),
+    list: (projectId, dir, options) => ipcRenderer.invoke('files:list', projectId, dir, options),
     read: (projectId, path) => ipcRenderer.invoke('files:read', projectId, path),
     write: (projectId, path, text) => ipcRenderer.invoke('files:write', projectId, path, text),
     confirmClose: (name) => ipcRenderer.invoke('files:confirm-close', name),
@@ -82,6 +83,13 @@ const api: NearHardwareApi = {
     reveal: (projectId, path) => ipcRenderer.invoke('files:reveal', projectId, path),
     watch: (projectId) => ipcRenderer.invoke('files:watch', projectId),
     onChange: (listener) => subscribe<FilesChangedEvent>('files:changed', listener)
+  },
+  screen: {
+    popOut: (projectId) => ipcRenderer.invoke('screen:pop-out', projectId),
+    dock: (projectId) => ipcRenderer.invoke('screen:dock', projectId),
+    floating: () => ipcRenderer.invoke('screen:floating'),
+    onFloatingChange: (listener) => subscribe<string[]>('screen:floating', listener),
+    fit: (aspect) => ipcRenderer.invoke('screen:fit', aspect)
   },
   showMenu: (items) => ipcRenderer.invoke('menu:show', items),
   onMenuCommand: (listener) => subscribe<MenuCommand>('menu:command', listener)

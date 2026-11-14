@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Cpu } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CircuitBoard, Cpu, MessageSquare } from 'lucide-react'
 import { getEnvironment } from '../../../../shared/environments'
-import type { RateLimitWindow, SendMessageInput } from '../../../../shared/chat'
+import { YOLO_MODE, type RateLimitWindow, type SendMessageInput } from '../../../../shared/chat'
 import type { BoardProfile, Chat, Project } from '../../../../shared/projects'
 import { useChat } from '../../hooks/useChat'
 import { findBoardDevice, useDevices } from '../../hooks/useDevices'
 import AgentIcon from '../AgentIcon'
+import WiringView from '../wiring/WiringView'
 import BoardSetupCard from './BoardSetupCard'
 import Composer from './Composer'
 import MessageList from './MessageList'
@@ -16,6 +17,24 @@ const STARTER_PROMPTS = [
   'Set up a PlatformIO project for an ESP32-S3 board',
   'Add a NEAR testnet account and send a test transaction'
 ]
+
+const YOLO_CONFIRMED_KEY = 'near-hardware.yolo-confirmed'
+
+function yoloConfirmed(): boolean {
+  try {
+    return localStorage.getItem(YOLO_CONFIRMED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function rememberYoloConfirmed(): void {
+  try {
+    localStorage.setItem(YOLO_CONFIRMED_KEY, 'true')
+  } catch {
+    // Asks again next time
+  }
+}
 
 const draftKey = (chatId: string): string => `near-hardware.draft.${chatId}`
 
@@ -64,8 +83,21 @@ type ChatViewProps = {
 function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
   const state = useChat(project.id, chat.id)
   const [draft, setDraft] = useState(() => readDraft(chat.id))
-  // Set once the user keeps the project's saved board for this chat
+  // Set once the user keeps the project's saved board, or skips it, for this chat
   const [boardConfirmed, setBoardConfirmed] = useState(false)
+  // The middle of the chat: the conversation, or the board's pins and wiring
+  const [view, setView] = useState<'chat' | 'wiring'>('chat')
+
+  // Other panels can fill the message box, e.g. the screen preview's "design it" button
+  useEffect(() => {
+    const onCompose = (event: Event): void => {
+      const text = (event as CustomEvent<string>).detail
+      setDraft(text)
+      writeDraft(chat.id, text)
+    }
+    window.addEventListener('near-hardware:compose', onCompose)
+    return () => window.removeEventListener('near-hardware:compose', onCompose)
+  }, [chat.id])
   const environment = getEnvironment(chat.environmentId)
 
   if (!state) return null
@@ -76,6 +108,15 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
   const updateDraft = (value: string): void => {
     setDraft(value)
     writeDraft(chat.id, value)
+  }
+
+  const changePermissionMode = async (mode: string): Promise<void> => {
+    if (mode === YOLO_MODE && !yoloConfirmed()) {
+      const { confirmed, dontAskAgain } = await window.api.chat.confirmYolo(environment.name)
+      if (!confirmed) return
+      if (dontAskAgain) rememberYoloConfirmed()
+    }
+    window.api.chat.setPermissionMode(chat.id, mode)
   }
 
   const send = (input: SendMessageInput): void => {
@@ -92,6 +133,28 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
           {environment.name}
         </span>
         <div className="chat-header-spacer" />
+        {!needsBoard && (
+          <div className="view-switch" role="tablist" aria-label="View">
+            <button
+              role="tab"
+              aria-selected={view === 'chat'}
+              className={view === 'chat' ? 'active' : undefined}
+              onClick={() => setView('chat')}
+            >
+              <MessageSquare size={13} strokeWidth={1.75} /> Chat
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === 'wiring'}
+              className={view === 'wiring' ? 'active' : undefined}
+              title="The board’s pins and everything wired to them"
+              onClick={() => setView('wiring')}
+            >
+              <CircuitBoard size={13} strokeWidth={1.75} /> Wiring
+            </button>
+          </div>
+        )}
+        <div className="chat-header-spacer" />
         <RateLimits windows={state.usage.rateLimits ?? []} />
       </header>
 
@@ -102,6 +165,8 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
           onStart={(text) => send({ text, images: [] })}
           onContinue={() => setBoardConfirmed(true)}
         />
+      ) : view === 'wiring' ? (
+        <WiringView project={project} agentName={environment.name} />
       ) : isNewChat ? (
         <div className="chat-empty">
           <AgentIcon id={chat.environmentId} size={26} />
@@ -139,7 +204,7 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
           onSend={send}
           onStop={() => window.api.chat.interrupt(chat.id)}
           onModelChange={(model) => window.api.chat.setModel(chat.id, model)}
-          onPermissionModeChange={(mode) => window.api.chat.setPermissionMode(chat.id, mode)}
+          onPermissionModeChange={(mode) => changePermissionMode(mode)}
         />
       )}
     </div>
