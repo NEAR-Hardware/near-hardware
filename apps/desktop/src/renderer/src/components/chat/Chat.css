@@ -15,7 +15,8 @@
 }
 
 .chat-header h1 {
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: min(120px, 100%);
   overflow: hidden;
   font-size: 15px;
   font-weight: 600;
@@ -38,6 +39,36 @@
   border-radius: 999px;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+.board-chip {
+  --chip-color: var(--text-muted);
+  /* Gives way before the chat title does; the full name is in the tooltip */
+  flex: 0 20 auto;
+  min-width: 96px;
+  max-width: 300px;
+  border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
+  background: color-mix(in srgb, var(--chip-color) 8%, transparent);
+  color: var(--chip-color);
+}
+
+.board-chip.connected {
+  --chip-color: var(--success);
+}
+
+.board-chip.disconnected {
+  --chip-color: var(--danger);
+}
+
+.board-chip svg {
+  flex-shrink: 0;
+}
+
+.board-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Plan usage windows */
@@ -753,6 +784,17 @@
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.field > .field-hint.warning {
+  color: var(--warning);
 }
 
 .board-setup-empty {

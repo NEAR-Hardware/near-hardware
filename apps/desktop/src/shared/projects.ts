@@ -16,6 +16,8 @@ export type BoardProfile = {
   port?: string
   vendorId?: string
   productId?: string
+  // USB serial number, to recognise this exact board when its port name changes
+  serialNumber?: string
   manufacturer?: string
   chip?: string
   docsUrl?: string
@@ -47,6 +49,15 @@ export type FilesChangedEvent = {
   projectId: string
   // Directories whose listing changed, relative to the project folder
   dirs: string[]
+  // Files and folders that changed, so open editor tabs can reload
+  paths: string[]
 }
+
+// A file opened in an editor tab
+export type FileContent =
+  | { kind: 'text'; text: string }
+  | { kind: 'image'; dataUrl: string; size: number }
+  | { kind: 'binary'; size: number }
+  | { kind: 'too-large'; size: number }
 
 export type MenuItemSpec = { id: string; label: string; enabled?: boolean } | { type: 'separator' }

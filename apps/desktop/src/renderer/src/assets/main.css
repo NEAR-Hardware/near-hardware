@@ -76,6 +76,20 @@ code {
   height: 100%;
 }
 
+/* Main area and files panel on top, the terminal panel across both below */
+.workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.workspace-top {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .main {
   display: flex;
   flex: 1;
@@ -223,6 +237,7 @@ code {
 
 .files-resizer {
   right: calc(var(--files-width) - 3px);
+  bottom: var(--bottom-panel-height, 0px);
   transition: right var(--sidebar-transition);
 }
 

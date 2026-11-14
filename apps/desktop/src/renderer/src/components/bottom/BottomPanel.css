@@ -27,7 +27,7 @@
   flex-shrink: 0;
   align-items: center;
   gap: 4px;
-  height: 34px;
+  height: 32px;
   padding: 0 8px;
 }
 
@@ -53,6 +53,14 @@
 .bottom-tab.active {
   background: var(--active);
   color: var(--text);
+}
+
+/* Green while a serial port is open, so it's visible from the collapsed bar */
+.bottom-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
 }
 
 .panel-spacer {

@@ -8,10 +8,20 @@ import './FilesPanel.css'
 type FilesPanelProps = {
   project: Project
   open: boolean
+  // The file showing in the editor, highlighted in the tree
+  activePath: string | null
   onToggle: () => void
+  // Single click previews a file in a tab; double click or Enter keeps it open
+  onOpenFile: (path: string, preview: boolean) => void
 }
 
-function FilesPanel({ project, open, onToggle }: FilesPanelProps): React.JSX.Element {
+function FilesPanel({
+  project,
+  open,
+  activePath,
+  onToggle,
+  onOpenFile
+}: FilesPanelProps): React.JSX.Element {
   return (
     <aside className="files-panel" inert={!open} aria-label="Files">
       <div className="files-panel-content">
@@ -30,7 +40,12 @@ function FilesPanel({ project, open, onToggle }: FilesPanelProps): React.JSX.Ele
           </button>
         </div>
         {/* Remount per project so tree state never leaks between projects */}
-        <FileTree key={project.id} project={project} />
+        <FileTree
+          key={project.id}
+          project={project}
+          activePath={activePath}
+          onOpenFile={onOpenFile}
+        />
       </div>
     </aside>
   )
@@ -38,7 +53,9 @@ function FilesPanel({ project, open, onToggle }: FilesPanelProps): React.JSX.Ele
 
 type Row = { entry: FileEntry; depth: number }
 
-function FileTree({ project }: { project: Project }): React.JSX.Element {
+type FileTreeProps = Pick<FilesPanelProps, 'project' | 'activePath' | 'onOpenFile'>
+
+function FileTree({ project, activePath, onOpenFile }: FileTreeProps): React.JSX.Element {
   // Loaded directory listings, keyed by relative path ("" is the project folder)
   const [listings, setListings] = useState<Record<string, FileEntry[]>>({})
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
@@ -116,19 +133,25 @@ function FileTree({ project }: { project: Project }): React.JSX.Element {
 
   const activate = (entry: FileEntry): void => {
     if (entry.kind === 'directory') setFolderOpen(entry.path, !expanded.has(entry.path))
-    else window.api.files.open(project.id, entry.path)
+    else onOpenFile(entry.path, false)
   }
 
   const showMenu = async (entry: FileEntry): Promise<void> => {
     setSelected(entry.path)
     const choice = await window.api.showMenu([
-      ...(entry.kind === 'file' ? [{ id: 'open', label: 'Open' }] : []),
+      ...(entry.kind === 'file'
+        ? [
+            { id: 'open', label: 'Open' },
+            { id: 'open-external', label: 'Open in Default App' }
+          ]
+        : []),
       { id: 'reveal', label: revealLabel() },
       { type: 'separator' as const },
       { id: 'copy-path', label: 'Copy Path' },
       { id: 'copy-relative', label: 'Copy Relative Path' }
     ])
-    if (choice === 'open') window.api.files.open(project.id, entry.path)
+    if (choice === 'open') onOpenFile(entry.path, false)
+    if (choice === 'open-external') window.api.files.open(project.id, entry.path)
     if (choice === 'reveal') window.api.files.reveal(project.id, entry.path)
     if (choice === 'copy-path') navigator.clipboard.writeText(joinPath(project.path, entry.path))
     if (choice === 'copy-relative') navigator.clipboard.writeText(entry.path)
@@ -188,7 +211,7 @@ function FileTree({ project }: { project: Project }): React.JSX.Element {
         <div
           key={entry.path}
           data-path={entry.path}
-          className={`tree-row${selected === entry.path ? ' selected' : ''}`}
+          className={`tree-row${selected === entry.path ? ' selected' : ''}${activePath === entry.path ? ' current' : ''}`}
           role="treeitem"
           aria-level={depth + 1}
           aria-selected={selected === entry.path}
@@ -198,6 +221,7 @@ function FileTree({ project }: { project: Project }): React.JSX.Element {
           onClick={() => {
             setSelected(entry.path)
             if (entry.kind === 'directory') setFolderOpen(entry.path, !expanded.has(entry.path))
+            else onOpenFile(entry.path, true)
           }}
           onDoubleClick={() => entry.kind === 'file' && activate(entry)}
           onContextMenu={(event) => {

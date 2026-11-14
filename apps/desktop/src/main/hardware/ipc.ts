@@ -123,8 +123,8 @@ export function registerHardwareIpc(): void {
 
   ipcMain.handle(
     'projects:set-board',
-    async (event, projectId: string, board: Record<string, unknown>) => {
-      const saved = await updateProjectBoard(projectId, board)
+    async (event, projectId: string, board: Record<string, unknown>, replace?: boolean) => {
+      const saved = await updateProjectBoard(projectId, board, replace === true)
       event.sender.send('projects:changed')
       return saved
     }

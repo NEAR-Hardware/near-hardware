@@ -11,7 +11,14 @@ import {
   setChatModel,
   setChatPermissionMode
 } from './chat/manager'
-import { listDirectory, resolveInProject, stopWatching, watchProject } from './files'
+import {
+  listDirectory,
+  readProjectFile,
+  resolveInProject,
+  stopWatching,
+  watchProject,
+  writeProjectFile
+} from './files'
 import { registerHardwareIpc } from './hardware/ipc'
 import {
   addExistingFolder,
@@ -171,6 +178,31 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('files:list', async (_event, projectId: string, dir: string) =>
     listDirectory((await getProject(projectId)).path, dir)
   )
+
+  ipcMain.handle('files:read', async (_event, projectId: string, path: string) =>
+    readProjectFile((await getProject(projectId)).path, path)
+  )
+
+  ipcMain.handle('files:write', async (_event, projectId: string, path: string, text: string) =>
+    writeProjectFile((await getProject(projectId)).path, path, text)
+  )
+
+  // Native "Save changes?" prompt before closing an edited tab
+  ipcMain.handle('files:confirm-close', async (event, name: string) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const options = {
+      type: 'warning' as const,
+      message: `Do you want to save the changes you made to ${name}?`,
+      detail: 'Your changes will be lost if you don’t save them.',
+      buttons: ['Save', 'Don’t Save', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2
+    }
+    const { response } = window
+      ? await dialog.showMessageBox(window, options)
+      : await dialog.showMessageBox(options)
+    return (['save', 'discard', 'cancel'] as const)[response]
+  })
 
   ipcMain.handle('files:open', async (_event, projectId: string, path: string) => {
     const error = await shell.openPath(

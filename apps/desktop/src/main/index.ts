@@ -7,6 +7,7 @@ import { setBridgeWindow, startBridge } from './hardware/bridge'
 import { closeAllTerminals } from './hardware/ipc'
 import { closeAllPorts, setSerialEventSink } from './hardware/serial'
 import { registerIpcHandlers } from './ipc'
+import { setAppMenu } from './menu'
 
 function createWindow(): void {
   // Create the browser window.
@@ -75,6 +76,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  setAppMenu()
   registerIpcHandlers()
   // Agents' MCP servers call into the app through this local bridge
   await startBridge()

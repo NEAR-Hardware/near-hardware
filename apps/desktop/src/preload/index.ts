@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { NearHardwareApi } from '../shared/api'
+import type { MenuCommand, NearHardwareApi } from '../shared/api'
 import type { ChatEventMessage } from '../shared/chat'
 import type { FilesChangedEvent } from '../shared/projects'
 
@@ -33,7 +33,8 @@ const api: NearHardwareApi = {
     deleteChat: (projectId, chatId) =>
       ipcRenderer.invoke('projects:delete-chat', projectId, chatId),
     onChange: (listener) => subscribe('projects:changed', listener),
-    setBoard: (projectId, board) => ipcRenderer.invoke('projects:set-board', projectId, board)
+    setBoard: (projectId, board, replace) =>
+      ipcRenderer.invoke('projects:set-board', projectId, board, replace)
   },
   devices: {
     list: () => ipcRenderer.invoke('devices:list'),
@@ -74,12 +75,16 @@ const api: NearHardwareApi = {
   },
   files: {
     list: (projectId, dir) => ipcRenderer.invoke('files:list', projectId, dir),
+    read: (projectId, path) => ipcRenderer.invoke('files:read', projectId, path),
+    write: (projectId, path, text) => ipcRenderer.invoke('files:write', projectId, path, text),
+    confirmClose: (name) => ipcRenderer.invoke('files:confirm-close', name),
     open: (projectId, path) => ipcRenderer.invoke('files:open', projectId, path),
     reveal: (projectId, path) => ipcRenderer.invoke('files:reveal', projectId, path),
     watch: (projectId) => ipcRenderer.invoke('files:watch', projectId),
     onChange: (listener) => subscribe<FilesChangedEvent>('files:changed', listener)
   },
-  showMenu: (items) => ipcRenderer.invoke('menu:show', items)
+  showMenu: (items) => ipcRenderer.invoke('menu:show', items),
+  onMenuCommand: (listener) => subscribe<MenuCommand>('menu:command', listener)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

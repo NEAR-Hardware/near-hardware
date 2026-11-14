@@ -18,7 +18,9 @@ function TerminalView({
     const host = hostRef.current
     if (!host) return
     const terminal = new Terminal({
-      fontFamily: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+      // Nerd Font fallbacks draw prompt icons (Powerlevel10k, Starship) instead of boxes
+      fontFamily:
+        "ui-monospace, 'SF Mono', Menlo, Consolas, 'Symbols Nerd Font Mono', 'JetBrainsMono Nerd Font Mono', 'JetBrainsMono Nerd Font', 'MesloLGS NF', 'MesloLGS Nerd Font', 'Hack Nerd Font', 'FiraCode Nerd Font', monospace",
       fontSize: 12.5,
       cursorBlink: true,
       theme: {

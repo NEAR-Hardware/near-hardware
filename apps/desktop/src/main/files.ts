@@ -1,8 +1,8 @@
 import { watch, type FSWatcher } from 'node:fs'
-import { readdir, realpath, stat } from 'node:fs/promises'
-import { dirname, resolve, sep } from 'node:path'
+import { readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, extname, join, resolve, sep } from 'node:path'
 import type { WebContents } from 'electron'
-import type { FileEntry, FilesChangedEvent } from '../shared/projects'
+import type { FileContent, FileEntry, FilesChangedEvent } from '../shared/projects'
 
 // Hidden from the tree, matching VS Code's default files.exclude
 const HIDDEN = new Set(['.git', '.svn', '.hg', 'CVS', '.DS_Store', 'Thumbs.db'])
@@ -49,6 +49,43 @@ export async function listDirectory(root: string, dir: string): Promise<FileEntr
   )
 }
 
+// Bigger files open in the default app instead of an editor tab
+const MAX_TEXT_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024
+const IMAGE_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml'
+}
+
+export async function readProjectFile(root: string, path: string): Promise<FileContent> {
+  const absolute = await resolveInProject(root, path)
+  const { size } = await stat(absolute)
+  const imageType = IMAGE_TYPES[extname(absolute).toLowerCase()]
+  if (imageType) {
+    if (size > MAX_IMAGE_BYTES) return { kind: 'too-large', size }
+    const data = await readFile(absolute)
+    return { kind: 'image', dataUrl: `data:${imageType};base64,${data.toString('base64')}`, size }
+  }
+  if (size > MAX_TEXT_BYTES) return { kind: 'too-large', size }
+  const data = await readFile(absolute)
+  // Same heuristic as git: a NUL byte near the start means binary
+  if (data.subarray(0, 8000).includes(0)) return { kind: 'binary', size }
+  return { kind: 'text', text: data.toString('utf8') }
+}
+
+// Resolves the parent folder rather than the file, so a file deleted on disk
+// while open can be saved again
+export async function writeProjectFile(root: string, path: string, text: string): Promise<void> {
+  const folder = await resolveInProject(root, dirname(path))
+  await writeFile(join(folder, basename(path)), text, 'utf8')
+}
+
 let active: { projectId: string; watcher: FSWatcher } | null = null
 
 export function stopWatching(): void {
@@ -62,12 +99,14 @@ export function watchProject(projectId: string, root: string, sender: WebContent
   stopWatching()
 
   const changed = new Set<string>()
+  const paths = new Set<string>()
   let timer: NodeJS.Timeout | undefined
   const flush = (): void => {
     timer = undefined
     if (sender.isDestroyed()) return stopWatching()
-    const event: FilesChangedEvent = { projectId, dirs: [...changed] }
+    const event: FilesChangedEvent = { projectId, dirs: [...changed], paths: [...paths] }
     changed.clear()
+    paths.clear()
     sender.send('files:changed', event)
   }
 
@@ -78,6 +117,7 @@ export function watchProject(projectId: string, root: string, sender: WebContent
       if (path.split('/').some((segment) => UNWATCHED_SEGMENTS.has(segment))) return
       const parent = toPosix(dirname(path))
       changed.add(parent === '.' ? '' : parent)
+      paths.add(path)
       // Batch bursts (an agent writing many files) into one update
       timer ??= setTimeout(flush, 150)
     })

@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { Cpu } from 'lucide-react'
 import { getEnvironment } from '../../../../shared/environments'
 import type { RateLimitWindow, SendMessageInput } from '../../../../shared/chat'
-import type { Chat, Project } from '../../../../shared/projects'
+import type { BoardProfile, Chat, Project } from '../../../../shared/projects'
 import { useChat } from '../../hooks/useChat'
+import { findBoardDevice, useDevices } from '../../hooks/useDevices'
 import AgentIcon from '../AgentIcon'
 import BoardSetupCard from './BoardSetupCard'
 import Composer from './Composer'
@@ -34,6 +36,26 @@ function writeDraft(chatId: string, draft: string): void {
   }
 }
 
+// Grey until we know the board, then green while it's plugged in and red when it isn't
+function BoardChip({ board }: { board?: BoardProfile }): React.JSX.Element {
+  const device = findBoardDevice(board, useDevices())
+  const state = !board?.name ? 'unknown' : device ? 'connected' : 'disconnected'
+  const title =
+    state === 'unknown'
+      ? 'No board set up for this project yet'
+      : state === 'connected'
+        ? `${board!.name}: connected on ${device!.path}`
+        : `${board!.name}: not connected. Plug it in to flash or monitor it.`
+  return (
+    <span className={`agent-chip board-chip ${state}`} title={title}>
+      <Cpu size={12} strokeWidth={1.75} />
+      <span className="board-chip-name">
+        {state === 'unknown' ? 'Board not detected' : board!.name}
+      </span>
+    </span>
+  )
+}
+
 type ChatViewProps = {
   project: Project
   chat: Chat
@@ -42,9 +64,14 @@ type ChatViewProps = {
 function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
   const state = useChat(project.id, chat.id)
   const [draft, setDraft] = useState(() => readDraft(chat.id))
+  // Set once the user keeps the project's saved board for this chat
+  const [boardConfirmed, setBoardConfirmed] = useState(false)
   const environment = getEnvironment(chat.environmentId)
 
   if (!state) return null
+
+  const isNewChat = state.items.length === 0 && state.status !== 'running'
+  const needsBoard = isNewChat && !boardConfirmed
 
   const updateDraft = (value: string): void => {
     setDraft(value)
@@ -59,6 +86,7 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
     <div className="chat-view">
       <header className="chat-header">
         <h1 title={chat.title}>{chat.title}</h1>
+        <BoardChip board={project.board} />
         <span className="agent-chip">
           <AgentIcon id={chat.environmentId} size={12} tile={false} />
           {environment.name}
@@ -67,13 +95,14 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
         <RateLimits windows={state.usage.rateLimits ?? []} />
       </header>
 
-      {!project.board?.name ? (
+      {needsBoard ? (
         <BoardSetupCard
           project={project}
           agentName={environment.name}
           onStart={(text) => send({ text, images: [] })}
+          onContinue={() => setBoardConfirmed(true)}
         />
-      ) : state.items.length === 0 && state.status !== 'running' ? (
+      ) : isNewChat ? (
         <div className="chat-empty">
           <AgentIcon id={chat.environmentId} size={26} />
           <p>
@@ -98,8 +127,8 @@ function ChatView({ project, chat }: ChatViewProps): React.JSX.Element | null {
         />
       )}
 
-      {/* The board name is required before anything else */}
-      {project.board?.name && (
+      {/* Every new chat starts by naming the board; nothing else until then */}
+      {!needsBoard && (
         <Composer
           agentName={environment.name}
           draft={draft}

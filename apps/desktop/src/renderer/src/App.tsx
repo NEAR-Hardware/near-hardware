@@ -2,16 +2,20 @@ import { useCallback, useEffect, useState } from 'react'
 import { PanelBottom, PanelRight, Usb } from 'lucide-react'
 import type { EnvironmentId } from '../../shared/environments'
 import type { Chat, Project } from '../../shared/projects'
-import BottomPanel from './components/bottom/BottomPanel'
+import BottomPanel, { BOTTOM_BAR_HEIGHT } from './components/bottom/BottomPanel'
 import ChatView from './components/chat/ChatView'
+import EditorTabs from './components/editor/EditorTabs'
+import FileEditor from './components/editor/FileEditor'
 import EnvironmentsView from './components/EnvironmentsView'
 import FilesPanel from './components/FilesPanel'
 import NewProjectDialog from './components/NewProjectDialog'
 import PanelResizer from './components/PanelResizer'
 import ProjectHome from './components/ProjectHome'
 import Sidebar, { SidebarHeader } from './components/Sidebar'
-import { revealLabel } from './format'
+import { saveDocument } from './editor/documents'
+import { basename, revealLabel } from './format'
 import { describeDevice } from './hooks/useDevices'
+import { useEditorTabs } from './hooks/useEditorTabs'
 import { useNow } from './hooks/useNow'
 import { usePanel } from './hooks/usePanel'
 import { FILES_PANEL, MAIN_MIN_WIDTH, SIDEBAR_PANEL } from './panelLayout'
@@ -76,9 +80,41 @@ function App(): React.JSX.Element {
 
   useEffect(() => saveView(view), [view])
 
+  const editor = useEditorTabs(project?.id)
+  const activeFile = project ? editor.active : null
+
+  // Picking a chat or project in the sidebar brings its chat tab to the front
+  const navigate = (next: View): void => {
+    setView(next)
+    if (next.kind === 'project') editor.showChat(next.projectId)
+  }
+
+  // File → Save (⌘S) and Close Tab (⌘W) from the app menu
+  useEffect(
+    () =>
+      window.api.onMenuCommand((command) => {
+        if (!project || !activeFile) return
+        if (command === 'close-tab') editor.close([activeFile])
+        if (command === 'save')
+          saveDocument(project.id, activeFile).catch((error: Error) =>
+            window.alert(`Couldn’t save ${basename(activeFile)}: ${error.message}`)
+          )
+      }),
+    [project, activeFile, editor]
+  )
+
   // ⌘B toggles the sidebar and ⌥⌘B the files panel, like Cursor and VS Code
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      // ⌃Tab / ⌃⇧Tab cycle through the chat and open files
+      if (event.ctrlKey && event.key === 'Tab' && editor.tabs.length > 0) {
+        event.preventDefault()
+        const order = [null, ...editor.tabs.map((tab) => tab.path)]
+        const step = event.shiftKey ? -1 : 1
+        const index = order.indexOf(editor.active)
+        editor.activate(order[(index + step + order.length) % order.length])
+        return
+      }
       if (!(event.metaKey || event.ctrlKey)) return
       // ⌘J toggles the terminal / serial monitor panel, like VS Code
       if (event.code === 'KeyJ') {
@@ -93,7 +129,7 @@ function App(): React.JSX.Element {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [files, sidebar])
+  }, [files, sidebar, editor])
 
   const openProject = (created: Project): void => {
     setNewProjectOpen(false)
@@ -146,7 +182,8 @@ function App(): React.JSX.Element {
       style={
         {
           '--sidebar-width': `${sidebar.layout.width}px`,
-          '--files-width': `${files.layout.width}px`
+          '--files-width': `${files.layout.width}px`,
+          '--bottom-panel-height': `${project ? (bottom.open ? bottom.height : BOTTOM_BAR_HEIGHT) : 0}px`
         } as React.CSSProperties
       }
     >
@@ -155,77 +192,112 @@ function App(): React.JSX.Element {
         view={view}
         projects={projects ?? []}
         now={now}
-        onNavigate={setView}
+        onNavigate={navigate}
         onNewProject={() => setNewProjectOpen(true)}
         onProjectMenu={showProjectMenu}
         onChatMenu={showChatMenu}
       />
 
-      <main className="main">
-        {/* Invisible strip so the window can be dragged from the main area too */}
-        <div className="titlebar">
+      <div className="workspace">
+        <div className="workspace-top">
+          <main className="main">
+            {/* Invisible strip so the window can be dragged from the main area too */}
+            <div className="titlebar">
+              {project && editor.tabs.length > 0 && (
+                <EditorTabs
+                  project={project}
+                  chat={chat}
+                  tabs={editor.tabs}
+                  active={editor.active}
+                  onActivate={editor.activate}
+                  onPin={editor.pin}
+                  onClose={editor.close}
+                />
+              )}
+              {project && (
+                <button
+                  className="icon-button"
+                  aria-label="Toggle panel"
+                  title="Terminal and serial monitor (⌘J)"
+                  onClick={() => setBottom((b) => ({ ...b, open: !b.open }))}
+                >
+                  <PanelBottom size={16} strokeWidth={1.5} />
+                </button>
+              )}
+              {project && !files.layout.open && (
+                <button
+                  className="icon-button"
+                  aria-label="Show files"
+                  title="Show files (⌥⌘B)"
+                  onClick={files.toggle}
+                >
+                  <PanelRight size={16} strokeWidth={1.5} />
+                </button>
+              )}
+            </div>
+            <div className="main-content">
+              {view.kind === 'environments' && <EnvironmentsView />}
+              {/* Stays mounted behind file tabs so a running chat keeps its place */}
+              {project && (
+                <div className="main-pane" hidden={!!activeFile}>
+                  {chat ? (
+                    <ChatView key={chat.id} project={project} chat={chat} />
+                  ) : (
+                    <ProjectHome
+                      key={project.id}
+                      project={project}
+                      onCreateChat={createChat}
+                      onOpenEnvironments={() => setView({ kind: 'environments' })}
+                    />
+                  )}
+                </div>
+              )}
+              {project && editor.tabs.length > 0 && (
+                <div className="main-pane" hidden={!activeFile}>
+                  <FileEditor key={project.id} project={project} path={activeFile} />
+                </div>
+              )}
+            </div>
+          </main>
+
           {project && (
-            <button
-              className="icon-button"
-              aria-label="Toggle panel"
-              title="Terminal and serial monitor (⌘J)"
-              onClick={() => setBottom((b) => ({ ...b, open: !b.open }))}
-            >
-              <PanelBottom size={16} strokeWidth={1.5} />
-            </button>
-          )}
-          {project && !files.layout.open && (
-            <button
-              className="icon-button"
-              aria-label="Show files"
-              title="Show files (⌥⌘B)"
-              onClick={files.toggle}
-            >
-              <PanelRight size={16} strokeWidth={1.5} />
-            </button>
-          )}
-        </div>
-        <div className="main-content">
-          {view.kind === 'environments' && <EnvironmentsView />}
-          {project && chat && <ChatView key={chat.id} project={project} chat={chat} />}
-          {project && !chat && (
-            <ProjectHome
-              key={project.id}
+            <FilesPanel
               project={project}
-              onCreateChat={createChat}
-              onOpenEnvironments={() => setView({ kind: 'environments' })}
+              open={files.layout.open}
+              activePath={activeFile}
+              onToggle={files.toggle}
+              onOpenFile={editor.open}
             />
           )}
         </div>
+        {/* Spans under the files panel too, like VS Code's justified panel */}
         {project && (
           <BottomPanel
             project={project}
             open={bottom.open}
             height={bottom.height}
             onHeightChange={(height) => setBottom((b) => ({ ...b, height }))}
+            onOpen={() => setBottom((b) => ({ ...b, open: true }))}
             onClose={() => setBottom((b) => ({ ...b, open: false }))}
           />
         )}
-      </main>
+      </div>
 
       {project && (
-        <>
-          <FilesPanel project={project} open={files.layout.open} onToggle={files.toggle} />
-          <PanelResizer
-            side="right"
-            className="files-resizer"
-            label="Resize files panel"
-            open={files.layout.open}
-            width={files.layout.width}
-            minWidth={FILES_PANEL.minWidth}
-            maxWidth={FILES_PANEL.maxWidth}
-            onResize={(width, startWidth) =>
-              files.resize(width, startWidth, window.innerWidth - sidebarWidth - MAIN_MIN_WIDTH)
-            }
-            onResizingChange={files.setResizing}
-            onReset={files.reset}
-          />
-        </>
+        <PanelResizer
+          side="right"
+          className="files-resizer"
+          label="Resize files panel"
+          open={files.layout.open}
+          width={files.layout.width}
+          minWidth={FILES_PANEL.minWidth}
+          maxWidth={FILES_PANEL.maxWidth}
+          onResize={(width, startWidth) =>
+            files.resize(width, startWidth, window.innerWidth - sidebarWidth - MAIN_MIN_WIDTH)
+          }
+          onResizingChange={files.setResizing}
+          onReset={files.reset}
+        />
       )}
 
       <PanelResizer

@@ -10,11 +10,15 @@ import type {
   BoardProfile,
   Chat,
   CreateProjectResult,
+  FileContent,
   FileEntry,
   FilesChangedEvent,
   MenuItemSpec,
   Project
 } from './projects'
+
+// Sent by the app menu (File → Save, Close Tab)
+export type MenuCommand = 'save' | 'close-tab'
 
 // What the preload script exposes to the renderer as `window.api`
 export interface NearHardwareApi {
@@ -41,7 +45,12 @@ export interface NearHardwareApi {
     // Only connected environments can be used
     createChat(projectId: string, environmentId: EnvironmentId): Promise<Chat>
     deleteChat(projectId: string, chatId: string): Promise<void>
-    setBoard(projectId: string, board: Partial<BoardProfile>): Promise<BoardProfile | undefined>
+    // Merges into the saved board; replace starts a fresh profile for a different board
+    setBoard(
+      projectId: string,
+      board: Partial<BoardProfile>,
+      replace?: boolean
+    ): Promise<BoardProfile | undefined>
     // Fires when the main process changes projects, e.g. naming a chat
     onChange(listener: () => void): () => void
   }
@@ -57,6 +66,11 @@ export interface NearHardwareApi {
   }
   files: {
     list(projectId: string, dir: string): Promise<FileEntry[]>
+    read(projectId: string, path: string): Promise<FileContent>
+    write(projectId: string, path: string, text: string): Promise<void>
+    // Asks whether to save an edited file before its tab closes
+    confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
+    // Opens in the system's default app
     open(projectId: string, path: string): Promise<void>
     reveal(projectId: string, path: string): Promise<void>
     // Watches one project at a time; null stops watching
@@ -92,4 +106,5 @@ export interface NearHardwareApi {
   }
   // Native context menu; resolves to the chosen item's id, or null if dismissed
   showMenu(items: MenuItemSpec[]): Promise<string | null>
+  onMenuCommand(listener: (command: MenuCommand) => void): () => void
 }

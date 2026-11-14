@@ -1,0 +1,256 @@
+/* Tabs live in the main area's title bar; clear the sidebar's buttons when it's collapsed */
+.main .titlebar {
+  gap: 8px;
+  transition: padding-left var(--sidebar-transition);
+}
+
+[data-sidebar='collapsed'] .main .titlebar {
+  padding-left: calc(var(--header-left-pad) + 4 * 26px + 4 * 2px + 8px + 10px);
+}
+
+[data-resizing] .main .titlebar {
+  transition: none;
+}
+
+.editor-tabs {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.editor-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: default;
+  -webkit-app-region: no-drag;
+}
+
+.editor-tab.file {
+  padding-right: 4px;
+}
+
+.editor-tab:hover {
+  background: var(--hover);
+  color: var(--text-secondary);
+}
+
+.editor-tab.active {
+  background: var(--active);
+  color: var(--text);
+}
+
+.editor-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.editor-tab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Preview tabs are replaced by the next file you single-click, like VS Code */
+.editor-tab.preview .editor-tab-name {
+  font-style: italic;
+}
+
+.editor-tab-hint {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  opacity: 0.8;
+}
+
+.editor-tab-close {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--icon);
+  visibility: hidden;
+  cursor: default;
+}
+
+.editor-tab:hover .editor-tab-close,
+.editor-tab.active .editor-tab-close,
+.editor-tab.dirty .editor-tab-close {
+  visibility: visible;
+}
+
+.editor-tab-close:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+/* Unsaved: a dot that turns into × when you point at it */
+.editor-tab.dirty .editor-tab-close:not(:hover) svg {
+  visibility: hidden;
+}
+
+.editor-tab.dirty .editor-tab-close:not(:hover)::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+/* Editor */
+
+.main-pane {
+  height: 100%;
+}
+
+.file-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.file-editor-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb:last-child {
+  color: var(--text-secondary);
+}
+
+.breadcrumb-separator {
+  margin: 0 2px;
+  color: var(--icon-dim);
+}
+
+.file-editor-meta {
+  flex-shrink: 0;
+  margin-right: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.file-editor-banner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+.file-editor-banner span {
+  flex: 1;
+}
+
+.file-editor-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.monaco-host {
+  position: absolute;
+  inset: 0;
+}
+
+.markdown-preview {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 24px max(32px, calc((100% - 820px) / 2));
+  user-select: text;
+}
+
+.file-editor-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.image-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  overflow: auto;
+}
+
+/* Checkerboard so transparent pixels are visible */
+.image-view img {
+  max-width: 100%;
+  max-height: calc(100% - 40px);
+  object-fit: contain;
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #1f1f1f 0% 50%) 0 0 / 16px 16px;
+  image-rendering: auto;
+}
+
+.image-view p {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Files panel: the file showing in the editor */
+.tree-row.current .tree-name {
+  color: var(--text);
+  font-weight: 500;
+}

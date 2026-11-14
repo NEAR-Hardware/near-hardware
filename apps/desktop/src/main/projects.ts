@@ -128,16 +128,19 @@ export async function createChat(projectId: string, environmentId: EnvironmentId
   return chat
 }
 
-// Merges fields into the project's board profile; only known string fields are kept
+// Merges fields into the project's board profile; only known string fields are kept.
+// replace starts a fresh profile instead (the user switched boards).
 export async function updateProjectBoard(
   projectId: string,
-  patch: Record<string, unknown>
+  patch: Record<string, unknown>,
+  replace = false
 ): Promise<BoardProfile | undefined> {
   const fields: (keyof BoardProfile)[] = [
     'name',
     'port',
     'vendorId',
     'productId',
+    'serialNumber',
     'manufacturer',
     'chip',
     'docsUrl',
@@ -153,7 +156,11 @@ export async function updateProjectBoard(
   let board: BoardProfile | undefined
   await updateSettings((settings) =>
     updateProject(settings, projectId, (p) => {
-      board = { ...p.board, ...clean, name: String(clean.name ?? p.board?.name ?? '') }
+      board = {
+        ...(replace ? {} : p.board),
+        ...clean,
+        name: String(clean.name ?? p.board?.name ?? '')
+      }
       return { ...p, board }
     })
   )
