@@ -1,0 +1,382 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Updating Contracts
+
+> Learn how to upgrade NEAR smart contracts safely, including programmatic updates, migration strategies, and best practices for contract versioning.
+
+Learn how to update NEAR smart contracts, both through tools like NEAR CLI and programmatically. Understand the implications of state migration when changing contract logic.
+
+NEAR accounts separate their logic (contract's code) from their state (storage),
+allowing the code to be changed.
+
+Contract's can be updated in two ways:
+
+1. **Through tools** such as [NEAR CLI](https://docs.near.org/tools/cli.md) or the
+   [NEAR API](https://docs.near.org/tools/near-api.md) (if you hold
+   the account's
+   [full access key](https://docs.near.org/protocol/accounts-contracts/access-keys.md)).
+2. **Programmatically**, by implementing a method that
+   [takes the new code and deploys it](#programmatic-update).
+
+***
+
+## Updating Through Tools
+
+Simply re-deploy another contract using your preferred tool, for example, using
+[NEAR CLI](https://docs.near.org/tools/cli.md):
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+# (optional) If you don't have an account, create one
+near create-account <account-id> --useFaucet
+
+# Deploy the contract
+near deploy <account-id> <wasm-file>
+```
+
+***
+
+## Programmatic Update
+
+A smart contract can also update itself by implementing a method that:
+
+1. Takes the new wasm contract as input
+2. Creates a Promise to deploy it on itself
+
+```rust title="update.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn update_contract(&self) -> Promise {
+    // Check the caller is authorized to update the code
+    assert!(
+        env::predecessor_account_id() == self.manager,
+        "Only the manager can update the code"
+    );
+
+    // Receive the code directly from the input to avoid the
+    // GAS overhead of deserializing parameters
+    let code = env::input().expect("Error: No input").to_vec();
+
+    // Deploy the contract on self
+    Promise::new(env::current_account_id())
+        .deploy_contract(code)
+        .function_call(
+            "migrate".to_string(),
+            NO_ARGS,
+            NearToken::from_near(0),
+            CALL_GAS,
+        )
+        .as_return()
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/update-migrate-rust/blob/c09b4adad96f265af07827787577bb8af775dc8d/self-updates/base/src/update.rs#L10-L31)
+
+#### How to Invoke Such Method?
+
+> [tab] CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> # Call the update_contract method
+> near contract call-function as-transaction <contract-account> update_contract file-args </path/to/wasm.wasm> prepaid-gas '300.0 Tgas' attached-deposit '0 NEAR' sign-as <manager-account> network-config testnet sign-with-keychain send
+> ```
+
+> [!TIP]
+>
+> **DAO Factories**
+>
+> This is how DAO factories
+> [update their contracts](https://github.com/near-daos/sputnik-dao-contract/blob/main/sputnikdao-factory2/src/factory_manager.rs#L60)
+
+***
+
+## Migrating the State
+
+Since the account's logic (smart contract) is separated from the account's state
+(storage), **the account's state persists** when re-deploying a contract.
+
+Because of this, **adding methods** or **modifying existing ones** will yield
+**no problems**.
+
+However, deploying a contract that **modifies or removes structures** stored in
+the state will raise an error: `Cannot deserialize the contract state`, in which
+case you can choose to:
+
+1. Use a different account
+2. Rollback to the previous contract code
+3. Add a method to migrate the contract's state
+
+***
+
+### The Migration Method
+
+If you have no option but to migrate the state, then you need to implement a
+method that:
+
+1. Reads the current state of the contract
+2. Applies different functions to transform it into the new state
+3. Returns the new state
+
+> [!TIP]
+>
+> **DAO Update**
+>
+> This is how DAOs
+> [update themselves](https://github.com/near-daos/sputnik-dao-contract/blob/main/sputnikdao2/src/upgrade.rs#L59)
+
+***
+
+### Example: Guest Book Migration
+
+Imagine you have a Guest Book where you store messages, and the users can pay
+for such messages to be "premium". You keep track of the messages and payments
+using two `near_sdk::store::Vector` collections in the following state:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const MESSAGES_PREFIX: &[u8] = b"m";
+const PAYMENTS_PREFIX: &[u8] = b"p";
+
+#[near(serializers=[json, borsh])]
+#[derive(Clone)]
+pub struct PostedMessage {
+    pub premium: bool,
+    pub sender: AccountId,
+    pub text: String,
+}
+
+#[near(contract_state)]
+pub struct GuestBook {
+    messages: Vector<PostedMessage>,
+    payments: Vector<NearToken>,
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/update-migrate-rust/blob/c09b4adad96f265af07827787577bb8af775dc8d/basic-updates/base/src/lib.rs#L10-L25)
+
+#### Update Contract
+
+At some point you realize that you could keep track of the `payments` inside of
+the `PostedMessage` itself, so you change the contract to:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const MESSAGES_PREFIX: &[u8] = b"m";
+
+#[near(serializers=[json, borsh])]
+#[derive(Clone)]
+pub struct PostedMessage {
+    pub payment: NearToken,
+    pub premium: bool,
+    pub sender: AccountId,
+    pub text: String,
+}
+
+#[near(contract_state)]
+pub struct GuestBook {
+    messages: Vector<PostedMessage>,
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/update-migrate-rust/blob/c09b4adad96f265af07827787577bb8af775dc8d/basic-updates/update/src/lib.rs#L12-L26)
+
+#### Incompatible States
+
+If you deploy the update into an initialized account the contract will fail to
+deserialize the account's state, because:
+
+1. There is an extra `payments` vector saved in the state (from the previous
+   contract)
+2. The stored `PostedMessages` are missing the `payment` field (as in the
+   previous contract)
+
+#### Migrating the State
+
+To fix the problem, you need to implement a method that goes through the old
+state, removes the `payments` vector and adds the information to the
+`PostedMessages`:
+
+```rust title="migrate.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(serializers=[borsh])]
+pub struct OldPostedMessage {
+    pub premium: bool,
+    pub sender: AccountId,
+    pub text: String,
+}
+
+#[near(serializers=[borsh])]
+pub struct OldState {
+    messages: Vector<OldPostedMessage>,
+    payments: Vector<NearToken>,
+}
+
+#[near]
+impl GuestBook {
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        // retrieve the current state from the contract
+        let mut old_state: OldState = env::state_read().expect("failed");
+
+        // new messages vector to hold the migrated messages
+        let mut new_messages: Vector<PostedMessage> = Vector::new(MESSAGES_PREFIX);
+
+        // iterate through the state migrating it to the new version
+        for (idx, posted) in old_state.messages.iter().enumerate() {
+            // get the payment and remove it from the old state payments vector so it won't be left in the new state
+            let payment = old_state
+                .payments
+                .get(idx as u32)
+                .expect("failed to get payment")
+                .clone();
+
+            // push the new message to the new messages vector
+            new_messages.push(PostedMessage {
+                payment,
+                premium: posted.premium,
+                sender: posted.sender.clone(),
+                text: posted.text.clone(),
+            })
+        }
+
+        // remove the payments from the old state
+        old_state.payments.clear();
+
+        // return the new state
+        Self {
+            messages: new_messages,
+        }
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/update-migrate-rust/blob/c09b4adad96f265af07827787577bb8af775dc8d/basic-updates/update/src/migrate.rs#L3-L53)
+
+Notice that `migrate` is actually an [initialization method](https://docs.near.org/smart-contracts/anatomy/storage.md) that **ignores** the existing state (`#[init(ignore_state)]`), thus being able to execute and rewrite the state.
+
+> [accordion] Why we should remove old structures from the state?
+>
+> To understand why we should remove old structures from the state let's take a look to how the data is stored.
+>
+> For example, if the old version of the contract stores two messages with payments according methods `get_messages` and `get_payments` will return the following results:
+>
+> > [accordion] get\_messags result
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > INFO --- Result -------------------------
+> > |    [
+> > |      {
+> > |        "premium": false,
+> > |        "sender": "test-ac-1719933221123-3.testnet",
+> > |        "text": "Hello"
+> > |      },
+> > |      {
+> > |        "premium": false,
+> > |        "sender": "test-ac-1719933221123-3.testnet",
+> > |        "text": "Hello"
+> > |      }
+> > |    ]
+> > |    ------------------------------------
+> > ```
+>
+> > [accordion] get\_payments result
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > INFO --- Result -------------------------
+> >  |    [
+> >  |      "10000000000000000000000",
+> >  |      "10000000000000000000000"
+> >  |    ]
+> >  |    ------------------------------------
+> > ```
+>
+> But if we take a look at the storage as text using following command, we will see that each payment is stored under its own key started with `p\` prefix.
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near contract view-storage <CONTRACT_ID> all as-text network-config testnet now
+> ```
+>
+> > [accordion] Storage as text result
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > INFO Contract state (values):
+> >  |      key:   STATE
+> >  |      value: \x02\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00m\x02\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00p
+> >  |      --------------------------------
+> >  |      key:   m\x00\x00\x00\x00\x00\x00\x00\x00
+> >  |      value: \x00\x1f\x00\x00\x00test-ac-1719933221123-3.testnet\x05\x00\x00\x00Hello
+> >  |      --------------------------------
+> >  |      key:   m\x01\x00\x00\x00\x00\x00\x00\x00
+> >  |      value: \x00\x1f\x00\x00\x00test-ac-1719933221123-3.testnet\x05\x00\x00\x00Hello
+> >  |      --------------------------------
+> >  |      key:   p\x00\x00\x00\x00\x00\x00\x00\x00
+> >  |      value: \x00\x00@\xb2\xba\xc9\xe0\x19\x1e\x02\x00\x00\x00\x00\x00\x00
+> >  |      --------------------------------
+> >  |      key:   p\x01\x00\x00\x00\x00\x00\x00\x00
+> >  |      value: \x00\x00@\xb2\xba\xc9\xe0\x19\x1e\x02\x00\x00\x00\x00\x00\x00
+> >  |      --------------------------------
+> > ```
+>
+> That means that while migrating the state to a new version we need not only change the messages structure, but also remove all payments related keys from the state. Otherwise, the old keys will simply stay behind being orphan, still occupying space.
+>
+> To remove them in `migrate` method, we call `clear()` method on payments vector in mutable `old_state` struct. This method removes all elements from the collection.
+
+> [!TIP]
+>
+> You can follow a migration step by step in the
+> [official migration example](https://github.com/near-examples/update-migrate-rust/tree/main/basic-updates/base)
+
+***
+
+## State versioning
+
+State versioning lets old and new representations coexist. Instead of rewriting every stored value during one migration, store an enum whose variants represent each supported version:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[derive(BorshDeserialize, BorshSerialize)]
+pub enum VersionedPostedMessage {
+    V1(PostedMessageV1),
+    V2(PostedMessageV2),
+}
+```
+
+When the contract reads an older variant, it can convert it to the latest representation before applying new logic. This makes future changes easier, but it also means the contract must continue understanding every version that can remain in storage.
+
+See the [state-versioning example](https://github.com/near-examples/update-migrate-rust/tree/main/enum-updates) for a complete implementation.
+
+***
+
+## Locking a contract account
+
+You can prevent external actors from upgrading a contract by removing every full-access key from its account. Once the keys are removed, nobody can sign transactions in the account's name to deploy new code or transfer its balance.
+
+First, list the account's keys and identify every full-access key:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near list-keys <contract-account>
+```
+
+Then remove each full-access key:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near delete-key <contract-account> '<public-key>'
+```
+
+> [!WARNING]
+>
+> Removing all full-access keys cannot be undone through an externally signed transaction. Confirm that you have the intended upgrade and recovery design before locking the account.
+
+A locked contract can still upgrade itself if its current code exposes an authorized [programmatic update](#programmatic-update) method. If the contract must be permanently immutable, do not include such a method.
+
+If the account uses a global contract by account ID, removing its keys does not lock its code. The owner of the global contract can deploy a new version at any time, and the locked account then runs the new code. To lock the code, deploy it to the account directly, or use a global contract by code hash.
+
+## Testing Upgrades
+
+The [migration example](https://github.com/near-examples/update-migrate-rust) includes tests for basic migrations, versioned state, and manager-authorized updates. From the repository root, run:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo install cargo-near --version 0.21.1 --locked --no-default-features
+cargo test --workspace --locked
+```
+
+Each test builds the base and updated contracts from source, deploys them to a local `near-sandbox` node, and sends transactions using `near-api`. The assertions check that messages, senders, premium flags, and payments survive the upgrade.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -21,16 +21,44 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+# PlatformIO and the coding agents aren't bundled: the app's setup installs them
+# on first launch, so the download stays small.
 mac:
+  target:
+    - target: dmg
+      arch: arm64
+    # install.sh downloads the zip
+    - target: zip
+      arch: arm64
+  # Stable names so releases/latest/download/<name> always points at the newest build
+  artifactName: NEAR-Hardware-mac-${arch}.${ext}
+  category: public.app-category.developer-tools
+  minimumSystemVersion: '12.0'
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # Shown in macOS's permission prompts. Agents run inside the app, so their
+  # file access is asked for in the app's name.
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
+    NSDocumentsFolderUsageDescription: Your hardware projects are kept in Documents › NEAR Hardware. NEAR Hardware and the coding agent it runs read and write project files there.
+    NSDesktopFolderUsageDescription: Lets NEAR Hardware and its coding agent open projects and files you keep on the Desktop.
+    NSDownloadsFolderUsageDescription: Lets NEAR Hardware and its coding agent use files you've downloaded, like board examples and datasheets.
+    NSRemovableVolumesUsageDescription: Lets NEAR Hardware open projects stored on an external drive.
+    NSNetworkVolumesUsageDescription: Lets NEAR Hardware open projects stored on a network drive.
+# Signed with a Developer ID and notarized when APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD
+# and APPLE_TEAM_ID are set; see scripts/build-mac.mjs
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  title: ${productName}
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 190
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications
 linux:
   target:
     - AppImage
@@ -42,5 +70,6 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: NEAR-Hardware
+  repo: near-hardware

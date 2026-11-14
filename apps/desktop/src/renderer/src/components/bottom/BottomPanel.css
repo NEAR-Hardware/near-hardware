@@ -19,7 +19,12 @@
 }
 
 .bottom-resizer:hover {
-  background: linear-gradient(transparent 2px, var(--accent) 2px, var(--accent) 4px, transparent 4px);
+  background: linear-gradient(
+    transparent 2px,
+    var(--accent) 2px,
+    var(--accent) 4px,
+    transparent 4px
+  );
 }
 
 .bottom-tabs {

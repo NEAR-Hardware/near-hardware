@@ -1,11 +1,22 @@
 import type { ChatEventMessage, ChatState, PermissionDecision, SendMessageInput } from './chat'
 import type {
+  AuthStatus,
   ConnectEnvironmentResult,
   ConnectedEnvironment,
   EnvironmentId,
   EnvironmentStatus
 } from './environments'
 import type { DeviceInfo, PlatformioStatus } from './hardware'
+import type {
+  ImportLookup,
+  NameCheck,
+  NearAccounts,
+  NearBalance,
+  NearNetwork,
+  NearResult,
+  NearSecret
+} from './near'
+import type { ContractToolsStatus, PrepareFolderResult, SetupState } from './setup'
 import type {
   BoardProfile,
   Chat,
@@ -17,8 +28,8 @@ import type {
   Project
 } from './projects'
 
-// Sent by the app menu (File → Save, Close Tab)
-export type MenuCommand = 'save' | 'close-tab'
+// Sent by the app menu (File → Save, Close Tab, Help → Setup Guide)
+export type MenuCommand = 'save' | 'close-tab' | 'setup-guide'
 
 // What the preload script exposes to the renderer as `window.api`
 export interface NearHardwareApi {
@@ -29,6 +40,42 @@ export interface NearHardwareApi {
     // Re-checks the agent and only connects it if it's installed
     connect(id: EnvironmentId): Promise<ConnectEnvironmentResult>
     disconnect(id: EnvironmentId): Promise<void>
+    authStatus(id: EnvironmentId): Promise<AuthStatus>
+  }
+  // The first-run setup guide
+  setup: {
+    state(): Promise<SetupState>
+    complete(): Promise<void>
+    // Opens Apple's installer for the Command Line Tools
+    installDevTools(): Promise<void>
+    // Relaunches from /Applications; false if it wasn't moved
+    moveToApplications(): Promise<boolean>
+    // Creates the folder and makes it the default for new projects
+    prepareProjectsFolder(path: string): Promise<PrepareFolderResult>
+    openPrivacySettings(): Promise<void>
+  }
+  // NEAR accounts; private keys stay in the main process
+  near: {
+    list(): Promise<NearAccounts>
+    // Whether <name>.testnet can be created
+    checkName(name: string): Promise<NameCheck>
+    // Creates <name>.testnet with the testnet faucet and a new recovery phrase
+    createTestnet(name: string): Promise<NearResult>
+    // The accounts a recovery phrase or private key controls, on both networks
+    lookupImport(secret: string): Promise<ImportLookup>
+    import(input: { secret: string; network: NearNetwork; accountId: string }): Promise<NearResult>
+    setPrimary(network: NearNetwork, accountId: string): Promise<void>
+    // Agents' testnet transactions go through without asking (mainnet always asks)
+    setAutoApproveTestnet(on: boolean): Promise<void>
+    // Picks a different pixel avatar for the account
+    shuffleAvatar(network: NearNetwork, accountId: string): Promise<void>
+    // Asks first; false if the user cancelled
+    remove(network: NearNetwork, accountId: string): Promise<boolean>
+    // After Touch ID; null if the user cancelled
+    reveal(network: NearNetwork, accountId: string): Promise<NearSecret | null>
+    // null when NEAR couldn't be reached
+    balance(network: NearNetwork, accountId: string): Promise<NearBalance | null>
+    onChange(listener: () => void): () => void
   }
   projects: {
     list(): Promise<Project[]>
@@ -95,12 +142,17 @@ export interface NearHardwareApi {
     onError(listener: (event: { path: string; message: string }) => void): () => void
   }
   terminal: {
-    create(projectId: string, cols: number, rows: number): Promise<string>
+    // projectId null runs `command` in the home folder instead of a project shell
+    create(projectId: string | null, cols: number, rows: number, command?: string): Promise<string>
     write(id: string, data: string): Promise<void>
     resize(id: string, cols: number, rows: number): Promise<void>
     kill(id: string): Promise<void>
     onData(listener: (event: { id: string; data: string }) => void): () => void
     onExit(listener: (event: { id: string; exitCode: number }) => void): () => void
+  }
+  // Rust, cargo-near and NEAR CLI for smart contracts; install runs in a terminal
+  contractTools: {
+    status(): Promise<ContractToolsStatus>
   }
   platformio: {
     status(): Promise<PlatformioStatus>

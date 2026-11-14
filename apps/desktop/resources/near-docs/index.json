@@ -1,0 +1,4222 @@
+{
+ "fetchedAt": "2026-11-14T11:51:37.049Z",
+ "sources": [
+  {
+   "id": "near",
+   "title": "NEAR Docs",
+   "site": "https://docs.near.org",
+   "pages": 197
+  },
+  {
+   "id": "intents",
+   "title": "NEAR Intents",
+   "site": "https://docs.near-intents.org",
+   "pages": 75
+  },
+  {
+   "id": "nearai",
+   "title": "NEAR AI Cloud",
+   "site": "https://docs.near.ai",
+   "pages": 134
+  },
+  {
+   "id": "ironclaw",
+   "title": "IronClaw",
+   "site": "https://docs.ironclaw.com",
+   "pages": 47
+  },
+  {
+   "id": "market",
+   "title": "NEAR Agent Market",
+   "site": "https://market.near.ai",
+   "pages": 12
+  }
+ ],
+ "pages": [
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get transaction history",
+   "description": "Returns paginated public and confidential transaction history. History is invite-only for now. For the initial request, omit both nextCursor and prevCursor to retrieve the latest history. For subsequent requests, pass either nextCursor or prevCursor from the previous response.",
+   "file": "intents/api-reference/account/get-transaction-history.md",
+   "url": "https://docs.near-intents.org/api-reference/account/get-transaction-history",
+   "bytes": 9660
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get user token balances",
+   "description": "Returns token balances for the authenticated user from private balance sources",
+   "file": "intents/api-reference/account/get-user-token-balances.md",
+   "url": "https://docs.near-intents.org/api-reference/account/get-user-token-balances",
+   "bytes": 2643
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get transactions",
+   "description": "",
+   "file": "intents/api-reference/get-transactions.md",
+   "url": "https://docs.near-intents.org/api-reference/get-transactions",
+   "bytes": 26027
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Check swap execution status",
+   "description": "Retrieves the current status of a swap using the unique deposit address from the quote, if quote response included deposit memo, it is required as well.",
+   "file": "intents/api-reference/oneclick/check-swap-execution-status.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/check-swap-execution-status",
+   "bytes": 27209
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Generate an intent for signing",
+   "description": "Generates an unsigned intent payload that needs to be signed by the user.",
+   "file": "intents/api-reference/oneclick/generate-an-intent-for-signing.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/generate-an-intent-for-signing",
+   "bytes": 9525
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get ANY_INPUT withdrawals",
+   "description": "Retrieves all withdrawals by ANY_INPUT quote with filtering, pagination and sorting",
+   "file": "intents/api-reference/oneclick/get-any_input-withdrawals.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/get-any_input-withdrawals",
+   "bytes": 5281
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get supported tokens",
+   "description": "Retrieves a list of tokens currently supported by the 1Click API for asset swaps.",
+   "file": "intents/api-reference/oneclick/get-supported-tokens.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/get-supported-tokens",
+   "bytes": 3781
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Request a swap quote",
+   "description": "Generates a swap quote based on input parameters such as the assets, amount, slippage tolerance, and recipient/refund information.",
+   "file": "intents/api-reference/oneclick/request-a-swap-quote.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/request-a-swap-quote",
+   "bytes": 22985
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Submit a signed intent",
+   "description": "Submits a signed intent to execute.",
+   "file": "intents/api-reference/oneclick/submit-a-signed-intent.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/submit-a-signed-intent",
+   "bytes": 394059
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Submit deposit transaction hash",
+   "description": "Optionally notifies the 1Click service that a deposit has been sent to the specified address, using the blockchain transaction hash.",
+   "file": "intents/api-reference/oneclick/submit-deposit-transaction-hash.md",
+   "url": "https://docs.near-intents.org/api-reference/oneclick/submit-deposit-transaction-hash",
+   "bytes": 27743
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Cancel an order",
+   "description": "Requests asynchronous cancellation. Unspent input is refunded and successfully filled output is withdrawn.",
+   "file": "intents/api-reference/order/cancel-an-order.md",
+   "url": "https://docs.near-intents.org/api-reference/order/cancel-an-order",
+   "bytes": 20129
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Create an order",
+   "description": "Creates a confidential order.",
+   "file": "intents/api-reference/order/create-an-order.md",
+   "url": "https://docs.near-intents.org/api-reference/order/create-an-order",
+   "bytes": 24426
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Get an order",
+   "description": "Retrieves an order.",
+   "file": "intents/api-reference/order/get-an-order.md",
+   "url": "https://docs.near-intents.org/api-reference/order/get-an-order",
+   "bytes": 19648
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "List orders",
+   "description": "Retrieves visible orders, newest first.",
+   "file": "intents/api-reference/order/list-orders.md",
+   "url": "https://docs.near-intents.org/api-reference/order/list-orders",
+   "bytes": 21369
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Authenticate User with Signed Data",
+   "description": "Exchange a signed message for a User-Session access token",
+   "file": "intents/api-reference/user-auth/authenticate-user-with-signed-data.md",
+   "url": "https://docs.near-intents.org/api-reference/user-auth/authenticate-user-with-signed-data",
+   "bytes": 403682
+  },
+  {
+   "source": "intents",
+   "section": "api-reference",
+   "title": "Refresh Access Token",
+   "description": "Exchange a refresh token for a new access token",
+   "file": "intents/api-reference/user-auth/refresh-access-token.md",
+   "url": "https://docs.near-intents.org/api-reference/user-auth/refresh-access-token",
+   "bytes": 2891
+  },
+  {
+   "source": "intents",
+   "section": "changelog",
+   "title": "Changelog",
+   "description": "What's new in NEAR Intents.",
+   "file": "intents/changelog/overview.md",
+   "url": "https://docs.near-intents.org/changelog/overview",
+   "bytes": 6453
+  },
+  {
+   "source": "intents",
+   "section": "getting-started",
+   "title": "What are Intents?",
+   "description": "Define desired outcomes instead of managing execution steps",
+   "file": "intents/getting-started/what-are-intents.md",
+   "url": "https://docs.near-intents.org/getting-started/what-are-intents",
+   "bytes": 3762
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Refund a stuck BTC deposit",
+   "description": "Recover Bitcoin you sent to a bridge deposit address that never finalized on NEAR",
+   "file": "intents/integration/bridging/btc-deposit-refund.md",
+   "url": "https://docs.near-intents.org/integration/bridging/btc-deposit-refund",
+   "bytes": 8377
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Token Bridges",
+   "description": "Bridges that route assets between NEAR Intents and external blockchains",
+   "file": "intents/integration/bridging/overview.md",
+   "url": "https://docs.near-intents.org/integration/bridging/overview",
+   "bytes": 3071
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Intents SDK",
+   "description": "Complete library to interact with NEAR Intents",
+   "file": "intents/integration/devkit/intents-sdk.md",
+   "url": "https://docs.near-intents.org/integration/devkit/intents-sdk",
+   "bytes": 3418
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "React Widget",
+   "description": "Add a cross-chain swap widget to your app in minutes",
+   "file": "intents/integration/devkit/react-widget.md",
+   "url": "https://docs.near-intents.org/integration/devkit/react-widget",
+   "bytes": 3579
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Agent Skills",
+   "description": "Enable AI Agents to build cross-chain apps",
+   "file": "intents/integration/devkit/skills.md",
+   "url": "https://docs.near-intents.org/integration/devkit/skills",
+   "bytes": 1150
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "1Click Swap API",
+   "description": "REST API for cross-chain swaps powered by NEAR Intents",
+   "file": "intents/integration/distribution-channels/1click-api/about-1click-api.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/about-1click-api",
+   "bytes": 3126
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "API Keys",
+   "description": "Obtain a JWT token for authenticated API access",
+   "file": "intents/integration/distribution-channels/1click-api/authentication.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/authentication",
+   "bytes": 4504
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Earn",
+   "description": "Offer multichain yield through the 1Click Swap API",
+   "file": "intents/integration/distribution-channels/1click-api/earn.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/earn",
+   "bytes": 13271
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Explorer API",
+   "description": "Programmatic access to historical 1Click Swap transactions",
+   "file": "intents/integration/distribution-channels/1click-api/explorer/introduction.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/explorer/introduction",
+   "bytes": 2018
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Fee Configuration",
+   "description": "Configure fee collection and aggregation",
+   "file": "intents/integration/distribution-channels/1click-api/fee-config.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/fee-config",
+   "bytes": 10945
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Hyperliquid",
+   "description": "Send USDC to Hyperliquid, or deposit USDC from Hyperliquid, through the 1Click Swap API",
+   "file": "intents/integration/distribution-channels/1click-api/hyperliquid.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/hyperliquid",
+   "bytes": 6242
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Limit Orders",
+   "description": "Offer a swap at the user's price through the 1Click Swap API",
+   "file": "intents/integration/distribution-channels/1click-api/orders.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/orders",
+   "bytes": 11233
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Confidential Swaps",
+   "description": "Add privacy to a swap with the confidentiality parameter or an embedded Confidential Intents balance",
+   "file": "intents/integration/distribution-channels/1click-api/quickstart/confidential-swaps.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/quickstart/confidential-swaps",
+   "bytes": 2552
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Going Live",
+   "description": "Next steps and troubleshooting for your first 1Click integration",
+   "file": "intents/integration/distribution-channels/1click-api/quickstart/going-live.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/quickstart/going-live",
+   "bytes": 2080
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Quickstart",
+   "description": "Execute your first intent-based swap using 1Click API",
+   "file": "intents/integration/distribution-channels/1click-api/quickstart/introduction.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/quickstart/introduction",
+   "bytes": 2064
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Making a Request",
+   "description": "Query tokens, request a quote, send your deposit, and track it to completion",
+   "file": "intents/integration/distribution-channels/1click-api/quickstart/making-a-request.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/quickstart/making-a-request",
+   "bytes": 7285
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Signed Intent Execution",
+   "description": "Authorize a swap by signing an intent off-chain instead of an on-chain deposit",
+   "file": "intents/integration/distribution-channels/1click-api/quickstart/signed-intent-execution.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/quickstart/signed-intent-execution",
+   "bytes": 6981
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Reusable deposit addresses",
+   "description": "Permanent deposit addresses for a user, created and read through the 1Click Swap API.",
+   "file": "intents/integration/distribution-channels/1click-api/reusable-deposit-addresses.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/reusable-deposit-addresses",
+   "bytes": 5494
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Swap SDK",
+   "description": "Client libraries for integrating with the 1Click Swap API",
+   "file": "intents/integration/distribution-channels/1click-api/sdk.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/sdk",
+   "bytes": 8996
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Swap Types",
+   "description": "",
+   "file": "intents/integration/distribution-channels/1click-api/swap-types.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/swap-types",
+   "bytes": 7674
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Verify Quote Signatures",
+   "description": "Confirm quote and status payloads are signed by 1Click",
+   "file": "intents/integration/distribution-channels/1click-api/verify-quote-signature.md",
+   "url": "https://docs.near-intents.org/integration/distribution-channels/1click-api/verify-quote-signature",
+   "bytes": 2183
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Confidential Example",
+   "description": "Migrate the AMM Solver to support confidential intents",
+   "file": "intents/integration/market-makers/confidential-example.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/confidential-example",
+   "bytes": 21791
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Confidential Intents",
+   "description": "Solve for private liquidity on the confidential relay",
+   "file": "intents/integration/market-makers/confidential-intents.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/confidential-intents",
+   "bytes": 8619
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Moving solver liquidity into Confidential Intents",
+   "description": "Move balances from intents.near into intents.far with the 1Click API or near.com",
+   "file": "intents/integration/market-makers/confidential-liquidity.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/confidential-liquidity",
+   "bytes": 8914
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Example Solver",
+   "description": "Understand how the AMM Solver example works",
+   "file": "intents/integration/market-makers/example.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/example",
+   "bytes": 11865
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Move HOT liquidity to Omni tokens",
+   "description": "Withdraw HOT balances to your own wallet, then deposit them back into NEAR Intents so you can solve Omni asset IDs.",
+   "file": "intents/integration/market-makers/hot-to-omni.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/hot-to-omni",
+   "bytes": 3199
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Market Makers",
+   "description": "Fulfill cross-chain swap intents as a liquidity provider",
+   "file": "intents/integration/market-makers/introduction.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/introduction",
+   "bytes": 2829
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Guaranteed Delivery",
+   "description": "Recover missed quote_status events after a disconnect",
+   "file": "intents/integration/market-makers/message-bus/guaranteed-delivery.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/message-bus/guaranteed-delivery",
+   "bytes": 8072
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Overview",
+   "description": "Off-chain bus communicating market makers and users",
+   "file": "intents/integration/market-makers/message-bus/introduction.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/message-bus/introduction",
+   "bytes": 1865
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "API Reference",
+   "description": "Request quotes and publish intents via JSON-RPC",
+   "file": "intents/integration/market-makers/message-bus/rpc.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/message-bus/rpc",
+   "bytes": 10762
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "WebSocket Reference",
+   "description": "Subscribe and respond to quote requests in real-time",
+   "file": "intents/integration/market-makers/message-bus/websocket.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/message-bus/websocket",
+   "bytes": 9699
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Quickstart",
+   "description": "Become a market maker on NEAR Intents",
+   "file": "intents/integration/market-makers/quickstart.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/quickstart",
+   "bytes": 5564
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Solver Terms of Use",
+   "description": "Terms of use governing Solver access to the Solver Services",
+   "file": "intents/integration/market-makers/solver-terms-of-use.md",
+   "url": "https://docs.near-intents.org/integration/market-makers/solver-terms-of-use",
+   "bytes": 79519
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Account Abstraction",
+   "description": "How the Verifier contract identifies users and manages account keys",
+   "file": "intents/integration/verifier-contract/account-abstraction.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/account-abstraction",
+   "bytes": 7086
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Balances and Token IDs",
+   "description": "How to check your balance and identify tokens in the Verifier contract",
+   "file": "intents/integration/verifier-contract/deposits-and-withdrawals/balances.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/deposits-and-withdrawals/balances",
+   "bytes": 3332
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Deposits",
+   "description": "Depositing fungible and non-fungible tokens into the Verifier contract",
+   "file": "intents/integration/verifier-contract/deposits-and-withdrawals/deposits.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/deposits-and-withdrawals/deposits",
+   "bytes": 6596
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Using NEAR Tokens",
+   "description": "How to use NEAR tokens with NEAR Intents",
+   "file": "intents/integration/verifier-contract/deposits-and-withdrawals/near-token.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/deposits-and-withdrawals/near-token",
+   "bytes": 3465
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Withdrawals",
+   "description": "How to withdraw tokens from the Verifier contract",
+   "file": "intents/integration/verifier-contract/deposits-and-withdrawals/withdrawals.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/deposits-and-withdrawals/withdrawals",
+   "bytes": 8829
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Events",
+   "description": "Events emitted by the Verifier smart contract for tracking on-chain actions",
+   "file": "intents/integration/verifier-contract/events.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/events",
+   "bytes": 4460
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Intent Types and Execution",
+   "description": "Available intent types and how to structure them for the Verifier contract",
+   "file": "intents/integration/verifier-contract/intent-types-and-execution.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/intent-types-and-execution",
+   "bytes": 18514
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Verifier Contract",
+   "description": "The on-chain settlement layer for NEAR Intents",
+   "file": "intents/integration/verifier-contract/introduction.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/introduction",
+   "bytes": 4693
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Signing Intents",
+   "description": "How to sign intents for different wallet types and signing standards",
+   "file": "intents/integration/verifier-contract/signing-intents.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/signing-intents",
+   "bytes": 11153
+  },
+  {
+   "source": "intents",
+   "section": "integration",
+   "title": "Simulating Intents",
+   "description": "Test intents without modifying blockchain state using the simulate_intents function",
+   "file": "intents/integration/verifier-contract/simulating-intents.md",
+   "url": "https://docs.near-intents.org/integration/verifier-contract/simulating-intents",
+   "bytes": 6018
+  },
+  {
+   "source": "intents",
+   "section": "learn",
+   "title": "How the Bitcoin bridge works",
+   "description": "Where a BTC deposit address comes from, why coins are not swept into a vault, and who can sign a withdrawal",
+   "file": "intents/learn/omni-bridge/how-it-works.md",
+   "url": "https://docs.near-intents.org/learn/omni-bridge/how-it-works",
+   "bytes": 11446
+  },
+  {
+   "source": "intents",
+   "section": "learn",
+   "title": "Omni Bridge",
+   "description": "How Omni Bridge moves assets on and off NEAR, and why Bitcoin works differently",
+   "file": "intents/learn/omni-bridge/overview.md",
+   "url": "https://docs.near-intents.org/learn/omni-bridge/overview",
+   "bytes": 3206
+  },
+  {
+   "source": "intents",
+   "section": "resources",
+   "title": "Supported Assets",
+   "description": "All tokens supported by NEAR Intents, sourced live from the 1Click API.",
+   "file": "intents/resources/asset-support.md",
+   "url": "https://docs.near-intents.org/resources/asset-support",
+   "bytes": 644
+  },
+  {
+   "source": "intents",
+   "section": "resources",
+   "title": "Supported Chains",
+   "description": "Supported chains, address formats, and signing standards",
+   "file": "intents/resources/chain-support.md",
+   "url": "https://docs.near-intents.org/resources/chain-support",
+   "bytes": 15844
+  },
+  {
+   "source": "intents",
+   "section": "resources",
+   "title": "FAQs",
+   "description": "Frequently Asked Questions",
+   "file": "intents/resources/faqs.md",
+   "url": "https://docs.near-intents.org/resources/faqs",
+   "bytes": 6509
+  },
+  {
+   "source": "intents",
+   "section": "resources",
+   "title": "Fees",
+   "description": "All fees that apply to NEAR Intents transactions and integrations",
+   "file": "intents/resources/fees.md",
+   "url": "https://docs.near-intents.org/resources/fees",
+   "bytes": 4099
+  },
+  {
+   "source": "intents",
+   "section": "resources",
+   "title": "Swap limits",
+   "description": "Current minimum USD sizes for 1Click chain-to-chain swaps, by chain",
+   "file": "intents/resources/swap-limits.md",
+   "url": "https://docs.near-intents.org/resources/swap-limits",
+   "bytes": 2476
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "SHIELD: Proactive Intents Security",
+   "description": "How SHIELD proactively raises security posture across guarded NEAR Intents surfaces",
+   "file": "intents/security-compliance/proactive-intents-security.md",
+   "url": "https://docs.near-intents.org/security-compliance/proactive-intents-security",
+   "bytes": 9718
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "Risk & Compliance",
+   "description": "How NEAR Intents implements compliance screening and financial integrity measures",
+   "file": "intents/security-compliance/risk-and-compliance.md",
+   "url": "https://docs.near-intents.org/security-compliance/risk-and-compliance",
+   "bytes": 2248
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "Security",
+   "description": "Security audits, bug bounty program, and AML resources",
+   "file": "intents/security-compliance/security.md",
+   "url": "https://docs.near-intents.org/security-compliance/security",
+   "bytes": 1109
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "Shield Incident API",
+   "description": "Partner-facing API for pulling active Shield incidents and submitting new ones",
+   "file": "intents/security-compliance/shield-incident-api.md",
+   "url": "https://docs.near-intents.org/security-compliance/shield-incident-api",
+   "bytes": 3546
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "1ClickSwap API Terms of Use",
+   "description": "Terms of use governing developer access to the 1ClickSwap API",
+   "file": "intents/security-compliance/terms-of-service.md",
+   "url": "https://docs.near-intents.org/security-compliance/terms-of-service",
+   "bytes": 106033
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "Treasury Addresses",
+   "description": "Official treasury and refill addresses for NEAR Intents and HOT Bridge",
+   "file": "intents/security-compliance/treasury-addresses.md",
+   "url": "https://docs.near-intents.org/security-compliance/treasury-addresses",
+   "bytes": 7229
+  },
+  {
+   "source": "intents",
+   "section": "security-compliance",
+   "title": "Withdrawals to Exchanges",
+   "description": "How to read a Bitcoin or Zcash withdrawal from NEAR Intents when it arrives at an exchange deposit address, and what to do when a transaction-monitoring tool flags one of its inputs",
+   "file": "intents/security-compliance/withdrawals-to-exchanges.md",
+   "url": "https://docs.near-intents.org/security-compliance/withdrawals-to-exchanges",
+   "bytes": 5685
+  },
+  {
+   "source": "ironclaw",
+   "section": "api",
+   "title": "Responses API",
+   "description": "OpenAI-compatible Responses endpoint backed by the full IronClaw agent loop",
+   "file": "ironclaw/api/responses.md",
+   "url": "https://docs.ironclaw.com/api/responses",
+   "bytes": 22079
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Configuration",
+   "description": "How IronClaw is configured and where each setting lives",
+   "file": "ironclaw/capabilities/configuration.md",
+   "url": "https://docs.ironclaw.com/capabilities/configuration",
+   "bytes": 10460
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Storage",
+   "description": "Where IronClaw keeps its data, and when to move to PostgreSQL",
+   "file": "ironclaw/capabilities/database.md",
+   "url": "https://docs.ironclaw.com/capabilities/database",
+   "bytes": 4719
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Jobs & Parallel Execution",
+   "description": "Parallel job scheduling and the job state machine",
+   "file": "ironclaw/capabilities/jobs/jobs.md",
+   "url": "https://docs.ironclaw.com/capabilities/jobs/jobs",
+   "bytes": 2811
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Self-Repair & Stuck Jobs",
+   "description": "Automatic detection and recovery of stuck jobs",
+   "file": "ironclaw/capabilities/jobs/self-repair.md",
+   "url": "https://docs.ironclaw.com/capabilities/jobs/self-repair",
+   "bytes": 4913
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Inference Providers",
+   "description": "IronClaw readily supports multiple LLM providers",
+   "file": "ironclaw/capabilities/llm-providers.md",
+   "url": "https://docs.ironclaw.com/capabilities/llm-providers",
+   "bytes": 14234
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Identity Files",
+   "description": "Files injected into the LLM system prompt to give the agent persistent identity",
+   "file": "ironclaw/capabilities/memory/identity.md",
+   "url": "https://docs.ironclaw.com/capabilities/memory/identity",
+   "bytes": 4519
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Persistent Memory",
+   "description": "Your agent's durable, searchable long-term memory system",
+   "file": "ironclaw/capabilities/memory/memory.md",
+   "url": "https://docs.ironclaw.com/capabilities/memory/memory",
+   "bytes": 2719
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Capabilities Overview",
+   "description": "Discover what makes IronClaw unique",
+   "file": "ironclaw/capabilities/overview.md",
+   "url": "https://docs.ironclaw.com/capabilities/overview",
+   "bytes": 1543
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Cron Routines",
+   "description": "Schedule recurring tasks with cron expressions",
+   "file": "ironclaw/capabilities/routines/cron.md",
+   "url": "https://docs.ironclaw.com/capabilities/routines/cron",
+   "bytes": 1639
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Heartbeat System",
+   "description": "Periodic checks and execution",
+   "file": "ironclaw/capabilities/routines/heartbeat.md",
+   "url": "https://docs.ironclaw.com/capabilities/routines/heartbeat",
+   "bytes": 6122
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Reactive Routines",
+   "description": "Event-driven and webhook-triggered automation",
+   "file": "ironclaw/capabilities/routines/reactive.md",
+   "url": "https://docs.ironclaw.com/capabilities/routines/reactive",
+   "bytes": 3803
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "WASM Tools",
+   "description": "Sandboxed tool execution via WebAssembly (wasmtime)",
+   "file": "ironclaw/capabilities/sandboxed-tools.md",
+   "url": "https://docs.ironclaw.com/capabilities/sandboxed-tools",
+   "bytes": 6649
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Skills",
+   "description": "Prompt extensions that activate based on context",
+   "file": "ironclaw/capabilities/skills.md",
+   "url": "https://docs.ironclaw.com/capabilities/skills",
+   "bytes": 6746
+  },
+  {
+   "source": "ironclaw",
+   "section": "capabilities",
+   "title": "Trace Commons",
+   "description": "Optionally contribute redacted agent traces and earn credit",
+   "file": "ironclaw/capabilities/traces.md",
+   "url": "https://docs.ironclaw.com/capabilities/traces",
+   "bytes": 4802
+  },
+  {
+   "source": "ironclaw",
+   "section": "changelog",
+   "title": "Changelog",
+   "description": "What shipped in each stable IronClaw release",
+   "file": "ironclaw/changelog.md",
+   "url": "https://docs.ironclaw.com/changelog",
+   "bytes": 10407
+  },
+  {
+   "source": "ironclaw",
+   "section": "channels",
+   "title": "How to build a channel",
+   "description": "Build a WASM messaging channel that plugs into IronClaw",
+   "file": "ironclaw/channels/building-a-channel.md",
+   "url": "https://docs.ironclaw.com/channels/building-a-channel",
+   "bytes": 14305
+  },
+  {
+   "source": "ironclaw",
+   "section": "channels",
+   "title": "Overview",
+   "description": "Reach your agent from a messaging app",
+   "file": "ironclaw/channels/overview.md",
+   "url": "https://docs.ironclaw.com/channels/overview",
+   "bytes": 4900
+  },
+  {
+   "source": "ironclaw",
+   "section": "channels",
+   "title": "Slack",
+   "description": "Talk to your agent in Slack channels and direct messages",
+   "file": "ironclaw/channels/slack.md",
+   "url": "https://docs.ironclaw.com/channels/slack",
+   "bytes": 9342
+  },
+  {
+   "source": "ironclaw",
+   "section": "channels",
+   "title": "Telegram",
+   "description": "Interact with your agent through Telegram",
+   "file": "ironclaw/channels/telegram.md",
+   "url": "https://docs.ironclaw.com/channels/telegram",
+   "bytes": 8232
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "How to implement a Reborn tool extension",
+   "description": "A Reborn-only implementation guide for IronClaw extension tools",
+   "file": "ironclaw/extensions/building-a-tool.md",
+   "url": "https://docs.ironclaw.com/extensions/building-a-tool",
+   "bytes": 34583
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "File Handling",
+   "description": "Let your agent read and write files in the local filesystem",
+   "file": "ironclaw/extensions/file-tools.md",
+   "url": "https://docs.ironclaw.com/extensions/file-tools",
+   "bytes": 2233
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "GitHub",
+   "description": "Let your agent access GitHub",
+   "file": "ironclaw/extensions/github.md",
+   "url": "https://docs.ironclaw.com/extensions/github",
+   "bytes": 5534
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Calendar",
+   "description": "Let your agent manage your Google Calendar",
+   "file": "ironclaw/extensions/google/calendar.md",
+   "url": "https://docs.ironclaw.com/extensions/google/calendar",
+   "bytes": 3074
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Docs",
+   "description": "Let your agent create and edit Google Documents",
+   "file": "ironclaw/extensions/google/docs.md",
+   "url": "https://docs.ironclaw.com/extensions/google/docs",
+   "bytes": 3755
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Drive",
+   "description": "Let your agent manage files and folders in Google Drive",
+   "file": "ironclaw/extensions/google/drive.md",
+   "url": "https://docs.ironclaw.com/extensions/google/drive",
+   "bytes": 3431
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Gmail",
+   "description": "Let your agent read, send, and manage your Gmail messages",
+   "file": "ironclaw/extensions/google/gmail.md",
+   "url": "https://docs.ironclaw.com/extensions/google/gmail",
+   "bytes": 3426
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "OAuth Setup",
+   "description": "One-time setup for any Google extension in IronClaw",
+   "file": "ironclaw/extensions/google/oauth-setup.md",
+   "url": "https://docs.ironclaw.com/extensions/google/oauth-setup",
+   "bytes": 4806
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Sheets",
+   "description": "Let your agent read and write Google Spreadsheets",
+   "file": "ironclaw/extensions/google/sheets.md",
+   "url": "https://docs.ironclaw.com/extensions/google/sheets",
+   "bytes": 3460
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Slides",
+   "description": "Let your agent create and edit Google Presentations",
+   "file": "ironclaw/extensions/google/slides.md",
+   "url": "https://docs.ironclaw.com/extensions/google/slides",
+   "bytes": 3780
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "MCP Servers",
+   "description": "Connect Model Context Protocol servers to extend IronClaw",
+   "file": "ironclaw/extensions/mcp.md",
+   "url": "https://docs.ironclaw.com/extensions/mcp",
+   "bytes": 2962
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Overview",
+   "description": "Extend your agent with built-in and external tools",
+   "file": "ironclaw/extensions/overview.md",
+   "url": "https://docs.ironclaw.com/extensions/overview",
+   "bytes": 1309
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Shell Commands",
+   "description": "Execute shell commands with environment scrubbing and injection detection",
+   "file": "ironclaw/extensions/shell.md",
+   "url": "https://docs.ironclaw.com/extensions/shell",
+   "bytes": 5025
+  },
+  {
+   "source": "ironclaw",
+   "section": "extensions",
+   "title": "Web Access",
+   "description": "Let your agent search the web and read pages",
+   "file": "ironclaw/extensions/web-search.md",
+   "url": "https://docs.ironclaw.com/extensions/web-search",
+   "bytes": 1846
+  },
+  {
+   "source": "ironclaw",
+   "section": "hub",
+   "title": "Contributing",
+   "description": "Submit your own skills and tools to the IronHub catalog",
+   "file": "ironclaw/hub/contributing.md",
+   "url": "https://docs.ironclaw.com/hub/contributing",
+   "bytes": 1464
+  },
+  {
+   "source": "ironclaw",
+   "section": "hub",
+   "title": "Installing skills & tools",
+   "description": "Install skills and tools from the IronHub catalog",
+   "file": "ironclaw/hub/installing.md",
+   "url": "https://docs.ironclaw.com/hub/installing",
+   "bytes": 3352
+  },
+  {
+   "source": "ironclaw",
+   "section": "hub",
+   "title": "Overview",
+   "description": "The official catalog of installable tools and skills",
+   "file": "ironclaw/hub/overview.md",
+   "url": "https://docs.ironclaw.com/hub/overview",
+   "bytes": 2062
+  },
+  {
+   "source": "ironclaw",
+   "section": "index",
+   "title": "Introduction",
+   "description": "The secure, open-source AI agent",
+   "file": "ironclaw/index.md",
+   "url": "https://docs.ironclaw.com/index",
+   "bytes": 2386
+  },
+  {
+   "source": "ironclaw",
+   "section": "infrastructure",
+   "title": "Amazon EC2",
+   "description": "Host IronClaw on an Amazon EC2 Instance",
+   "file": "ironclaw/infrastructure/amazon.md",
+   "url": "https://docs.ironclaw.com/infrastructure/amazon",
+   "bytes": 6787
+  },
+  {
+   "source": "ironclaw",
+   "section": "infrastructure",
+   "title": "DigitalOcean Droplet",
+   "description": "Host IronClaw on a DigitalOcean Droplet",
+   "file": "ironclaw/infrastructure/droplet.md",
+   "url": "https://docs.ironclaw.com/infrastructure/droplet",
+   "bytes": 7489
+  },
+  {
+   "source": "ironclaw",
+   "section": "infrastructure",
+   "title": "Google Compute Engine",
+   "description": "Host IronClaw on a Google Compute Engine VM",
+   "file": "ironclaw/infrastructure/google.md",
+   "url": "https://docs.ironclaw.com/infrastructure/google",
+   "bytes": 9164
+  },
+  {
+   "source": "ironclaw",
+   "section": "onboard",
+   "title": "Onboard",
+   "description": "Initialize your agent's home directory and first-run settings",
+   "file": "ironclaw/onboard.md",
+   "url": "https://docs.ironclaw.com/onboard",
+   "bytes": 6337
+  },
+  {
+   "source": "ironclaw",
+   "section": "quickstart",
+   "title": "Quickstart",
+   "description": "Create your first Agent in minutes",
+   "file": "ironclaw/quickstart.md",
+   "url": "https://docs.ironclaw.com/quickstart",
+   "bytes": 6108
+  },
+  {
+   "source": "ironclaw",
+   "section": "security",
+   "title": "Security",
+   "description": "IronClaw's defense-in-depth security architecture",
+   "file": "ironclaw/security.md",
+   "url": "https://docs.ironclaw.com/security",
+   "bytes": 3677
+  },
+  {
+   "source": "ironclaw",
+   "section": "using",
+   "title": "CLI Reference",
+   "description": "Every command the ironclaw binary provides",
+   "file": "ironclaw/using/cli.md",
+   "url": "https://docs.ironclaw.com/using/cli",
+   "bytes": 6755
+  },
+  {
+   "source": "ironclaw",
+   "section": "using",
+   "title": "Run as a Service",
+   "description": "Keep IronClaw running in the background",
+   "file": "ironclaw/using/service.md",
+   "url": "https://docs.ironclaw.com/using/service",
+   "bytes": 3461
+  },
+  {
+   "source": "ironclaw",
+   "section": "using",
+   "title": "Web Interface",
+   "description": "Chat with your agent and manage it from the browser",
+   "file": "ironclaw/using/webui.md",
+   "url": "https://docs.ironclaw.com/using/webui",
+   "bytes": 7338
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "A2A + x402",
+   "description": "Self-register an agent, go live and get paid per call over A2A with x402",
+   "file": "market/skill/flows/a2a-x402.md",
+   "url": "https://market.near.ai/skill/flows/a2a-x402.md",
+   "bytes": 6381
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Competitions",
+   "description": "Enter a USDC prize-pool competition, submit before the deadline, read the score",
+   "file": "market/skill/flows/competitions.md",
+   "url": "https://market.near.ai/skill/flows/competitions.md",
+   "bytes": 9719
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "MCP",
+   "description": "The marketplace MCP endpoint: submit tool, worker loop, connector tools, buyer tools",
+   "file": "market/skill/flows/mcp.md",
+   "url": "https://market.near.ai/skill/flows/mcp.md",
+   "bytes": 18948
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Messaging",
+   "description": "The buyer-worker thread, and a bid’s thread before the award",
+   "file": "market/skill/flows/messaging.md",
+   "url": "https://market.near.ai/skill/flows/messaging.md",
+   "bytes": 10533
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Quote requests",
+   "description": "Price a task before the hire: quote, revise once or decline",
+   "file": "market/skill/flows/quotes.md",
+   "url": "https://market.near.ai/skill/flows/quotes.md",
+   "bytes": 5981
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Worker lifecycle",
+   "description": "Discover, bid, start, deliver, rework; file uploads and payout",
+   "file": "market/skill/flows/worker-lifecycle.md",
+   "url": "https://market.near.ai/skill/flows/worker-lifecycle.md",
+   "bytes": 22645
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "MCP buyer skill",
+   "description": "Hire agents for a person from an MCP client: browse, price, hire, follow, accept, review",
+   "file": "market/skill/mcp-buyer/SKILL.md",
+   "url": "https://market.near.ai/skill/mcp-buyer/SKILL.md",
+   "bytes": 64348
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Agent API reference",
+   "description": "Auth with aat_ tokens, worker endpoints, errors, statuses, pagination",
+   "file": "market/skill/reference/agent-api.md",
+   "url": "https://market.near.ai/skill/reference/agent-api.md",
+   "bytes": 18076
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Event feed",
+   "description": "Job events over one pull route, each read once",
+   "file": "market/skill/reference/event-feed.md",
+   "url": "https://market.near.ai/skill/reference/event-feed.md",
+   "bytes": 3593
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Webhooks",
+   "description": "Signed push events (hire.created, hire.changes_requested, …) and their bodies",
+   "file": "market/skill/reference/webhooks.md",
+   "url": "https://market.near.ai/skill/reference/webhooks.md",
+   "bytes": 11761
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "Marketplace worker skill",
+   "description": "Work as an agent: find assignments, bid or enter competitions, deliver, get paid; REST, MCP or A2A + x402",
+   "file": "market/skill/SKILL.md",
+   "url": "https://market.near.ai/skill/SKILL.md",
+   "bytes": 12201
+  },
+  {
+   "source": "market",
+   "section": "skill",
+   "title": "x402 caller skill",
+   "description": "Hire a listed agent from a program over A2A and pay per call with x402 (USDC), no account",
+   "file": "market/skill/x402-caller/SKILL.md",
+   "url": "https://market.near.ai/skill/x402-caller/SKILL.md",
+   "bytes": 11499
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post block effects",
+   "description": "Returns changes in block for given block height or hash over all transactions for all the types. Includes changes like account_touched, access_key_touched, data_touched, contract_code_touched.",
+   "file": "near/api-reference/post-block_effects.md",
+   "url": "https://docs.near.org/api-reference/post-block_effects",
+   "bytes": 10262
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post block",
+   "description": "Returns block details for given height or hash",
+   "file": "near/api-reference/post-block.md",
+   "url": "https://docs.near.org/api-reference/post-block",
+   "bytes": 21967
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post broadcast tx async",
+   "description": "[Deprecated] Sends a transaction and immediately returns transaction hash. Consider using send_tx instead.",
+   "file": "near/api-reference/post-broadcast_tx_async.md",
+   "url": "https://docs.near.org/api-reference/post-broadcast_tx_async",
+   "bytes": 142685
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post broadcast tx commit",
+   "description": "[Deprecated] Sends a transaction and waits until transaction is fully complete. (Has a 10 second timeout). Consider using send_tx instead.",
+   "file": "near/api-reference/post-broadcast_tx_commit.md",
+   "url": "https://docs.near.org/api-reference/post-broadcast_tx_commit",
+   "bytes": 142805
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post changes",
+   "description": "Returns changes for a given account, contract or contract code for given block height or hash.",
+   "file": "near/api-reference/post-changes.md",
+   "url": "https://docs.near.org/api-reference/post-changes",
+   "bytes": 34642
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post chunk",
+   "description": "Returns details of a specific chunk. You can run a block details query to get a valid chunk hash.",
+   "file": "near/api-reference/post-chunk.md",
+   "url": "https://docs.near.org/api-reference/post-chunk",
+   "bytes": 54999
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post client config",
+   "description": "Queries client node configuration",
+   "file": "near/api-reference/post-client_config.md",
+   "url": "https://docs.near.org/api-reference/post-client_config",
+   "bytes": 37744
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental call function",
+   "description": "Calls a view function on a contract and returns the result.",
+   "file": "near/api-reference/post-experimental_call_function.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_call_function",
+   "bytes": 34922
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental changes in block",
+   "description": "[Deprecated] Returns changes in block for given block height or hash over all transactions for all the types. Includes changes like account_touched, access_key_touched, data_touched, contract_code_touched. Consider using block_effects instead",
+   "file": "near/api-reference/post-experimental_changes_in_block.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_changes_in_block",
+   "bytes": 10515
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental changes",
+   "description": "[Deprecated] Returns changes for a given account, contract or contract code for given block height or hash. Consider using changes instead.",
+   "file": "near/api-reference/post-experimental_changes.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_changes",
+   "bytes": 34836
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental congestion level",
+   "description": "Queries the congestion level of a shard. More info about congestion [here](https://near.github.io/nearcore/architecture/how/receipt-congestion.html?highlight=congestion#receipt-congestion)",
+   "file": "near/api-reference/post-experimental_congestion_level.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_congestion_level",
+   "bytes": 8137
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental genesis config",
+   "description": "[Deprecated] Get initial state and parameters for the genesis block. Consider genesis_config instead.",
+   "file": "near/api-reference/post-experimental_genesis_config.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_genesis_config",
+   "bytes": 21935
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental light client block proof",
+   "description": "Returns the proofs for a transaction execution.",
+   "file": "near/api-reference/post-experimental_light_client_block_proof.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_light_client_block_proof",
+   "bytes": 15220
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental light client proof",
+   "description": "Returns the proofs for a transaction execution.",
+   "file": "near/api-reference/post-experimental_light_client_proof.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_light_client_proof",
+   "bytes": 103724
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental maintenance windows",
+   "description": "[Deprecated] Returns the future windows for maintenance in current epoch for the specified account. In the maintenance windows, the node will not be block producer or chunk producer. Consider using maintenance_windows instead.",
+   "file": "near/api-reference/post-experimental_maintenance_windows.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_maintenance_windows",
+   "bytes": 6850
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental protocol config",
+   "description": "A configuration that defines the protocol-level parameters such as gas/storage costs, limits, feature flags, other settings",
+   "file": "near/api-reference/post-experimental_protocol_config.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_protocol_config",
+   "bytes": 64240
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental receipt to tx",
+   "description": "Resolves a receipt ID back to the originating transaction hash and sender account",
+   "file": "near/api-reference/post-experimental_receipt_to_tx.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_receipt_to_tx",
+   "bytes": 12259
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental receipt",
+   "description": "Fetches a receipt by its ID (as is, without a status or execution outcome)",
+   "file": "near/api-reference/post-experimental_receipt.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_receipt",
+   "bytes": 43638
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental split storage info",
+   "description": "Contains the split storage information. More info on split storage [here](https://near-nodes.io/archival/split-storage-archival)",
+   "file": "near/api-reference/post-experimental_split_storage_info.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_split_storage_info",
+   "bytes": 6097
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental tx status",
+   "description": "[Deprecated] Queries status of a transaction by hash, returning the final transaction result and details of all receipts. Consider using `tx_status` instead.",
+   "file": "near/api-reference/post-experimental_tx_status.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_tx_status",
+   "bytes": 142493
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental validators ordered",
+   "description": "Returns the current epoch validators ordered in the block producer order with repetition. This endpoint is solely used for bridge currently and is not intended for other external use cases.",
+   "file": "near/api-reference/post-experimental_validators_ordered.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_validators_ordered",
+   "bytes": 7808
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental view access key list",
+   "description": "Returns all access keys for a given account.",
+   "file": "near/api-reference/post-experimental_view_access_key_list.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_view_access_key_list",
+   "bytes": 16430
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental view access key",
+   "description": "Returns information about a single access key for given account.",
+   "file": "near/api-reference/post-experimental_view_access_key.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_view_access_key",
+   "bytes": 14419
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental view account",
+   "description": "Returns information about an account for given account_id.",
+   "file": "near/api-reference/post-experimental_view_account.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_view_account",
+   "bytes": 12703
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental view code",
+   "description": "Returns the contract code (Wasm binary) deployed to the account.",
+   "file": "near/api-reference/post-experimental_view_code.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_view_code",
+   "bytes": 11291
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post experimental view state",
+   "description": "Returns the state (key-value pairs) of a contract based on the key prefix.",
+   "file": "near/api-reference/post-experimental_view_state.md",
+   "url": "https://docs.near.org/api-reference/post-experimental_view_state",
+   "bytes": 13518
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post gas price",
+   "description": "Returns gas price for a specific block_height or block_hash. Using [null] will return the most recent block's gas price.",
+   "file": "near/api-reference/post-gas_price.md",
+   "url": "https://docs.near.org/api-reference/post-gas_price",
+   "bytes": 6040
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post genesis config",
+   "description": "Get initial state and parameters for the genesis block",
+   "file": "near/api-reference/post-genesis_config.md",
+   "url": "https://docs.near.org/api-reference/post-genesis_config",
+   "bytes": 21701
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post health",
+   "description": "Returns the current health status of the RPC node the client connects to.",
+   "file": "near/api-reference/post-health.md",
+   "url": "https://docs.near.org/api-reference/post-health",
+   "bytes": 6761
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post light client proof",
+   "description": "Returns the proofs for a transaction execution.",
+   "file": "near/api-reference/post-light_client_proof.md",
+   "url": "https://docs.near.org/api-reference/post-light_client_proof",
+   "bytes": 103603
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post maintenance windows",
+   "description": "Returns the future windows for maintenance in current epoch for the specified account. In the maintenance windows, the node will not be block producer or chunk producer.",
+   "file": "near/api-reference/post-maintenance_windows.md",
+   "url": "https://docs.near.org/api-reference/post-maintenance_windows",
+   "bytes": 6607
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post network info",
+   "description": "Queries the current state of node network connections. This includes information about active peers, transmitted data, known producers, etc.",
+   "file": "near/api-reference/post-network_info.md",
+   "url": "https://docs.near.org/api-reference/post-network_info",
+   "bytes": 7771
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post next light client block",
+   "description": "Returns the next light client block.",
+   "file": "near/api-reference/post-next_light_client_block.md",
+   "url": "https://docs.near.org/api-reference/post-next_light_client_block",
+   "bytes": 10831
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post query",
+   "description": "This module allows you to make generic requests to the network.",
+   "file": "near/api-reference/post-query.md",
+   "url": "https://docs.near.org/api-reference/post-query",
+   "bytes": 71999
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post send tx",
+   "description": "Sends transaction. Returns the guaranteed execution status and the results the blockchain can provide at the moment.",
+   "file": "near/api-reference/post-send_tx.md",
+   "url": "https://docs.near.org/api-reference/post-send_tx",
+   "bytes": 142665
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post status",
+   "description": "Requests the status of the connected RPC node. This includes information about sync status, nearcore node version, protocol version, the current set of validators, etc.",
+   "file": "near/api-reference/post-status.md",
+   "url": "https://docs.near.org/api-reference/post-status",
+   "bytes": 19885
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post tx status",
+   "description": "Queries status of a transaction by hash, returning the final transaction result and details of all receipts.",
+   "file": "near/api-reference/post-tx_status.md",
+   "url": "https://docs.near.org/api-reference/post-tx_status",
+   "bytes": 142283
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post tx",
+   "description": "Queries status of a transaction by hash and returns the final transaction result.",
+   "file": "near/api-reference/post-tx.md",
+   "url": "https://docs.near.org/api-reference/post-tx",
+   "bytes": 142173
+  },
+  {
+   "source": "near",
+   "section": "api-reference",
+   "title": "Post validators",
+   "description": "Queries active validators on the network. Returns details and the state of validation on the blockchain.",
+   "file": "near/api-reference/post-validators.md",
+   "url": "https://docs.near.org/api-reference/post-validators",
+   "bytes": 17991
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Block / Chunk",
+   "description": "Learn how to retrieve details about blocks and chunks from the NEAR RPC API.",
+   "file": "near/api/rpc/block-chunk.md",
+   "url": "https://docs.near.org/api/rpc/block-chunk",
+   "bytes": 11772
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Accounts / Contracts",
+   "description": "Learn to query information from accounts and contracts using the NEAR RPC API.",
+   "file": "near/api/rpc/contracts.md",
+   "url": "https://docs.near.org/api/rpc/contracts",
+   "bytes": 33033
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Gas",
+   "description": "Query gas prices for specific blocks or hashes using the NEAR RPC API.",
+   "file": "near/api/rpc/gas.md",
+   "url": "https://docs.near.org/api/rpc/gas",
+   "bytes": 3744
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Protocol Call Reference",
+   "description": "Overview of tools and methods for interacting with the NEAR Protocol.",
+   "file": "near/api/rpc/introduction.md",
+   "url": "https://docs.near.org/api/rpc/introduction",
+   "bytes": 3291
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Protocol",
+   "description": "Learn how to retrieve the genesis and current protocol configurations using the NEAR RPC API.",
+   "file": "near/api/rpc/protocol.md",
+   "url": "https://docs.near.org/api/rpc/protocol",
+   "bytes": 4166
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "RPC Providers",
+   "description": "List of public RPC endpoints for the NEAR Protocol.",
+   "file": "near/api/rpc/providers.md",
+   "url": "https://docs.near.org/api/rpc/providers",
+   "bytes": 6444
+  },
+  {
+   "source": "near",
+   "section": "api",
+   "title": "Transactions",
+   "description": "Send transactions and query their status using the NEAR RPC API.",
+   "file": "near/api/rpc/transactions.md",
+   "url": "https://docs.near.org/api/rpc/transactions",
+   "bytes": 11540
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "What are Chain Signatures?",
+   "description": "Learn how Chain Signatures enable NEAR accounts to sign and execute transactions across multiple blockchains using Multi-Party Computation for secure cross-chain operations.",
+   "file": "near/chain-abstraction/chain-signatures.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures",
+   "bytes": 9276
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Signing Transactions",
+   "description": "Learn how to sign transactions across multiple blockchains.",
+   "file": "near/chain-abstraction/chain-signatures/implementation.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/implementation",
+   "bytes": 27569
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Controlling a NEAR account",
+   "description": "Learn to control a NEAR account securely using Multi-Party Computation.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/0-introduction.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/0-introduction",
+   "bytes": 2060
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Setting up a Near account to be controlled by MPC",
+   "description": "Set up a NEAR account to be securely controlled via MPC by deriving a public key and adding it as an access key.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/1-setup.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/1-setup",
+   "bytes": 5542
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Transfer Near tokens on behalf of a controlled account",
+   "description": "Build transaction arguments, request MPC signatures, and broadcast signed NEAR token transfers securely.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/2-transfer.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/controlling-near-accounts/2-transfer",
+   "bytes": 3484
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Near Multi-Chain DAO Governance",
+   "description": "Learn how Abstract DAO enables a single vote on NEAR to execute actions across multiple EVM chains.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/multichain-dao/0-intro.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/multichain-dao/0-intro",
+   "bytes": 4071
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Abstract DAO: Requests",
+   "description": "Learn how to create a signature request in Abstract DAO to execute actions on foreign EVM chains.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/multichain-dao/1-request.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/multichain-dao/1-request",
+   "bytes": 4399
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Abstract Dao: Signatures",
+   "description": "Learn how to sign Abstract DAO requests for different chains and relay them to target EVM networks.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/multichain-dao/2-signing.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/multichain-dao/2-signing",
+   "bytes": 2662
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "MultiSig Voting",
+   "description": "Learn how to deploy a MultiSig contract and vote on multi-chain proposals using the Abstract DAO.",
+   "file": "near/chain-abstraction/chain-signatures/tutorials/multichain-dao/3-voting.md",
+   "url": "https://docs.near.org/chain-abstraction/chain-signatures/tutorials/multichain-dao/3-voting",
+   "bytes": 4605
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "NEAR Intents",
+   "description": "Learn how the intents protocol works",
+   "file": "near/chain-abstraction/intents/overview.md",
+   "url": "https://docs.near.org/chain-abstraction/intents/overview",
+   "bytes": 3087
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "How Omni Bridge Works",
+   "description": "Learn how Omni Bridge uses Chain Signatures to enable cross-chain transfers.",
+   "file": "near/chain-abstraction/omnibridge/how-it-works.md",
+   "url": "https://docs.near.org/chain-abstraction/omnibridge/how-it-works",
+   "bytes": 7373
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Implementation Details",
+   "description": "Explore Omni Bridge's technical architecture",
+   "file": "near/chain-abstraction/omnibridge/implementation.md",
+   "url": "https://docs.near.org/chain-abstraction/omnibridge/implementation",
+   "bytes": 10950
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Omni Bridge Overview",
+   "description": "Learn about Omni Bridge, a multi-chain asset bridge that enables secure and efficient transfers between blockchain networks using Chain Signatures and MPC technology.",
+   "file": "near/chain-abstraction/omnibridge/overview.md",
+   "url": "https://docs.near.org/chain-abstraction/omnibridge/overview",
+   "bytes": 2883
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "Omni Bridge Roadmap",
+   "description": "Explore the Omni Bridge roadmap, including hybrid architecture launch, Chain Signatures migration path, and future development plans for cross-chain infrastructure.",
+   "file": "near/chain-abstraction/omnibridge/roadmap.md",
+   "url": "https://docs.near.org/chain-abstraction/omnibridge/roadmap",
+   "bytes": 3263
+  },
+  {
+   "source": "near",
+   "section": "chain-abstraction",
+   "title": "What is Chain Abstraction?",
+   "description": "Learn how NEAR allows you to seamlessly work across all chains",
+   "file": "near/chain-abstraction/what-is.md",
+   "url": "https://docs.near.org/chain-abstraction/what-is",
+   "bytes": 2849
+  },
+  {
+   "source": "near",
+   "section": "communities",
+   "title": "Communities",
+   "description": "Connect with the NEAR community through various channels and join specialized communities.",
+   "file": "near/communities.md",
+   "url": "https://docs.near.org/communities",
+   "bytes": 2892
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "BigQuery Public Dataset",
+   "description": "Learn how to use NEAR Protocol's BigQuery public dataset for blockchain data analysis, including querying on-chain data, understanding costs, and accessing historical transaction data.",
+   "file": "near/data-infrastructure/big-query.md",
+   "url": "https://docs.near.org/data-infrastructure/big-query",
+   "bytes": 8721
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "Data APIs",
+   "description": "Explore community-built APIs for accessing on-chain data",
+   "file": "near/data-infrastructure/data-api.md",
+   "url": "https://docs.near.org/data-infrastructure/data-api",
+   "bytes": 4353
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "Data Services",
+   "description": "Indexers are constantly listening for transactions and storing them so they can be easily queried.",
+   "file": "near/data-infrastructure/data-services.md",
+   "url": "https://docs.near.org/data-infrastructure/data-services",
+   "bytes": 3086
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "Introduction to Indexers",
+   "description": "Learn about blockchain indexers, how they work with NEAR Protocol, the difference between pull and push models, and when to use indexers for data querying.",
+   "file": "near/data-infrastructure/indexers.md",
+   "url": "https://docs.near.org/data-infrastructure/indexers",
+   "bytes": 8586
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "What is NEAR Indexer?",
+   "description": "A framework to handle real-time events on the blockchain",
+   "file": "near/data-infrastructure/near-indexer.md",
+   "url": "https://docs.near.org/data-infrastructure/near-indexer",
+   "bytes": 1563
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "Tutorial: Creating an Indexer",
+   "description": "This tutorial will guide you through building an indexer using the NEAR Indexer Framework. The indexer will listen for FunctionCalls on a specific contract and log the details of each call.",
+   "file": "near/data-infrastructure/tutorials/near-indexer.md",
+   "url": "https://docs.near.org/data-infrastructure/tutorials/near-indexer",
+   "bytes": 27774
+  },
+  {
+   "source": "near",
+   "section": "data-infrastructure",
+   "title": "What is Data Infrastructure?",
+   "description": "Explore NEAR's data infrastructure for accessing on-chain data",
+   "file": "near/data-infrastructure/what-is.md",
+   "url": "https://docs.near.org/data-infrastructure/what-is",
+   "bytes": 3401
+  },
+  {
+   "source": "near",
+   "section": "getting-started",
+   "title": "Create an Account",
+   "description": "Understand how to create a NEAR account using a wallet and the NEAR CLI",
+   "file": "near/getting-started/create-account.md",
+   "url": "https://docs.near.org/getting-started/create-account",
+   "bytes": 5282
+  },
+  {
+   "source": "near",
+   "section": "getting-started",
+   "title": "Token Faucet",
+   "description": "Learn how to get free testnet tokens for development and testing on the NEAR blockchain",
+   "file": "near/getting-started/faucet.md",
+   "url": "https://docs.near.org/getting-started/faucet",
+   "bytes": 2465
+  },
+  {
+   "source": "near",
+   "section": "getting-started",
+   "title": "Start Building",
+   "description": "Choose what to build on NEAR, and find the guides and tools you need for it",
+   "file": "near/getting-started/start-building.md",
+   "url": "https://docs.near.org/getting-started/start-building",
+   "bytes": 7328
+  },
+  {
+   "source": "near",
+   "section": "getting-started",
+   "title": "Tools for AI Agents",
+   "description": "Guide your agent on building NEAR applications",
+   "file": "near/getting-started/tools-for-ai.md",
+   "url": "https://docs.near.org/getting-started/tools-for-ai",
+   "bytes": 8119
+  },
+  {
+   "source": "near",
+   "section": "getting-started",
+   "title": "What is NEAR?",
+   "description": "An introduction to NEAR, a scalable and secure blockchain built with usability in mind",
+   "file": "near/getting-started/what-is-near.md",
+   "url": "https://docs.near.org/getting-started/what-is-near",
+   "bytes": 4659
+  },
+  {
+   "source": "near",
+   "section": "index",
+   "title": "NEAR Docs",
+   "description": "",
+   "file": "near/index.md",
+   "url": "https://docs.near.org/index",
+   "bytes": 3574
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Accounts",
+   "description": "Implicit-account derivation, on-chain creation, transfers, key management, and account costs for exchanges.",
+   "file": "near/integrations/accounts.md",
+   "url": "https://docs.near.org/integrations/accounts",
+   "bytes": 8113
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Balances & Reconciliation",
+   "description": "Learn how to query and track account balances in NEAR protocol, including native NEAR tokens, fungible tokens, and balance management for integrations.",
+   "file": "near/integrations/balance-changes.md",
+   "url": "https://docs.near.org/integrations/balance-changes",
+   "bytes": 4722
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Blocks and Finality",
+   "description": "Finalized block queries, skipped heights, chunk processing, and transaction execution milestones for exchanges.",
+   "file": "near/integrations/blocks-and-finality.md",
+   "url": "https://docs.near.org/integrations/blocks-and-finality",
+   "bytes": 4041
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Sending Withdrawals",
+   "description": "Learn how to create, sign, and send transactions on NEAR protocol, including transaction structure, actions, and best practices for integration.",
+   "file": "near/integrations/create-transactions.md",
+   "url": "https://docs.near.org/integrations/create-transactions",
+   "bytes": 30129
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Receiving Deposits",
+   "description": "Track finalized native NEAR deposits through blocks, chunks, and receipt outcomes.",
+   "file": "near/integrations/deposits.md",
+   "url": "https://docs.near.org/integrations/deposits",
+   "bytes": 28011
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Error Handling",
+   "description": "Learn about common error patterns in NEAR protocol integrations and how to handle and troubleshoot issues in your applications.",
+   "file": "near/integrations/errors/introduction.md",
+   "url": "https://docs.near.org/integrations/errors/introduction",
+   "bytes": 4098
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Exchange Integration",
+   "description": "Learn how to integrate NEAR Protocol.",
+   "file": "near/integrations/exchange-integration.md",
+   "url": "https://docs.near.org/integrations/exchange-integration",
+   "bytes": 6455
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Fungible tokens",
+   "description": "Integrate NEP-141 fungible tokens, including balance queries, storage registration, transfers, and metadata.",
+   "file": "near/integrations/fungible-tokens.md",
+   "url": "https://docs.near.org/integrations/fungible-tokens",
+   "bytes": 42180
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Nodes & RPC",
+   "description": "Node configuration, archival history, health checks, and network upgrades for exchange integrations.",
+   "file": "near/integrations/nodes.md",
+   "url": "https://docs.near.org/integrations/nodes",
+   "bytes": 8371
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Accessing On-chain Data",
+   "description": "RPC queries, indexers, and hosted data APIs for exchange integrations.",
+   "file": "near/integrations/on-chain-data.md",
+   "url": "https://docs.near.org/integrations/on-chain-data",
+   "bytes": 3671
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Staking & Delegation",
+   "description": "Validator selection, delegation, withdrawal availability, and staking-pool custody.",
+   "file": "near/integrations/staking.md",
+   "url": "https://docs.near.org/integrations/staking",
+   "bytes": 3315
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Testing an Integration",
+   "description": "Test an integration on NEAR testnet or in a local sandbox.",
+   "file": "near/integrations/testing.md",
+   "url": "https://docs.near.org/integrations/testing",
+   "bytes": 1598
+  },
+  {
+   "source": "near",
+   "section": "integrations",
+   "title": "Transaction Lifecycle",
+   "description": "How NEAR transactions are signed, validated, included in chunks, and executed.",
+   "file": "near/integrations/transaction-lifecycle.md",
+   "url": "https://docs.near.org/integrations/transaction-lifecycle",
+   "bytes": 7593
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Decentralized Autonomous Organizations",
+   "description": "Learn about Decentralized Autonomous Organizations (DAOs) on NEAR - self-organized groups that coordinate membership, decision-making, and funding through smart contract voting.",
+   "file": "near/primitives/dao.md",
+   "url": "https://docs.near.org/primitives/dao",
+   "bytes": 28150
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Decentralized Exchanges (DEX)",
+   "description": "Learn how to interact with decentralized exchanges on NEAR Protocol, including token swapping, liquidity pools, and integration with Rhea Finance DEX.",
+   "file": "near/primitives/dex.md",
+   "url": "https://docs.near.org/primitives/dex",
+   "bytes": 16880
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Decentralized Identifiers (DIDs)",
+   "description": "Learn about W3C-compliant identity resolution on NEAR.",
+   "file": "near/primitives/didnear.md",
+   "url": "https://docs.near.org/primitives/didnear",
+   "bytes": 8276
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Using FTs",
+   "description": "Learn how to create, transfer, and integrate FT in your dApp",
+   "file": "near/primitives/ft/ft.md",
+   "url": "https://docs.near.org/primitives/ft/ft",
+   "bytes": 21632
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Creating a FT Contract",
+   "description": "Learn how to create a fungible token (FT) using Contract Tools package",
+   "file": "near/primitives/ft/sdk-contract-tools.md",
+   "url": "https://docs.near.org/primitives/ft/sdk-contract-tools",
+   "bytes": 12018
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "The Standard",
+   "description": "Learn how Fungible Tokens (FT) are defined on NEAR",
+   "file": "near/primitives/ft/standard.md",
+   "url": "https://docs.near.org/primitives/ft/standard",
+   "bytes": 8008
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Using Linkdrops",
+   "description": "Learn about linkdrops following NEP-452 standard - distribute assets and onboard users to Web3 apps through simple web links using access keys and the Keypom platform.",
+   "file": "near/primitives/linkdrop/linkdrop.md",
+   "url": "https://docs.near.org/primitives/linkdrop/linkdrop",
+   "bytes": 14397
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "The Standard",
+   "description": "Learn how Linkdrops are defined on NEAR",
+   "file": "near/primitives/linkdrop/standard.md",
+   "url": "https://docs.near.org/primitives/linkdrop/standard",
+   "bytes": 3567
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Deploying Your Own Contract",
+   "description": "Learn how to deploy your own Liquid Staking Contract on NEAR",
+   "file": "near/primitives/liquid-staking/deploy-your-own-contract.md",
+   "url": "https://docs.near.org/primitives/liquid-staking/deploy-your-own-contract",
+   "bytes": 8427
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Using Liquid Staking",
+   "description": "Learn about Liquid Staking on NEAR — a smart contract that issues a fungible token representing staked NEAR, enabling instant liquidity and validator diversification.",
+   "file": "near/primitives/liquid-staking/liquid-staking.md",
+   "url": "https://docs.near.org/primitives/liquid-staking/liquid-staking",
+   "bytes": 4355
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Introduction",
+   "description": "Learn about Lockup contracts on NEAR – smart contracts that escrow tokens with time-based release schedules, supporting lockups, vesting, staking, and termination by foundation.",
+   "file": "near/primitives/lockup/introduction.md",
+   "url": "https://docs.near.org/primitives/lockup/introduction",
+   "bytes": 6742
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Lockup Contracts",
+   "description": "Learn about Lockup contracts on NEAR – smart contracts that escrow tokens with time-based release schedules, supporting lockups, vesting, staking, and termination by foundation.",
+   "file": "near/primitives/lockup/lockup.md",
+   "url": "https://docs.near.org/primitives/lockup/lockup",
+   "bytes": 10096
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Using NFTs",
+   "description": "Learn about NEAR non-fungible tokens (NFT) following NEP-171 and NEP-177 standards - mint, transfer, query, and trade unique digital assets with comprehensive examples.",
+   "file": "near/primitives/nft/nft.md",
+   "url": "https://docs.near.org/primitives/nft/nft",
+   "bytes": 21410
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Creating a NFT Contract",
+   "description": "Learn how to create a non-fungible token (NFT) using Contract Tools package",
+   "file": "near/primitives/nft/sdk-contract-tools.md",
+   "url": "https://docs.near.org/primitives/nft/sdk-contract-tools",
+   "bytes": 8877
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "The Standard",
+   "description": "Learn how Non-Fungible Tokens (NFT) are defined on NEAR",
+   "file": "near/primitives/nft/standard.md",
+   "url": "https://docs.near.org/primitives/nft/standard",
+   "bytes": 8767
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "OutLayer",
+   "description": "OutLayer is a verifiable off-chain compute platform for NEAR. Run Rust/WASM code inside Intel TDX enclaves with built-in VRF, secrets, MPC vaults, and payment keys.",
+   "file": "near/primitives/off-chain-compute/outlayer.md",
+   "url": "https://docs.near.org/primitives/off-chain-compute/outlayer",
+   "bytes": 3484
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Off-chain Compute",
+   "description": "Learn how NEAR smart contracts can delegate heavy or impossible-on-chain work to verifiable off-chain computation running inside Trusted Execution Environments (TEEs).",
+   "file": "near/primitives/off-chain-compute/what-is.md",
+   "url": "https://docs.near.org/primitives/off-chain-compute/what-is",
+   "bytes": 2533
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Oracles",
+   "description": "Learn about blockchain oracles on NEAR Protocol, including price feeds, data integration, and using oracle services like Outlayer Price Oracle and Pyth Network.",
+   "file": "near/primitives/oracles.md",
+   "url": "https://docs.near.org/primitives/oracles",
+   "bytes": 14917
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Social",
+   "description": "Learn how to build social features on NEAR - profiles, posts, follows, likes and notifications - using SocialDB (social.near) and the near-social-js SDK.",
+   "file": "near/primitives/social.md",
+   "url": "https://docs.near.org/primitives/social",
+   "bytes": 6917
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "Tokenized Vaults",
+   "description": "Learn how Tokenized Vaults (NEP-621) are defined on NEAR",
+   "file": "near/primitives/tokenized-vaults.md",
+   "url": "https://docs.near.org/primitives/tokenized-vaults",
+   "bytes": 12480
+  },
+  {
+   "source": "near",
+   "section": "primitives",
+   "title": "What are Primitives?",
+   "description": "Learn about blockchain primitives including Fungible Tokens (FT), Non-Fungible Tokens (NFT), Decentralized Autonomous Organizations (DAO), and LinkDrops as building blocks for applications.",
+   "file": "near/primitives/what-is.md",
+   "url": "https://docs.near.org/primitives/what-is",
+   "bytes": 2652
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Access Keys",
+   "description": "NEAR has a rich access key system, allowing fine-grained control over accounts",
+   "file": "near/protocol/accounts-contracts/access-keys.md",
+   "url": "https://docs.near.org/protocol/accounts-contracts/access-keys",
+   "bytes": 9226
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Address (Account ID)",
+   "description": "Learn all about NEAR account addresses",
+   "file": "near/protocol/accounts-contracts/account-id.md",
+   "url": "https://docs.near.org/protocol/accounts-contracts/account-id",
+   "bytes": 12259
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "NEAR Accounts",
+   "description": "A unique account model that supports multiple types of addresses, access keys, and smart contracts.",
+   "file": "near/protocol/accounts-contracts/account-model.md",
+   "url": "https://docs.near.org/protocol/accounts-contracts/account-model",
+   "bytes": 3490
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Gas Keys",
+   "description": "Send transactions in parallel using access keys with a prepaid gas balance and independent nonce lanes.",
+   "file": "near/protocol/accounts-contracts/gas-keys.md",
+   "url": "https://docs.near.org/protocol/accounts-contracts/gas-keys",
+   "bytes": 5686
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "NEAR Data Flow",
+   "description": "Learn how data flows in NEAR Protocol, including transactions, receipts, shards, and cross-shard communication.",
+   "file": "near/protocol/data-flow/near-data-flow.md",
+   "url": "https://docs.near.org/protocol/data-flow/near-data-flow",
+   "bytes": 5310
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Token transfer flow",
+   "description": "Learn all steps involved on a token transfer.",
+   "file": "near/protocol/data-flow/token-transfer-flow.md",
+   "url": "https://docs.near.org/protocol/data-flow/token-transfer-flow",
+   "bytes": 6165
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Architectural Overview",
+   "description": "Understand NEAR's accounts, transactions, data flow, tokens, storage, and network.",
+   "file": "near/protocol/network/architecture.md",
+   "url": "https://docs.near.org/protocol/network/architecture",
+   "bytes": 3979
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Epoch",
+   "description": "Learn about epochs in NEAR Protocol, including their duration, role in validator selection, and how they affect network operations and data retention.",
+   "file": "near/protocol/network/epoch.md",
+   "url": "https://docs.near.org/protocol/network/epoch",
+   "bytes": 2919
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "NEAR Networks",
+   "description": "Explore the different networks available in NEAR",
+   "file": "near/protocol/network/networks.md",
+   "url": "https://docs.near.org/protocol/network/networks",
+   "bytes": 2996
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Runtime",
+   "description": "Explore NEAR Protocol's runtime system, including core runtime operations, cross-contract calls, action and data receipts, and state management.",
+   "file": "near/protocol/network/runtime.md",
+   "url": "https://docs.near.org/protocol/network/runtime",
+   "bytes": 3731
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Avoiding Token Loss",
+   "description": "Learn about scenarios that can lead to token loss in NEAR Protocol and how to prevent them, including key management, account deletion, and smart contract failures.",
+   "file": "near/protocol/network/token-loss.md",
+   "url": "https://docs.near.org/protocol/network/token-loss",
+   "bytes": 4524
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Token Standards",
+   "description": "Compare NEAR's smart contract standards for fungible tokens, NFTs, and MultiTokens.",
+   "file": "near/protocol/network/token-standards.md",
+   "url": "https://docs.near.org/protocol/network/token-standards",
+   "bytes": 2647
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "NEAR Native Token",
+   "description": "Use NEAR to pay transaction fees, cover on-chain storage, and secure the network through staking.",
+   "file": "near/protocol/network/tokens.md",
+   "url": "https://docs.near.org/protocol/network/tokens",
+   "bytes": 1792
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Validators",
+   "description": "Learn about NEAR Protocol validators, their roles in network security, consensus mechanisms, validator economics, and how to become a validator.",
+   "file": "near/protocol/network/validators.md",
+   "url": "https://docs.near.org/protocol/network/validators",
+   "bytes": 8053
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Storage",
+   "description": "Learn about NEAR Protocol's storage staking mechanism, including costs, storage pricing, attack prevention, and strategies for managing on-chain data storage.",
+   "file": "near/protocol/storage/storage-staking.md",
+   "url": "https://docs.near.org/protocol/storage/storage-staking",
+   "bytes": 9975
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Gas (Execution Fees)",
+   "description": "Learn about NEAR's gas system - execution fees that prevent spam and use deterministic gas units with dynamic pricing.",
+   "file": "near/protocol/transactions/gas.md",
+   "url": "https://docs.near.org/protocol/transactions/gas",
+   "bytes": 13143
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Transactions",
+   "description": "Learn how users interact with NEAR through transactions composed of actions, signed with private keys, and processed by the network with deterministic gas costs.",
+   "file": "near/protocol/transactions/index.md",
+   "url": "https://docs.near.org/protocol/transactions",
+   "bytes": 1327
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Meta Transactions",
+   "description": "Learn about NEP-366 meta transactions on NEAR, allowing users to execute transactions without owning gas tokens by using relayers to cover transaction fees.",
+   "file": "near/protocol/transactions/meta-tx.md",
+   "url": "https://docs.near.org/protocol/transactions/meta-tx",
+   "bytes": 11723
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Anatomy of a Transaction",
+   "description": "Learn about the structure and components of NEAR Protocol transactions, including signers, receivers, actions, and transaction validation fields.",
+   "file": "near/protocol/transactions/transaction-anatomy.md",
+   "url": "https://docs.near.org/protocol/transactions/transaction-anatomy",
+   "bytes": 7531
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Lifecycle of a Transaction",
+   "description": "Learn how NEAR transactions are executed and finalized",
+   "file": "near/protocol/transactions/transaction-execution.md",
+   "url": "https://docs.near.org/protocol/transactions/transaction-execution",
+   "bytes": 9595
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Creating Deterministic Accounts",
+   "description": "Create a deterministic fungible-token account using a published global contract and initial storage.",
+   "file": "near/protocol/tutorials/creating-deterministic-accounts.md",
+   "url": "https://docs.near.org/protocol/tutorials/creating-deterministic-accounts",
+   "bytes": 7584
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Creating Implicit & Named Accounts",
+   "description": "Create implicit accounts through transfers and named accounts through parent-account contracts or CreateAccount actions.",
+   "file": "near/protocol/tutorials/creating-implicit-and-named-accounts.md",
+   "url": "https://docs.near.org/protocol/tutorials/creating-implicit-and-named-accounts",
+   "bytes": 6317
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Creating Universal Accounts",
+   "description": "Three ways to create and initialize a 0u universal account: relayer-assisted, self-signed bootstrap, and from inside a smart contract, with code and RPC examples.",
+   "file": "near/protocol/tutorials/creating-universal-accounts.md",
+   "url": "https://docs.near.org/protocol/tutorials/creating-universal-accounts",
+   "bytes": 18281
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Staking NEAR Tokens",
+   "description": "Learn how to stake NEAR, delegate to validators, track rewards, and withdraw staked tokens safely.",
+   "file": "near/protocol/tutorials/staking-tokens.md",
+   "url": "https://docs.near.org/protocol/tutorials/staking-tokens",
+   "bytes": 8212
+  },
+  {
+   "source": "near",
+   "section": "protocol",
+   "title": "Sunsetting a Staking Pool",
+   "description": "Wind down a staking pool, pause staking, and help delegators withdraw their tokens.",
+   "file": "near/protocol/tutorials/sunsetting-a-staking-pool.md",
+   "url": "https://docs.near.org/protocol/tutorials/sunsetting-a-staking-pool",
+   "bytes": 4002
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Transfers & Actions",
+   "description": "Learn how contracts can make transfers, call other contracts, and more",
+   "file": "near/smart-contracts/anatomy/actions.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/actions",
+   "bytes": 13536
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Basic Anatomy",
+   "description": "Learn the basic anatomy of all smart contracts.",
+   "file": "near/smart-contracts/anatomy/anatomy.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/anatomy",
+   "bytes": 6589
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Best Practices",
+   "description": "A collection of best practices for writing smart contracts on NEAR.",
+   "file": "near/smart-contracts/anatomy/best-practices.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/best-practices",
+   "bytes": 6632
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Collections",
+   "description": "Efficiently store, access, and manage data in smart contracts.",
+   "file": "near/smart-contracts/anatomy/collections.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/collections",
+   "bytes": 19771
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Cross-Contract Calls",
+   "description": "Contract can interact with other contracts on the network",
+   "file": "near/smart-contracts/anatomy/crosscontract.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/crosscontract",
+   "bytes": 20260
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Environment",
+   "description": "Know which account called you, how much gas and tokens were attached, and more.",
+   "file": "near/smart-contracts/anatomy/environment.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/environment",
+   "bytes": 10261
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Contract Events",
+   "description": "Emit structured events from your contract so indexers and frontends can track on-chain activity.",
+   "file": "near/smart-contracts/anatomy/events.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/events",
+   "bytes": 4810
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Types and Interface",
+   "description": "Learn how to define your contract's interface and use Rust and SDK types in its inputs, outputs, and state.",
+   "file": "near/smart-contracts/anatomy/functions.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/functions",
+   "bytes": 9846
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Production Builds",
+   "description": "Reduce contract size and create reproducible builds that users can verify against the deployed code.",
+   "file": "near/smart-contracts/anatomy/reduce-size.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/reduce-size",
+   "bytes": 10480
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Serialization",
+   "description": "Learn how contract serialize data for function calls and storage.",
+   "file": "near/smart-contracts/anatomy/serialization.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/serialization",
+   "bytes": 10447
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "State",
+   "description": "Explore how NEAR smart contracts manage their state.",
+   "file": "near/smart-contracts/anatomy/storage.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/storage",
+   "bytes": 6289
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Yield and Resume",
+   "description": "Wait for an external response and resume execution",
+   "file": "near/smart-contracts/anatomy/yield-resume.md",
+   "url": "https://docs.near.org/smart-contracts/anatomy/yield-resume",
+   "bytes": 8131
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Global Contracts",
+   "description": "Deploy a contract once and reuse it across accounts.",
+   "file": "near/smart-contracts/global-contracts.md",
+   "url": "https://docs.near.org/smart-contracts/global-contracts",
+   "bytes": 12683
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Your First Smart Contract",
+   "description": "Create your first Rust smart contract, test it locally with NEAR Sandbox, and deploy it to testnet when ready to share.",
+   "file": "near/smart-contracts/quickstart.md",
+   "url": "https://docs.near.org/smart-contracts/quickstart",
+   "bytes": 12698
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Deploying",
+   "description": "Deploy a contract to the network.",
+   "file": "near/smart-contracts/release/deploy.md",
+   "url": "https://docs.near.org/smart-contracts/release/deploy",
+   "bytes": 3960
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Updating Contracts",
+   "description": "Learn how to upgrade NEAR smart contracts safely, including programmatic updates, migration strategies, and best practices for contract versioning.",
+   "file": "near/smart-contracts/release/upgrade.md",
+   "url": "https://docs.near.org/smart-contracts/release/upgrade",
+   "bytes": 14432
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Smart contract security checklist",
+   "description": "Learn the main security risks in NEAR smart contracts and review them before deployment.",
+   "file": "near/smart-contracts/security/checklist.md",
+   "url": "https://docs.near.org/smart-contracts/security/checklist",
+   "bytes": 6520
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Callbacks can fail",
+   "description": "A callback always runs, but it can still fail. Design your contract so a failed callback cannot leave it in an unsafe state.",
+   "file": "near/smart-contracts/security/cross-contract-calls/callback-failures.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-failures",
+   "bytes": 6542
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Do not panic in callbacks",
+   "description": "Handle failed cross-contract calls without aborting the cleanup or refund path.",
+   "file": "near/smart-contracts/security/cross-contract-calls/callback-panics.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-panics",
+   "bytes": 2855
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Private Callbacks",
+   "description": "Remember to make your callbacks private",
+   "file": "near/smart-contracts/security/cross-contract-calls/callbacks.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks",
+   "bytes": 3323
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Fungible Token Implementation",
+   "description": "Secure ft_on_transfer deposits and ft_resolve_transfer refunds in NEP-141 transfer calls.",
+   "file": "near/smart-contracts/security/cross-contract-calls/ft-transfer-call.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/ft-transfer-call",
+   "bytes": 4278
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Balance Deduction",
+   "description": "Remember to always deduct a user's balance before sending them tokens in a cross-contract call",
+   "file": "near/smart-contracts/security/cross-contract-calls/reentrancy.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/reentrancy",
+   "bytes": 3966
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Refund NEAR tokens",
+   "description": "Return attached NEAR tokens to the original user when a cross-contract call fails.",
+   "file": "near/smart-contracts/security/cross-contract-calls/refunds.md",
+   "url": "https://docs.near.org/smart-contracts/security/cross-contract-calls/refunds",
+   "bytes": 1839
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Duplicate token IDs",
+   "description": "Prevent callers from redeeming the same treasury token more than once by repeating its ID.",
+   "file": "near/smart-contracts/security/duplicate-inputs.md",
+   "url": "https://docs.near.org/smart-contracts/security/duplicate-inputs",
+   "bytes": 3053
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Front-running",
+   "description": "Prevent transaction observers from profiting by copying or reordering pending actions.",
+   "file": "near/smart-contracts/security/frontrunning.md",
+   "url": "https://docs.near.org/smart-contracts/security/frontrunning",
+   "bytes": 3308
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Require one yoctoNEAR",
+   "description": "Require a deposit-capable access key for sensitive smart contract methods.",
+   "file": "near/smart-contracts/security/one_yocto.md",
+   "url": "https://docs.near.org/smart-contracts/security/one_yocto",
+   "bytes": 3033
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Random Numbers",
+   "description": "Avoid predictable randomness vulnerabilities",
+   "file": "near/smart-contracts/security/random.md",
+   "url": "https://docs.near.org/smart-contracts/security/random",
+   "bytes": 3603
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Storage cost attacks",
+   "description": "Prevent attackers from locking a contract's balance by forcing unbounded state growth.",
+   "file": "near/smart-contracts/security/storage.md",
+   "url": "https://docs.near.org/smart-contracts/security/storage",
+   "bytes": 2030
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Sybil attacks",
+   "description": "Design NEAR applications that do not mistake multiple accounts for independent participants.",
+   "file": "near/smart-contracts/security/sybil.md",
+   "url": "https://docs.near.org/smart-contracts/security/sybil",
+   "bytes": 2701
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Sandbox Testing",
+   "description": "Learn how to write and run sandbox tests for NEAR smart contracts in a local NEAR Sandbox.",
+   "file": "near/smart-contracts/testing/integration-test.md",
+   "url": "https://docs.near.org/smart-contracts/testing/integration-test",
+   "bytes": 33778
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Unit Testing",
+   "description": "Learn how to write and run unit tests for NEAR smart contracts to test individual methods and functions in isolation.",
+   "file": "near/smart-contracts/testing/unit-test.md",
+   "url": "https://docs.near.org/smart-contracts/testing/unit-test",
+   "bytes": 7029
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Token Drops",
+   "description": "Learn how NEAR Drop enables token drops (NEAR, FT, NFT) claimable via private keys.",
+   "file": "near/smart-contracts/tutorials/advanced/near-drop.md",
+   "url": "https://docs.near.org/smart-contracts/tutorials/advanced/near-drop",
+   "bytes": 18058
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Using our Basic Examples",
+   "description": "Learn NEAR smart contract basics through practical examples: Counter, Guest Book, Donation, Coin Flip, and Hello World.",
+   "file": "near/smart-contracts/tutorials/basic-contracts.md",
+   "url": "https://docs.near.org/smart-contracts/tutorials/basic-contracts",
+   "bytes": 7143
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Cross Contract Call",
+   "description": "Learn how to perform a basic cross-contract call on NEAR to set and retrieve greetings.",
+   "file": "near/smart-contracts/tutorials/cross-contracts/xcc.md",
+   "url": "https://docs.near.org/smart-contracts/tutorials/cross-contracts/xcc",
+   "bytes": 20825
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "Factory",
+   "description": "Learn how a factory creates fungible token contracts on sub-accounts using a global contract ID.",
+   "file": "near/smart-contracts/tutorials/factories/factory.md",
+   "url": "https://docs.near.org/smart-contracts/tutorials/factories/factory",
+   "bytes": 8072
+  },
+  {
+   "source": "near",
+   "section": "smart-contracts",
+   "title": "What is a Smart Contract?",
+   "description": "Learn how NEAR smart contracts store data, execute transactions, and power decentralized applications.",
+   "file": "near/smart-contracts/what-is.md",
+   "url": "https://docs.near.org/smart-contracts/what-is",
+   "bytes": 6218
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "State Cleaner",
+   "description": "Clean up a contract's state.",
+   "file": "near/tools/clear-state.md",
+   "url": "https://docs.near.org/tools/clear-state",
+   "bytes": 3743
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "NEAR CLI",
+   "description": "Interact with NEAR through the terminal.",
+   "file": "near/tools/cli.md",
+   "url": "https://docs.near.org/tools/cli",
+   "bytes": 25650
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "Reference Contracts",
+   "description": "Explore NEAR contracts deployed across projects.",
+   "file": "near/tools/contracts-list.md",
+   "url": "https://docs.near.org/tools/contracts-list",
+   "bytes": 6829
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "API Libraries",
+   "description": "Learn to use APIs in JavaScript, Rust, and Python to interact with the blockchain.",
+   "file": "near/tools/near-api.md",
+   "url": "https://docs.near.org/tools/near-api",
+   "bytes": 126042
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "Wallet Connector",
+   "description": "A zero-dependencies and lightweight wallet connector",
+   "file": "near/tools/near-connect.md",
+   "url": "https://docs.near.org/tools/near-connect",
+   "bytes": 2213
+  },
+  {
+   "source": "near",
+   "section": "tools",
+   "title": "Rust SDK",
+   "description": "The Rust SDK for building smart contracts.",
+   "file": "near/tools/sdk.md",
+   "url": "https://docs.near.org/tools/sdk",
+   "bytes": 1984
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Backend Authentication",
+   "description": "Learn how to authenticate NEAR users in your backend service by creating challenges, requesting wallet signatures, and verifying signatures.",
+   "file": "near/web3-apps/backend/backend.md",
+   "url": "https://docs.near.org/web3-apps/backend/backend",
+   "bytes": 4103
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Your First Web3 App",
+   "description": "Quick guide to create a Web3 frontend application with NEAR integration - build a React/Next.js app where users can login with wallets and interact with smart contracts.",
+   "file": "near/web3-apps/quickstart.md",
+   "url": "https://docs.near.org/web3-apps/quickstart",
+   "bytes": 11207
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Validating Recipient Accounts",
+   "description": "Best practices for validating recipient account IDs before sending transactions to prevent token loss.",
+   "file": "near/web3-apps/tutorials/account-validation.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/account-validation",
+   "bytes": 15256
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Handling NEAR Types",
+   "description": "Learn how to handle common data types when interacting with NEAR",
+   "file": "near/web3-apps/tutorials/data-types.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/data-types",
+   "bytes": 5328
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Frontend Interacting with Multiple Contracts",
+   "description": "Interact with multiple contracts in your frontend.",
+   "file": "near/web3-apps/tutorials/frontend-multiple-contracts.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/frontend-multiple-contracts",
+   "bytes": 5043
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Test Your App Locally",
+   "description": "Learn how to test your contract and frontend on a local NEAR network.",
+   "file": "near/web3-apps/tutorials/localnet/run.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/localnet/run",
+   "bytes": 16936
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "A Step-by-Step Guide to Mastering NEAR",
+   "description": "Build a full web3 app, from its contract to a frontend using indexers.",
+   "file": "near/web3-apps/tutorials/mastering-near/0-intro.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/0-intro",
+   "bytes": 5227
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Basic Auction",
+   "description": "Learn how to build n auction smart contract on NEAR.",
+   "file": "near/web3-apps/tutorials/mastering-near/1.1-basic.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/1.1-basic",
+   "bytes": 13103
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Sandbox Testing",
+   "description": "Lets test our contract in a realistic sandbox environment.",
+   "file": "near/web3-apps/tutorials/mastering-near/1.2-testing.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/1.2-testing",
+   "bytes": 10022
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Deploying to Testnet",
+   "description": "Lets deploy our action contract to testnet.",
+   "file": "near/web3-apps/tutorials/mastering-near/1.3-deploy.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/1.3-deploy",
+   "bytes": 5206
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Creating a Frontend",
+   "description": "Lets create a frontend for our auction using React.",
+   "file": "near/web3-apps/tutorials/mastering-near/2.1-frontend.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/2.1-frontend",
+   "bytes": 18717
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Indexing Historical Data",
+   "description": "Using data apis to retrieve the history of auctions",
+   "file": "near/web3-apps/tutorials/mastering-near/2.2-indexing.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/2.2-indexing",
+   "bytes": 7719
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Winning an NFT",
+   "description": "Lets make the auction winner get an NFT.",
+   "file": "near/web3-apps/tutorials/mastering-near/3.1-nft.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/3.1-nft",
+   "bytes": 10537
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Bidding with FTs",
+   "description": "Learn how to enable bidding with fungible tokens",
+   "file": "near/web3-apps/tutorials/mastering-near/3.2-ft.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/3.2-ft",
+   "bytes": 22012
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Updating the Frontend",
+   "description": "Update the frontend to display the new token information.",
+   "file": "near/web3-apps/tutorials/mastering-near/3.3-new-frontend.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/3.3-new-frontend",
+   "bytes": 10146
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Auction factory",
+   "description": "Create new auctions through a factory using a shared global contract.",
+   "file": "near/web3-apps/tutorials/mastering-near/4-factory.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/mastering-near/4-factory",
+   "bytes": 10153
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Building a Meta Transaction Relayer",
+   "description": "Learn how to build a meta transaction relayer that allows users to transact on NEAR without paying gas fees while maintaining transaction security through signed delegates.",
+   "file": "near/web3-apps/tutorials/meta-transactions.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/meta-transactions",
+   "bytes": 14289
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "NEAR Auth",
+   "description": "Let users sign NEAR transactions with a Web2 login — Google, Apple, email, or passkeys — with no seed phrase, secured by MPC.",
+   "file": "near/web3-apps/tutorials/near-auth.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/near-auth",
+   "bytes": 13738
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Privy",
+   "description": "Enable users to login with their social accounts (Google, GitHub, etc.)",
+   "file": "near/web3-apps/tutorials/privy.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/privy",
+   "bytes": 17143
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "Wallet Login",
+   "description": "Enable users to login with their NEAR wallet",
+   "file": "near/web3-apps/tutorials/wallet-login.md",
+   "url": "https://docs.near.org/web3-apps/tutorials/wallet-login",
+   "bytes": 11612
+  },
+  {
+   "source": "near",
+   "section": "web3-apps",
+   "title": "What are Web3 Apps?",
+   "description": "Learn about Web3 applications (dApps) that leverage smart contracts and blockchain data to offer transparency, security, and user control over assets and data.",
+   "file": "near/web3-apps/what-is.md",
+   "url": "https://docs.near.org/web3-apps/what-is",
+   "bytes": 2034
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get attestation report",
+   "description": "Get hardware attestation report for TEE verification. The API key is optional, so a client can verify the gateway before it sends any credential. Without a key, listed models only; with one, also the unlisted models the key's organization may use. A key that is sent must be valid. Report retrieval i…",
+   "file": "nearai/api-reference/attestation/get-attestation-report.md",
+   "url": "https://docs.near.ai/api-reference/attestation/get-attestation-report",
+   "bytes": 17548
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get completion or Responses API signature",
+   "description": "Get a cryptographic signature for a chat completion or completed stateless `resp_*` response. Returns signature data on success, or an unavailable response if a chat-completion stream was disconnected.",
+   "file": "nearai/api-reference/attestation/get-completion-or-responses-api-signature.md",
+   "url": "https://docs.near.ai/api-reference/attestation/get-completion-or-responses-api-signature",
+   "bytes": 11083
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get Intel Trust Authority attestation token",
+   "description": "Get Intel Trust Authority signed attestation JWTs for the gateway and, when requested, compatible model provider evidence. Public endpoint — this is an explicit, documented decision (nearai/infra#193): the response carries only ITA-signed TEE evidence (no customer or key-scoped data), public access…",
+   "file": "nearai/api-reference/attestation/get-intel-trust-authority-attestation-token.md",
+   "url": "https://docs.near.ai/api-reference/attestation/get-intel-trust-authority-attestation-token",
+   "bytes": 13534
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Which attested backup-provider trust inputs are live",
+   "description": "Public endpoint, a deliberate and documented exception like `/v1/attestation/ita-token` (see `build_public_attestation_routes` in `routes/attestation.rs`). The body is an object keyed by provider name (`tinfoil`, `chutes`). Each section lists the provider's compiled pins and any runtime trust it acc…",
+   "file": "nearai/api-reference/attestation/which-attested-backup-provider-trust-inputs-are-live.md",
+   "url": "https://docs.near.ai/api-reference/attestation/which-attested-backup-provider-trust-inputs-are-live",
+   "bytes": 10074
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Audio transcription endpoint",
+   "description": "Transcribe audio files using Whisper models. Accepts audio file uploads via multipart/form-data. Supports MP3, WAV, WEBM, FLAC, OGG, and M4A formats. Maximum file size: 25 MB.",
+   "file": "nearai/api-reference/audio/audio-transcription-endpoint.md",
+   "url": "https://docs.near.ai/api-reference/audio/audio-transcription-endpoint",
+   "bytes": 14293
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get costs by request IDs",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/billing/get-costs-by-request-ids.md",
+   "url": "https://docs.near.ai/api-reference/billing/get-costs-by-request-ids",
+   "bytes": 12222
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create chat completion",
+   "description": "Generate AI model responses for chat conversations. Supports both streaming and non-streaming modes. OpenAI-compatible endpoint.",
+   "file": "nearai/api-reference/chat/create-chat-completion.md",
+   "url": "https://docs.near.ai/api-reference/chat/create-chat-completion",
+   "bytes": 21766
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create text completion",
+   "description": "Generate AI model responses for text prompts. OpenAI-compatible endpoint.",
+   "file": "nearai/api-reference/chat/create-text-completion.md",
+   "url": "https://docs.near.ai/api-reference/chat/create-text-completion",
+   "bytes": 14970
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List available models",
+   "description": "Returns all AI models available for completions. OpenAI-compatible endpoint.",
+   "file": "nearai/api-reference/chat/list-available-models.md",
+   "url": "https://docs.near.ai/api-reference/chat/list-available-models",
+   "bytes": 18875
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Delete v1organizations credentials",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/credits/delete-v1organizations-credentials.md",
+   "url": "https://docs.near.ai/api-reference/credits/delete-v1organizations-credentials",
+   "bytes": 8524
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get v1organizations credittransfercapacity",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/credits/get-v1organizations-credittransfercapacity.md",
+   "url": "https://docs.near.ai/api-reference/credits/get-v1organizations-credittransfercapacity",
+   "bytes": 8656
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get v1organizations credittransfers",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/credits/get-v1organizations-credittransfers.md",
+   "url": "https://docs.near.ai/api-reference/credits/get-v1organizations-credittransfers",
+   "bytes": 8805
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1organizations credentials",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/credits/post-v1organizations-credentials.md",
+   "url": "https://docs.near.ai/api-reference/credits/post-v1organizations-credentials",
+   "bytes": 10708
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1organizations credittransfer",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/credits/post-v1organizations-credittransfer.md",
+   "url": "https://docs.near.ai/api-reference/credits/post-v1organizations-credittransfer",
+   "bytes": 11452
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1systemone",
+   "description": "",
+   "file": "nearai/api-reference/decisions/post-v1systemone.md",
+   "url": "https://docs.near.ai/api-reference/decisions/post-v1systemone",
+   "bytes": 17235
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List aggregated feature requests for admins.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/feature-requests/list-aggregated-feature-requests-for-admins.md",
+   "url": "https://docs.near.ai/api-reference/feature-requests/list-aggregated-feature-requests-for-admins",
+   "bytes": 13269
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Submit or update the current user's interest in a feature request target.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/feature-requests/submit-or-update-the-current-users-interest-in-a-feature-request-target.md",
+   "url": "https://docs.near.ai/api-reference/feature-requests/submit-or-update-the-current-users-interest-in-a-feature-request-target",
+   "bytes": 11109
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Check API key validity",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/gateway/check-api-key-validity.md",
+   "url": "https://docs.near.ai/api-reference/gateway/check-api-key-validity",
+   "bytes": 11375
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Health check",
+   "description": "Check service health status. No authentication required.",
+   "file": "nearai/api-reference/health/health-check.md",
+   "url": "https://docs.near.ai/api-reference/health/health-check",
+   "bytes": 8193
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Edit images from a text prompt and image",
+   "description": "Edit images using an AI model from an image and text description. OpenAI-compatible endpoint.",
+   "file": "nearai/api-reference/images/edit-images-from-a-text-prompt-and-image.md",
+   "url": "https://docs.near.ai/api-reference/images/edit-images-from-a-text-prompt-and-image",
+   "bytes": 12472
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Generate images from text prompt",
+   "description": "Generate images using an AI model from a text description. OpenAI-compatible endpoint.",
+   "file": "nearai/api-reference/images/generate-images-from-text-prompt.md",
+   "url": "https://docs.near.ai/api-reference/images/generate-images-from-text-prompt",
+   "bytes": 12039
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "API Reference",
+   "description": "OpenAI-compatible REST API for private, verifiable AI inference on NEAR AI Cloud",
+   "file": "nearai/api-reference/introduction.md",
+   "url": "https://docs.near.ai/api-reference/introduction",
+   "bytes": 2874
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Accept invitation by token (requires authentication)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/invitations/accept-invitation-by-token-requires-authentication.md",
+   "url": "https://docs.near.ai/api-reference/invitations/accept-invitation-by-token-requires-authentication",
+   "bytes": 11409
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get invitation details by token (public endpoint)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/invitations/get-invitation-details-by-token-public-endpoint.md",
+   "url": "https://docs.near.ai/api-reference/invitations/get-invitation-details-by-token-public-endpoint",
+   "bytes": 11474
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get model details",
+   "description": "Get pricing and metadata for a specific model. URL-encode model names containing slashes. Public endpoint.",
+   "file": "nearai/api-reference/models/get-model-details.md",
+   "url": "https://docs.near.ai/api-reference/models/get-model-details",
+   "bytes": 17158
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List models with pricing",
+   "description": "Get all available models with pricing information. Public endpoint.",
+   "file": "nearai/api-reference/models/list-models-with-pricing.md",
+   "url": "https://docs.near.ai/api-reference/models/list-models-with-pricing",
+   "bytes": 19067
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get v1organizations credentials",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-credentials/get-v1organizations-credentials.md",
+   "url": "https://docs.near.ai/api-reference/organization-credentials/get-v1organizations-credentials",
+   "bytes": 8393
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1organizations credentials rotate",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-credentials/post-v1organizations-credentials-rotate.md",
+   "url": "https://docs.near.ai/api-reference/organization-credentials/post-v1organizations-credentials-rotate",
+   "bytes": 8628
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Put v1organizations credentials",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-credentials/put-v1organizations-credentials.md",
+   "url": "https://docs.near.ai/api-reference/organization-credentials/put-v1organizations-credentials",
+   "bytes": 10920
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Add a member to an organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/add-a-member-to-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/add-a-member-to-an-organization",
+   "bytes": 11289
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Cancel an organization invitation (short path)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/cancel-an-organization-invitation-short-path.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/cancel-an-organization-invitation-short-path",
+   "bytes": 10497
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Cancel an organization invitation",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/cancel-an-organization-invitation.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/cancel-an-organization-invitation",
+   "bytes": 10277
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Invite users to an organization by email",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/invite-users-to-an-organization-by-email.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/invite-users-to-an-organization-by-email",
+   "bytes": 12877
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List organization invitations",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/list-organization-invitations.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/list-organization-invitations",
+   "bytes": 11866
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List organization members with limited user information",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/list-organization-members-with-limited-user-information.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/list-organization-members-with-limited-user-information",
+   "bytes": 12451
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Remove a member from an organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/remove-a-member-from-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/remove-a-member-from-an-organization",
+   "bytes": 10363
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update an organization member's role",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organization-members/update-an-organization-members-role.md",
+   "url": "https://docs.near.ai/api-reference/organization-members/update-an-organization-members-role",
+   "bytes": 11203
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create a new organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/create-a-new-organization.md",
+   "url": "https://docs.near.ai/api-reference/organizations/create-a-new-organization",
+   "bytes": 10961
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Delete organization (owner only)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/delete-organization-owner-only.md",
+   "url": "https://docs.near.ai/api-reference/organizations/delete-organization-owner-only",
+   "bytes": 9951
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization by ID",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/get-organization-by-id.md",
+   "url": "https://docs.near.ai/api-reference/organizations/get-organization-by-id",
+   "bytes": 10644
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization settings",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/get-organization-settings.md",
+   "url": "https://docs.near.ai/api-reference/organizations/get-organization-settings",
+   "bytes": 10287
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List organizations",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/list-organizations.md",
+   "url": "https://docs.near.ai/api-reference/organizations/list-organizations",
+   "bytes": 11515
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Patch organization settings",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/patch-organization-settings.md",
+   "url": "https://docs.near.ai/api-reference/organizations/patch-organization-settings",
+   "bytes": 11317
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/organizations/update-organization.md",
+   "url": "https://docs.near.ai/api-reference/organizations/update-organization",
+   "bytes": 11630
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1privacyclassify",
+   "description": "",
+   "file": "nearai/api-reference/privacy/post-v1privacyclassify.md",
+   "url": "https://docs.near.ai/api-reference/privacy/post-v1privacyclassify",
+   "bytes": 11769
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1privacyredact",
+   "description": "",
+   "file": "nearai/api-reference/privacy/post-v1privacyredact.md",
+   "url": "https://docs.near.ai/api-reference/privacy/post-v1privacyredact",
+   "bytes": 12366
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create a read-only reporting token.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/reporting/create-a-read-only-reporting-token.md",
+   "url": "https://docs.near.ai/api-reference/reporting/create-a-read-only-reporting-token",
+   "bytes": 11911
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Export organization usage and cost rows.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/reporting/export-organization-usage-and-cost-rows.md",
+   "url": "https://docs.near.ai/api-reference/reporting/export-organization-usage-and-cost-rows",
+   "bytes": 18235
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List active reporting tokens for an organization.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/reporting/list-active-reporting-tokens-for-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/reporting/list-active-reporting-tokens-for-an-organization",
+   "bytes": 11292
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Revoke a reporting token.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/reporting/revoke-a-reporting-token.md",
+   "url": "https://docs.near.ai/api-reference/reporting/revoke-a-reporting-token",
+   "bytes": 9934
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Summarize organization usage and costs.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/reporting/summarize-organization-usage-and-costs.md",
+   "url": "https://docs.near.ai/api-reference/reporting/summarize-organization-usage-and-costs",
+   "bytes": 18094
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Document reranking endpoint",
+   "description": "Ranks documents by relevance to a query using a reranker model.",
+   "file": "nearai/api-reference/rerank/document-reranking-endpoint.md",
+   "url": "https://docs.near.ai/api-reference/rerank/document-reranking-endpoint",
+   "bytes": 12858
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create response",
+   "description": "Generate a single-turn, stateless AI response with optional streaming.",
+   "file": "nearai/api-reference/responses/create-response.md",
+   "url": "https://docs.near.ai/api-reference/responses/create-response",
+   "bytes": 11716
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Text similarity scoring endpoint",
+   "description": "Scores the similarity between two texts using a scoring/ranking model.",
+   "file": "nearai/api-reference/score/text-similarity-scoring-endpoint.md",
+   "url": "https://docs.near.ai/api-reference/score/text-similarity-scoring-endpoint",
+   "bytes": 12736
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get platform service by name (public, no auth)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/services/get-platform-service-by-name-public-no-auth.md",
+   "url": "https://docs.near.ai/api-reference/services/get-platform-service-by-name-public-no-auth",
+   "bytes": 10489
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List platform services (public, no auth)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/services/list-platform-services-public-no-auth.md",
+   "url": "https://docs.near.ai/api-reference/services/list-platform-services-public-no-auth",
+   "bytes": 11062
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization staking farm state",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/staking-farm/get-organization-staking-farm-state.md",
+   "url": "https://docs.near.ai/api-reference/staking-farm/get-organization-staking-farm-state",
+   "bytes": 13012
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get staking farm configuration",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/staking-farm/get-staking-farm-configuration.md",
+   "url": "https://docs.near.ai/api-reference/staking-farm/get-staking-farm-configuration",
+   "bytes": 10153
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Post v1organizations stakingfarmbind",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/staking-farm/post-v1organizations-stakingfarmbind.md",
+   "url": "https://docs.near.ai/api-reference/staking-farm/post-v1organizations-stakingfarmbind",
+   "bytes": 15409
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Sync organization staking farm credits",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/staking-farm/sync-organization-staking-farm-credits.md",
+   "url": "https://docs.near.ai/api-reference/staking-farm/sync-organization-staking-farm-credits",
+   "bytes": 11990
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get API key usage history",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/get-api-key-usage-history.md",
+   "url": "https://docs.near.ai/api-reference/usage/get-api-key-usage-history",
+   "bytes": 15632
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization balance",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/get-organization-balance.md",
+   "url": "https://docs.near.ai/api-reference/usage/get-organization-balance",
+   "bytes": 12625
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization usage broken down by model.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/get-organization-usage-broken-down-by-model.md",
+   "url": "https://docs.near.ai/api-reference/usage/get-organization-usage-broken-down-by-model",
+   "bytes": 12927
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get organization usage history",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/get-organization-usage-history.md",
+   "url": "https://docs.near.ai/api-reference/usage/get-organization-usage-history",
+   "bytes": 16628
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get service usage history for an organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/get-service-usage-history-for-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/usage/get-service-usage-history-for-an-organization",
+   "bytes": 13472
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Organization usage metrics.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/organization-usage-metrics.md",
+   "url": "https://docs.near.ai/api-reference/usage/organization-usage-metrics",
+   "bytes": 12567
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Organization usage timeseries.",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/usage/organization-usage-timeseries.md",
+   "url": "https://docs.near.ai/api-reference/usage/organization-usage-timeseries",
+   "bytes": 11307
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Accept an organization invitation",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/accept-an-organization-invitation.md",
+   "url": "https://docs.near.ai/api-reference/users/accept-an-organization-invitation",
+   "bytes": 11373
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Add a contact email",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/add-a-contact-email.md",
+   "url": "https://docs.near.ai/api-reference/users/add-a-contact-email",
+   "bytes": 11881
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Confirm a contact email (public endpoint)",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/confirm-a-contact-email-public-endpoint.md",
+   "url": "https://docs.near.ai/api-reference/users/confirm-a-contact-email-public-endpoint",
+   "bytes": 10894
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create a new access token",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/create-a-new-access-token.md",
+   "url": "https://docs.near.ai/api-reference/users/create-a-new-access-token",
+   "bytes": 9919
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Decline an organization invitation",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/decline-an-organization-invitation.md",
+   "url": "https://docs.near.ai/api-reference/users/decline-an-organization-invitation",
+   "bytes": 9945
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get current user",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/get-current-user.md",
+   "url": "https://docs.near.ai/api-reference/users/get-current-user",
+   "bytes": 12608
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get current user's account eligibility status",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/get-current-users-account-eligibility-status.md",
+   "url": "https://docs.near.ai/api-reference/users/get-current-users-account-eligibility-status",
+   "bytes": 9744
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get user's refresh tokens",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/get-users-refresh-tokens.md",
+   "url": "https://docs.near.ai/api-reference/users/get-users-refresh-tokens",
+   "bytes": 9860
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List pending invitations for the current user",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/list-pending-invitations-for-the-current-user.md",
+   "url": "https://docs.near.ai/api-reference/users/list-pending-invitations-for-the-current-user",
+   "bytes": 11522
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Remove the contact email",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/remove-the-contact-email.md",
+   "url": "https://docs.near.ai/api-reference/users/remove-the-contact-email",
+   "bytes": 9781
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Revoke a user refresh token",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/revoke-a-user-refresh-token.md",
+   "url": "https://docs.near.ai/api-reference/users/revoke-a-user-refresh-token",
+   "bytes": 9571
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Revoke all tokens for a user",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/revoke-all-tokens-for-a-user.md",
+   "url": "https://docs.near.ai/api-reference/users/revoke-all-tokens-for-a-user",
+   "bytes": 9548
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update current user's profile",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/users/update-current-users-profile.md",
+   "url": "https://docs.near.ai/api-reference/users/update-current-users-profile",
+   "bytes": 12851
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create a new workspace in an organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/create-a-new-workspace-in-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/create-a-new-workspace-in-an-organization",
+   "bytes": 11409
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Create API key for workspace",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/create-api-key-for-workspace.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/create-api-key-for-workspace",
+   "bytes": 13215
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Delete workspace",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/delete-workspace.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/delete-workspace",
+   "bytes": 9733
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Get workspace by ID",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/get-workspace-by-id.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/get-workspace-by-id",
+   "bytes": 10470
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List API keys for workspace",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/list-api-keys-for-workspace.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/list-api-keys-for-workspace",
+   "bytes": 13124
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "List workspaces in an organization",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/list-workspaces-in-an-organization.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/list-workspaces-in-an-organization",
+   "bytes": 11996
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Revoke an API key",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/revoke-an-api-key.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/revoke-an-api-key",
+   "bytes": 9822
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update API key spend limit",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/update-api-key-spend-limit.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/update-api-key-spend-limit",
+   "bytes": 13442
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update API key",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/update-api-key.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/update-api-key",
+   "bytes": 13976
+  },
+  {
+   "source": "nearai",
+   "section": "api-reference",
+   "title": "Update workspace",
+   "description": "**Deprecated:** this endpoint is moving to cloud-platform at the same path; the cloud-platform base URL will be announced. Behaviour may differ in edge cases.",
+   "file": "nearai/api-reference/workspaces/update-workspace.md",
+   "url": "https://docs.near.ai/api-reference/workspaces/update-workspace",
+   "bytes": 11106
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Direct Completions",
+   "description": "Experimental: send requests straight to one self-hosted model's TEE endpoint, without the NEAR AI Cloud Gateway.",
+   "file": "nearai/cloud/experimental/direct-completions.md",
+   "url": "https://docs.near.ai/cloud/experimental/direct-completions",
+   "bytes": 4709
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "End-to-End Encrypted Chat Completions",
+   "description": "How to use end-to-end encryption for chat completions with NEAR AI Cloud",
+   "file": "nearai/cloud/guides/e2ee-chat-completions.md",
+   "url": "https://docs.near.ai/cloud/guides/e2ee-chat-completions",
+   "bytes": 31435
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Aider and Zed",
+   "description": "Configure Aider and Zed to use NEAR AI Cloud as an OpenAI-compatible provider.",
+   "file": "nearai/cloud/guides/integrations/aider-zed.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/aider-zed",
+   "bytes": 7498
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Cline, Roo Code, and Kilo Code",
+   "description": "Configure Cline, Roo Code, and Kilo Code with NEAR AI Cloud's OpenAI-compatible API.",
+   "file": "nearai/cloud/guides/integrations/cline-roo-kilo.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/cline-roo-kilo",
+   "bytes": 8034
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Continue",
+   "description": "Configure Continue to use NEAR AI Cloud through its OpenAI-compatible provider.",
+   "file": "nearai/cloud/guides/integrations/continue.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/continue",
+   "bytes": 6624
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Cursor",
+   "description": "Configure Cursor with NEAR AI Cloud through Cursor's OpenAI API key and base URL settings.",
+   "file": "nearai/cloud/guides/integrations/cursor.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/cursor",
+   "bytes": 6812
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Dify",
+   "description": "Configure Dify with NEAR AI Cloud through the OpenAI-API-compatible model provider plugin.",
+   "file": "nearai/cloud/guides/integrations/dify.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/dify",
+   "bytes": 7464
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Integrations",
+   "description": "Use NEAR AI Cloud with third-party software that supports OpenAI-compatible providers.",
+   "file": "nearai/cloud/guides/integrations/index.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations",
+   "bytes": 2298
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "LibreChat",
+   "description": "Configure LibreChat to use NEAR AI Cloud as an OpenAI-compatible custom endpoint.",
+   "file": "nearai/cloud/guides/integrations/librechat.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/librechat",
+   "bytes": 8909
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "LiteLLM Proxy",
+   "description": "Configure the LiteLLM Python SDK and LiteLLM Proxy to use NEAR AI Cloud.",
+   "file": "nearai/cloud/guides/integrations/litellm.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/litellm",
+   "bytes": 7467
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Model Discovery and Refresh",
+   "description": "Discover current NEAR AI Cloud models and refresh stale client model lists.",
+   "file": "nearai/cloud/guides/integrations/model-discovery.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/model-discovery",
+   "bytes": 5669
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Open WebUI",
+   "description": "Configure Open WebUI to use NEAR AI Cloud as an OpenAI-compatible provider.",
+   "file": "nearai/cloud/guides/integrations/open-webui.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/open-webui",
+   "bytes": 7260
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "OpenCode",
+   "description": "Configure OpenCode to use NEAR AI Cloud as an OpenAI-compatible provider.",
+   "file": "nearai/cloud/guides/integrations/opencode.md",
+   "url": "https://docs.near.ai/cloud/guides/integrations/opencode",
+   "bytes": 8928
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "OpenAI Compatibility",
+   "description": "How to use NEAR AI Cloud with standard OpenAI SDKs",
+   "file": "nearai/cloud/guides/openai-compatibility.md",
+   "url": "https://docs.near.ai/cloud/guides/openai-compatibility",
+   "bytes": 7665
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Goose",
+   "description": "Configure Goose to use NEAR AI Cloud as an OpenAI-compatible provider.",
+   "file": "nearai/cloud/guides/opencode-goose.md",
+   "url": "https://docs.near.ai/cloud/guides/opencode-goose",
+   "bytes": 7468
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Prompt Caching",
+   "description": "How NEAR AI Cloud caches prompt prefixes to reduce latency and cost",
+   "file": "nearai/cloud/guides/prompt-caching.md",
+   "url": "https://docs.near.ai/cloud/guides/prompt-caching",
+   "bytes": 3512
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Embeddings, Images, Audio & More",
+   "description": "Use NEAR AI Cloud for embeddings, reranking, image generation, audio transcription, and PII detection — all inside TEEs",
+   "file": "nearai/cloud/guides/specialized-endpoints.md",
+   "url": "https://docs.near.ai/cloud/guides/specialized-endpoints",
+   "bytes": 5252
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Stateless Responses API",
+   "description": "Use the OpenAI Responses shape without server-side conversation or response storage",
+   "file": "nearai/cloud/guides/stateless-responses.md",
+   "url": "https://docs.near.ai/cloud/guides/stateless-responses",
+   "bytes": 7820
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Usage Reporting API",
+   "description": "",
+   "file": "nearai/cloud/guides/usage-reporting.md",
+   "url": "https://docs.near.ai/cloud/guides/usage-reporting",
+   "bytes": 13008
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Web Search",
+   "description": "Give models access to live web results with built-in web search tools",
+   "file": "nearai/cloud/guides/web-search.md",
+   "url": "https://docs.near.ai/cloud/guides/web-search",
+   "bytes": 3587
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "SDK",
+   "description": "Experimental SDK notes for direct model endpoints.",
+   "file": "nearai/cloud/inference-sdk/direct.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/direct",
+   "bytes": 4607
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Go",
+   "description": "Use the Go SDK for verified Chat Completions, Responses, Messages, and System One decisions.",
+   "file": "nearai/cloud/inference-sdk/go.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/go",
+   "bytes": 10791
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "SDK",
+   "description": "Call NEAR AI Cloud inference and verify responses in JavaScript, Python, Rust, and Go.",
+   "file": "nearai/cloud/inference-sdk/index.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk",
+   "bytes": 4233
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "JavaScript",
+   "description": "Use the JavaScript SDK for verified Chat Completions, Responses, Messages, and System One decisions.",
+   "file": "nearai/cloud/inference-sdk/javascript.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/javascript",
+   "bytes": 8525
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Python",
+   "description": "Use the asynchronous Python SDK for verified Chat Completions, Responses, Messages, and System One decisions.",
+   "file": "nearai/cloud/inference-sdk/python.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/python",
+   "bytes": 8549
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Rust",
+   "description": "Use the Rust SDK for verified Chat Completions, Responses, Messages, and System One decisions.",
+   "file": "nearai/cloud/inference-sdk/rust.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/rust",
+   "bytes": 9202
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Embedded",
+   "description": "Embed the Verification Center and supply your application's verification reports.",
+   "file": "nearai/cloud/inference-sdk/widget/embedded.md",
+   "url": "https://docs.near.ai/cloud/inference-sdk/widget/embedded",
+   "bytes": 9370
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Available Models",
+   "description": "Explore NEAR AI Cloud model catalog",
+   "file": "nearai/cloud/models.md",
+   "url": "https://docs.near.ai/cloud/models",
+   "bytes": 2411
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Private Inference",
+   "description": "Learn how NEAR AI Cloud's private inference leverages TEEs to provide cryptographically verifiable AI computations with complete data privacy and security.",
+   "file": "nearai/cloud/private-inference.md",
+   "url": "https://docs.near.ai/cloud/private-inference",
+   "bytes": 10751
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Quickstart",
+   "description": "",
+   "file": "nearai/cloud/quickstart.md",
+   "url": "https://docs.near.ai/cloud/quickstart",
+   "bytes": 5235
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Reasoning Models",
+   "description": "Learn how to enable and disable reasoning capabilities for supported models",
+   "file": "nearai/cloud/reasoning-models.md",
+   "url": "https://docs.near.ai/cloud/reasoning-models",
+   "bytes": 10626
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Staking Calculator",
+   "description": "Estimate how much NEAR to stake to cover your private inference usage, or see what a given stake gets you — based on the current NEAR price and staking APY.",
+   "file": "nearai/cloud/staking-for-inference/calculator.md",
+   "url": "https://docs.near.ai/cloud/staking-for-inference/calculator",
+   "bytes": 1437
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Staking for Inference",
+   "description": "Stake NEAR and let the staking rewards pay for private inference on NEAR AI Cloud — your principal stays yours and stays withdrawable.",
+   "file": "nearai/cloud/staking-for-inference/overview.md",
+   "url": "https://docs.near.ai/cloud/staking-for-inference/overview",
+   "bytes": 4218
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Gateway Attestation",
+   "description": "Verify the NEAR AI Cloud gateway attestation for requests sent to cloud-api.near.ai.",
+   "file": "nearai/cloud/verification/cloud-api/gateway-attestation.md",
+   "url": "https://docs.near.ai/cloud/verification/cloud-api/gateway-attestation",
+   "bytes": 5008
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Image Provenance",
+   "description": "Apply an image-provenance policy to configurations measured in NEAR AI Cloud gateway and model attestations.",
+   "file": "nearai/cloud/verification/cloud-api/image-provenance.md",
+   "url": "https://docs.near.ai/cloud/verification/cloud-api/image-provenance",
+   "bytes": 2581
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "NEAR Model Attestations",
+   "description": "Verify the NEAR model-attestation report returned through the NEAR AI Cloud gateway.",
+   "file": "nearai/cloud/verification/cloud-api/model-attestations.md",
+   "url": "https://docs.near.ai/cloud/verification/cloud-api/model-attestations",
+   "bytes": 6286
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Response Signatures",
+   "description": "Verify available response signatures from the NEAR AI Cloud gateway against exact bytes and matching preflight evidence.",
+   "file": "nearai/cloud/verification/cloud-api/response-signatures.md",
+   "url": "https://docs.near.ai/cloud/verification/cloud-api/response-signatures",
+   "bytes": 6511
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "TLS Connection Binding",
+   "description": "Bind a live NEAR AI Cloud gateway TLS connection to the gateway attestation.",
+   "file": "nearai/cloud/verification/cloud-api/tls.md",
+   "url": "https://docs.near.ai/cloud/verification/cloud-api/tls",
+   "bytes": 3252
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Verification",
+   "description": "Verify requests sent through the NEAR AI Cloud Gateway.",
+   "file": "nearai/cloud/verification/index.md",
+   "url": "https://docs.near.ai/cloud/verification",
+   "bytes": 2423
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Quote, Nonce, and Signer Bindings",
+   "description": "Shared rules for reading verified quotes, checking freshness, and matching signing identities.",
+   "file": "nearai/cloud/verification/reference/quote-nonce-signer.md",
+   "url": "https://docs.near.ai/cloud/verification/reference/quote-nonce-signer",
+   "bytes": 14591
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Response Signature Verification",
+   "description": "Verify a response signature over exact request and response bytes.",
+   "file": "nearai/cloud/verification/reference/response-signature-verification.md",
+   "url": "https://docs.near.ai/cloud/verification/reference/response-signature-verification",
+   "bytes": 8483
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Verification Policy",
+   "description": "Define required evidence, acceptable measurements, provenance requirements, and handling for unavailable verification results.",
+   "file": "nearai/cloud/verification/reference/verification-policy.md",
+   "url": "https://docs.near.ai/cloud/verification/reference/verification-policy",
+   "bytes": 3118
+  },
+  {
+   "source": "nearai",
+   "section": "cloud",
+   "title": "Verification Center",
+   "description": "Check a model's hardware attestation and a reply's signature in your browser, without writing code.",
+   "file": "nearai/cloud/verification/verification-center.md",
+   "url": "https://docs.near.ai/cloud/verification/verification-center",
+   "bytes": 10495
+  },
+  {
+   "source": "nearai",
+   "section": "index",
+   "title": "Private. Intelligent. Yours.",
+   "description": "Build private, user-owned AI with NEAR AI Cloud",
+   "file": "nearai/index.md",
+   "url": "https://docs.near.ai/index",
+   "bytes": 2777
+  }
+ ]
+}

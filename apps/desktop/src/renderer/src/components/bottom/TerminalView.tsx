@@ -3,16 +3,28 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 
-// A shell in the project folder, kept alive while the panel is collapsed
+type TerminalViewProps = {
+  // A shell in this project's folder; null runs `command` in the home folder
+  projectId: string | null
+  command?: string
+  visible: boolean
+  onExit?: (exitCode: number) => void
+}
+
+// A shell in the project folder, kept alive while the panel is collapsed, or a
+// single command such as an agent's installer
 function TerminalView({
   projectId,
-  visible
-}: {
-  projectId: string
-  visible: boolean
-}): React.JSX.Element {
+  command,
+  visible,
+  onExit
+}: TerminalViewProps): React.JSX.Element {
   const hostRef = useRef<HTMLDivElement>(null)
   const fitRef = useRef<FitAddon>(null)
+  const onExitRef = useRef(onExit)
+  useEffect(() => {
+    onExitRef.current = onExit
+  })
 
   useEffect(() => {
     const host = hostRef.current
@@ -42,9 +54,11 @@ function TerminalView({
       if (event.id === id) terminal.write(event.data)
     })
     const offExit = window.api.terminal.onExit((event) => {
-      if (event.id === id) terminal.write('\r\n[process exited]\r\n')
+      if (event.id !== id) return
+      terminal.write('\r\n[process exited]\r\n')
+      onExitRef.current?.(event.exitCode)
     })
-    window.api.terminal.create(projectId, terminal.cols, terminal.rows).then((created) => {
+    window.api.terminal.create(projectId, terminal.cols, terminal.rows, command).then((created) => {
       if (disposed) window.api.terminal.kill(created)
       else id = created
     })
@@ -67,7 +81,7 @@ function TerminalView({
       if (id) window.api.terminal.kill(id)
       terminal.dispose()
     }
-  }, [projectId])
+  }, [projectId, command])
 
   useEffect(() => {
     if (visible) requestAnimationFrame(() => fitRef.current?.fit())

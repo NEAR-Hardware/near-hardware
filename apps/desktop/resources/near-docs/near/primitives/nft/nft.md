@@ -1,0 +1,510 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Using NFTs
+
+> Learn about NEAR non-fungible tokens (NFT) following NEP-171 and NEP-177 standards - mint, transfer, query, and trade unique digital assets with comprehensive examples.
+
+Wanting to use Non-Fungible Tokens (NFT) in your dApp? Here you will find all the information you need to get started creating your own tokens, registering users, transferring tokens, and integrating them into your smart contracts.
+
+The WebApp examples use the local `useNearWallet` hook from the [Hello NEAR provider setup](https://docs.near.org/web3-apps/quickstart.md#context-provider).
+
+***
+
+## Deploying a NFT Contract
+
+Use the existing global NFT contract. Reuse its deployed code and configure the owner and collection metadata through initialization arguments.
+
+### Global Contract
+
+You can deploy a new Non-Fungible Token using our global NFT contract - a pre-deployed [standard NFT contract](https://github.com/near-examples/NFT) that you can reuse. [Global contracts](https://docs.near.org/smart-contracts/global-contracts.md) are deployed once and can be reused by any account without incurring high storage costs.
+
+| Network | Global NFT contract |
+| - | - |
+| Mainnet | `nft.globals.primitives.near` |
+| Testnet | `nft.globals.primitives.testnet` |
+
+The following commands attach the global code to `<account-id>` and initialize that account's collection with its own owner and metadata. Call `nft_mint` on `<account-id>` to mint NFTs in that collection.
+
+> [tab] By Account (Mainnet)
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near contract deploy <account-id> use-global-account-id nft.globals.primitives.near \
+>   with-init-call new \
+>   json-args '{"owner_id": "<account-id>", "metadata": {"spec": "nft-1.0.0", "name": "MY_NFT", "symbol": "NFT2000"}}' \
+>   prepaid-gas '100.0 Tgas' \
+>   attached-deposit '0 NEAR' \
+>   network-config mainnet \
+>   sign-with-keychain send
+> ```
+
+> [tab] By Account (Testnet)
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near contract deploy <account-id> use-global-account-id nft.globals.primitives.testnet \
+>   with-init-call new \
+>   json-args '{"owner_id": "<account-id>", "metadata": {"spec": "nft-1.0.0", "name": "MY_NFT", "symbol": "NFT2000"}}' \
+>   prepaid-gas '100.0 Tgas' \
+>   attached-deposit '0 NEAR' \
+>   network-config testnet \
+>   sign-with-keychain \
+>   send
+> ```
+
+> [tab] By Hash
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near contract deploy <account-id> use-global-hash ivu1e9obVRnMJLSvVPRgtYefUYUS1L3f5eYHjS86zL9 \
+>   with-init-call new \
+>   json-args '{"owner_id": "<account-id>", "metadata": {"spec": "nft-1.0.0", "name": "MY_NFT", "symbol": "NFT2000"}}' \
+>   prepaid-gas '100.0 Tgas' \
+>   attached-deposit '0 NEAR' \
+>   network-config testnet \
+>   sign-with-keychain \
+>   send
+> ```
+
+> [!NOTE]
+>
+> Deploying by **hash** creates an immutable contract that never changes. Deploying by **account ID** creates an updatable contract that changes when the referenced account's contract is updated. Choose based on whether you want your NFT contract to be updatable or permanent.
+
+***
+
+## Minting a NFT
+
+To create a new NFT (a.k.a. minting it) you will call the `nft_mint` method passing as arguments the metadata that defines the NFT.
+
+> [accordion] Manual Interaction
+>
+> You don't need to deploy your own NFT contract. NEAR has a shared NFT contract that anyone can mint on: `nft.primitives.near` on mainnet and `nft.primitives.testnet` on testnet. Here's how to call it from your application:
+>
+> > [tab] 🌐 WebApp
+> >
+> > ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > import { useNearWallet } from "@/components/near-provider";
+> >
+> > const CONTRACT_ADDRESS = 'nft.primitives.near';
+> >
+> > const { callFunction } = useNearWallet();
+> >
+> > await callFunction({
+> >   contractId: CONTRACT_ADDRESS,
+> >   method: 'nft_mint',
+> >   args: {
+> >     token_id: '1',
+> >     receiver_id: 'bob.near',
+> >     token_metadata: {
+> >       title: 'NFT Primitive Token',
+> >       description: 'Awesome NFT Primitive Token',
+> >       media: 'string', // URL to associated media, preferably to decentralized, content-addressed storage
+> >     },
+> >   },
+> >   deposit: 10000000000000000000000,
+> > });
+> > ```
+> >
+> > Learn more about setting up the [NEAR provider](https://docs.near.org/web3-apps/quickstart.md#context-provider) in your application
+>
+> > [tab] 🖥️ CLI
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > near call nft.primitives.near nft_mint '{"token_id": "1", "receiver_id": "bob.near", "token_metadata": {"title": "NFT Primitive Token", "description": "Awesome NFT Primitive Token", "media": "string"}}' --depositYocto 10000000000000000000000, --useAccount bob.near
+> > ```
+>
+> > [tab] Lantstool
+> >
+> > Try it out on
+> > [Lantstool](https://app.lantstool.dev/import/gh/lantstool/examples.near-protocol/main/docs/2.build/5.primitives/nft/mint-nft-reference.json)
+>
+> > [tab] 📄 Contract
+> >
+> > ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > // Validator interface, for cross-contract calls
+> > #[ext_contract(ext_nft_contract)]
+> > trait ExternalNftContract {
+> >   fn nft_mint(&self, token_series_id: String, receiver_id: AccountId) -> Promise;
+> > }
+> >
+> > // Implement the contract structure
+> > #[near]
+> > impl Contract {
+> >   #[payable]
+> >   pub fn nft_mint(&mut self, token_series_id: String, receiver_id: AccountId) -> Promise {
+> >     let promise = ext_nft_contract::ext(self.nft_contract.clone())
+> >       .with_static_gas(Gas(30*TGAS))
+> >       .with_attached_deposit(env::attached_deposit())
+> >       .nft_mint(token_series_id, receiver_id);
+> >
+> >     return promise.then( // Create a promise to callback query_greeting_callback
+> >       Self::ext(env::current_account_id())
+> >       .with_static_gas(Gas(30*TGAS))
+> >       .nft_mint_callback()
+> >     )
+> >   }
+> >
+> >   #[private] // Public - but only callable by env::current_account_id()
+> >   pub fn nft_mint_callback(&self, #[callback_result] call_result: Result<TokenId, PromiseError>) -> Option<TokenId> {
+> >     // Check if the promise succeeded
+> >     if call_result.is_err() {
+> >       log!("There was an error contacting NFT contract");
+> >       return None;
+> >     }
+> >
+> >     // Return the token data
+> >     let token_id: TokenId = call_result.unwrap();
+> >     return Some(token_id);
+> >   }
+> > }
+> > ```
+>
+> > [!NOTE]
+> >
+> > See the [metadata standard](https://github.com/near/NEPs/tree/master/neps/nep-0177.md) for the full list of `TokenMetadata` parameters.
+>
+> > [!WARNING]
+> >
+> > Values of gas and deposit might vary depending on which NFT contract you are calling.
+
+***
+
+### Minting Collections
+
+Many times people want to create multiple 100 copies of an NFT (this is called a collection). In such cases, what you actually need to do is to mint 100 different NFTs with the same metadata (but different `token-id`).
+
+***
+
+### Royalties
+
+You might have noticed that one of the parameters is a structure called royalties. Royalties enable you to create a list of users that should get paid when the token is sell in a marketplace. For example, if `anna` has `5%` of royalties, each time the NFT is sell, `anna` should get a 5% of the selling price.
+
+***
+
+## Querying NFT data
+
+You can query the NFT's information and metadata by calling the `nft_token`.
+
+> [tab] 🌐 WebApp
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { useNearWallet } from "@/components/near-provider";
+>
+> const CONTRACT_ADDRESS = 'nft.primitives.near';
+>
+> const { viewFunction } = useNearWallet();
+>
+> const response = await viewFunction({
+>   contractId: CONTRACT_ADDRESS,
+>   method: 'nft_token',
+>   args: {
+>     token_id: '1',
+>   },
+> });
+> ```
+>
+> Learn more about setting up the [NEAR provider](https://docs.near.org/web3-apps/quickstart.md#context-provider) in your application
+>
+> > [accordion] Example response
+> >
+> > ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > {
+> >   "token_id": "1",
+> >   "owner_id": "bob.near",
+> >   "metadata": {
+> >     "title": "string", // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+> >     "description": "string", // free-form description
+> >     "media": "string", // URL to associated media, preferably to decentralized, content-addressed storage
+> >     "media_hash": "string", // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
+> >     "copies": 1, // number of copies of this set of metadata in existence when token was minted.
+> >     "issued_at": 1642053411068358156, // When token was issued or minted, Unix epoch in milliseconds
+> >     "expires_at": 1642053411168358156, // When token expires, Unix epoch in milliseconds
+> >     "starts_at": 1642053411068358156, // When token starts being valid, Unix epoch in milliseconds
+> >     "updated_at": 1642053411068358156, // When token was last updated, Unix epoch in milliseconds
+> >     "extra": "string", // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+> >     "reference": "string", // URL to an off-chain JSON file with more info.
+> >     "reference_hash": "string" // Base64-encoded sha256 hash of JSON from reference field. Required if `reference` is included.
+> >   }
+> > }
+> > ```
+
+> [tab] 🖥️ CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near view nft.primitives.near nft_token '{"token_id": "1"}'
+> ```
+>
+> > [accordion] Example response
+> >
+> > ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > {
+> >   "token_id": "1",
+> >   "owner_id": "bob.near",
+> >   "metadata": {
+> >     "title": "string", // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+> >     "description": "string", // free-form description
+> >     "media": "string", // URL to associated media, preferably to decentralized, content-addressed storage
+> >     "media_hash": "string", // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
+> >     "copies": 1, // number of copies of this set of metadata in existence when token was minted.
+> >     "issued_at": 1642053411068358156, // When token was issued or minted, Unix epoch in milliseconds
+> >     "expires_at": 1642053411168358156, // When token expires, Unix epoch in milliseconds
+> >     "starts_at": 1642053411068358156, // When token starts being valid, Unix epoch in milliseconds
+> >     "updated_at": 1642053411068358156, // When token was last updated, Unix epoch in milliseconds
+> >     "extra": "string", // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+> >     "reference": "string", // URL to an off-chain JSON file with more info.
+> >     "reference_hash": "string" // Base64-encoded sha256 hash of JSON from reference field. Required if `reference` is included.
+> >   }
+> > }
+> > ```
+
+> [tab] Lantstool
+>
+> Try it out on
+> [Lantstool](https://app.lantstool.dev/import/gh/lantstool/examples.near-protocol/main/docs/2.build/5.primitives/nft/query-nft-data-reference.json)
+>
+> > [accordion] Example response
+> >
+> > ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > {
+> >   "token_id": "1",
+> >   "owner_id": "bob.near",
+> >   "metadata": {
+> >     "title": "string", // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+> >     "description": "string", // free-form description
+> >     "media": "string", // URL to associated media, preferably to decentralized, content-addressed storage
+> >     "media_hash": "string", // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
+> >     "copies": 1, // number of copies of this set of metadata in existence when token was minted.
+> >     "issued_at": 1642053411068358156, // When token was issued or minted, Unix epoch in milliseconds
+> >     "expires_at": 1642053411168358156, // When token expires, Unix epoch in milliseconds
+> >     "starts_at": 1642053411068358156, // When token starts being valid, Unix epoch in milliseconds
+> >     "updated_at": 1642053411068358156, // When token was last updated, Unix epoch in milliseconds
+> >     "extra": "string", // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+> >     "reference": "string", // URL to an off-chain JSON file with more info.
+> >     "reference_hash": "string" // Base64-encoded sha256 hash of JSON from reference field. Required if `reference` is included.
+> >   }
+> > }
+> > ```
+
+> [tab] 📄 Contract
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Validator interface, for cross-contract calls
+> #[ext_contract(ext_nft_contract)]
+> trait ExternalNftContract {
+>   fn nft_token(&self, token_id: TokenId) -> Promise;
+> }
+>
+> // Implement the contract structure
+> #[near]
+> impl Contract {
+>   pub fn nft_token(&self, token_id: TokenId) -> Promise {
+>     let promise = ext_nft_contract::ext(self.nft_contract.clone())
+>       .nft_token(token_id);
+>
+>     return promise.then( // Create a promise to callback query_greeting_callback
+>       Self::ext(env::current_account_id())
+>       .nft_token_callback()
+>     )
+>   }
+>
+>   #[private] // Public - but only callable by env::current_account_id()
+>   pub fn nft_token_callback(&self, #[callback_result] call_result: Result<Token, PromiseError>) -> Option<Token> {
+>     // Check if the promise succeeded
+>     if call_result.is_err() {
+>       log!("There was an error contacting NFT contract");
+>       return None;
+>     }
+>
+>     // Return the token data
+>     let token_data: Token = call_result.unwrap();
+>     return Some(token_data);
+>   }
+> }
+> ```
+
+***
+
+## Transferring a NFT
+
+Transferring an NFT can happen in two scenarios: (1) you ask to transfer an NFT, and (2) an [authorized account](#approving-users) asks to transfer the NFT.
+
+In both cases, it is necessary to invoke the `nft_transfer` method, indicating the token id, the receiver, and an (optionally) an [approval\_id](https://github.com/near/NEPs/tree/master/neps/nep-0178.md).
+
+> [tab] 🌐 WebApp
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { useNearWallet } from "@/components/near-provider";
+>
+> const CONTRACT_ADDRESS = 'nft.primitives.near';
+>
+> const { callFunction } = useNearWallet();
+>
+> await callFunction({
+>   contractId: CONTRACT_ADDRESS,
+>   method: 'nft_transfer',
+>   args: {
+>     token_id: '1',
+>     receiver_id: 'bob.near',
+>   },
+>   deposit: 1,
+> });
+> ```
+>
+> Learn more about setting up the [NEAR provider](https://docs.near.org/web3-apps/quickstart.md#context-provider) in your application
+
+> [tab] 🖥️ CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   near call nft.primitives.near nft_transfer '{"token_id": "1", "receiver_id": "bob.near"}' --useAccount bob.near --deposit 0.000000000000000000000001
+> ```
+
+> [tab] Lantstool
+>
+> Try it out on
+> [Lantstool](https://app.lantstool.dev/import/gh/lantstool/examples.near-protocol/main/docs/2.build/5.primitives/nft/transfer-nft-reference.json)
+
+> [tab] 📄 Contract
+>
+> > [!NOTE]
+> >
+> > Please notice that a contract can only transfer an NFT that they own, or an NFT that they were approved to transfer.
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> const YOCTO_NEAR: u128 = 1;
+>
+> #[ext_contract(ext_nft_contract)]
+> trait ExternalNftContract {
+>   fn nft_transfer(&self, receiver_id: AccountId, token_id: TokenId) -> Promise;
+> }
+>
+> impl Contract {
+>   #[payable]
+>   pub fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId) -> Promise {
+>     let promise = ext_nft_contract::ext(self.nft_contract.clone())
+>       .with_attached_deposit(YOCTO_NEAR)
+>       .nft_transfer(receiver_id, token_id);
+>
+>     return promise.then( // Create a promise to callback query_greeting_callback
+>       Self::ext(env::current_account_id())
+>       .nft_transfer_callback()
+>     )
+>   }
+>
+>   #[private] // Public - but only callable by env::current_account_id()
+>   pub fn nft_transfer_callback(&self, #[callback_result] call_result: Result<(), PromiseError>) {
+>     // Check if the promise succeeded
+>     if call_result.is_err() {
+>       log!("There was an error contacting NFT contract");
+>     }
+>   }
+> }
+> ```
+
+***
+
+## Attaching NFTs to a Call
+
+Natively, only NEAR tokens (Ⓝ) can be attached to a function calls. However, the NFT standard enables to attach a non-fungible tokens in a call by using the NFT-contract as intermediary. This means that, instead of you attaching tokens directly to the call, you ask the NFT-contract to do both a transfer and a function call in your name.
+
+> [tab] 🖥️ CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near call <nft-contract> nft_transfer_call '{"receiver_id": "<receiver-contract>", "token_id": "<token_id>", "msg": "<a-string-message>"}' --useAccount <your-account> --depositYocto 1
+> ```
+
+> [tab] Lantstool
+>
+> Try it out on
+> [Lantstool](https://app.lantstool.dev/import/gh/lantstool/examples.near-protocol/main/docs/2.build/5.primitives/nft/attach-nft-to-call.json)
+
+> [!NOTE]
+>
+> Optionally, a [`memo` parameter](https://github.com/near/NEPs/tree/master/neps/nep-0171.md#nft-interface) can be passed to provide more information to your contract.
+
+***
+
+### How Does it Work?
+
+Assume you want to attach an NFT (🎫) to a call on the receiver contract. The workflow is as follows:
+
+1. You call `nft_transfer_call` in the NFT-contract passing: the receiver, a message, and the token-id of 🎫.
+2. The NFT contract transfers the NFT 🎫 to the receiver.
+3. The NFT contract calls **`receiver.nft_on_transfer(sender, token-owner, token-id, msg)`**.
+4. The NFT contract handles errors in the `nft_resolve_transfer` callback.
+5. The NFT contract returns `true` if it succeeded.
+
+#### The nft\_on\_transfer method
+
+From the workflow above it follows that the receiver we want to call needs to implement the `nft_on_transfer` method. When executed, such method will know:
+
+* Who is sending the NFT, since it is a parameter
+* Who is the current owner, since it is a parameter
+* Which NFT was transferred, since it is a parameter.
+* If there are any parameters encoded as a message
+
+The `nft_on_transfer` **must return true** if the NFT has to be **returned to the sender**.
+
+***
+
+## Approving Users
+
+You can authorize other users to transfer an NFT you own. This is useful, for example, to enable listing your NFT in a marketplace. In such scenario, you **trust** that the marketplace will only transfer the NFT upon receiving a certain amount of money in exchange.
+
+> [tab] 🖥️ CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near call <nft-contract> nft_approve '{
+> "token_id": "<token-unique-id>",
+> "account_id": "<authorized-account>",
+> "msg": "<json-structure>"
+> }' --useAccount <your-account> --depositYocto 1
+> ```
+
+> [tab] Lantstool
+>
+> Try it out on
+> [Lantstool](https://app.lantstool.dev/import/gh/lantstool/examples.near-protocol/main/docs/2.build/5.primitives/nft/approve-user.json)
+
+> [!NOTE]
+>
+> If the `msg` parameter is included, then a cross-contract call will be made to `<authorized_account>.nft_on_approve(msg)`. Which in turn will make a callback to `nft_resolve_transfer` in your NFT contract.
+
+***
+
+## Burn Tokens
+
+While the NFT standard does not define a `burn` method, you can simply transfer tokens to an account that no one controls, such as [`0000000000000000000000000000000000000000000000000000000000000000`](https://nearblocks.io/es/address/0000000000000000000000000000000000000000000000000000000000000000) (64 zeros).
+
+> [tab] 🌐 WebApp
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { useNearWallet } from "@/components/near-provider";
+>
+> const { callFunction } = useNearWallet();
+>
+> await callFunction({
+>   contractId: 'nft.primitives.near',
+>   method: 'nft_transfer',
+>   args: {
+>     token_id: '1',
+>     receiver_id: '0000000000000000000000000000000000000000000000000000000000000000',
+>   },
+>   deposit: 1,
+> });
+> ```
+>
+> Learn more about setting up the [NEAR provider](https://docs.near.org/web3-apps/quickstart.md#context-provider) in your application
+
+> [tab] 🖥️ CLI
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   near call nft.primitives.near nft_transfer '{"token_id": "1", "receiver_id": "0000000000000000000000000000000000000000000000000000000000000000"}' --useAccount bob.near --deposit 0.000000000000000000000001
+> ```
+
+***
+
+## Additional Application Behavior
+
+Use the global NFT contract by default. Only if your application truly requires behavior it does not provide, use [`near-contract-standards`](https://github.com/near/near-sdk-rs/tree/master/near-contract-standards) or [`near-sdk-contract-tools`](https://docs.near.org/primitives/nft/sdk-contract-tools) for the NFT implementation. Keep ownership, transfers, approvals, and transfer resolution in these libraries; do not implement the NFT standard by hand.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

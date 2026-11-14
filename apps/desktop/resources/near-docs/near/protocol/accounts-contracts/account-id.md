@@ -1,0 +1,180 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Address (Account ID)
+
+> Learn all about NEAR account addresses
+
+NEAR accounts are identified by a unique address, which can take multiple forms:
+
+1. [**Implicit address**](#implicit-address), which are 64 characters long (e.g. `fb9243ce...`)
+2. [**Named address**](#named-address), which are simpler to remember (e.g. `alice.near`, `sub.account.testnet`)
+3. An ethereum-like account (e.g. `0x85f17cf997934a597031b2e18a9ab6ebd4b9f6a4`)
+4. [**Deterministic address**](#deterministic-address), which are 42 characters long and start with `0s` (e.g. `0s85f17cf997934a597031b2e18a9ab6ebd4b9f6a4`)
+5. [**Universal address**](#universal-address), which are 54 characters long and start with `0u` (e.g. `0u0000000000000000000000000000000000000000000000000000`)
+
+> [accordion] Valid Account IDs
+>
+> In NEAR, accounts can actually be any string as long as they meet the following criteria:
+>
+> * It must have at least 2 characters and can go up to 64 characters
+> * It can only use lowercase letters (`a-z`), digits (`0-9`), and separators (`.`, `-`, `_`)
+>
+> This means that all `root`, `some-unique-string`, `something-to-remember-later`, `0x85f17....`, `fb9243ce` and `user.name` are **all valid account IDs**.
+>
+> Accounts can be created with named, implicit, Ethereum-like, deterministic, or universal addresses.
+
+> [!TIP]
+>
+> **Searching to create an account?**
+>
+> See our guide on [creating an account](https://docs.near.org/getting-started/create-account.md).
+
+> [!NOTE]
+>
+> **Building an app that accepts a recipient account from the user?**
+>
+> Read [Validating Recipient Accounts](https://docs.near.org/web3-apps/tutorials/account-validation.md) for the best practices wallets apply to prevent typos and lost funds.
+
+***
+
+## Implicit Address
+
+Implicit accounts are denoted by a 64 character address, which corresponds to a unique `ed25519` public/private key-pair. Whoever controls the [private key](https://docs.near.org/protocol/accounts-contracts/access-keys.md) of the implicit account controls the account.
+
+For example:
+
+* The private key: `ed25519:4qAaptksph8QbpNKU8TBDL65nh95AXGkSiXnDbdcoJ2SmtMrsihyqQdyiMoz38g38B3Lfo5MpPFveFgtLpjz1FpG`
+* Corresponds to the public key: `ed25519:5NkxGL5fD497rn5o3SQmSeBggraAT6hfSivb1JdtFC1J`
+* And controls the account: `4101a46f3ba21613263de3decc83b1a79f745a9a791f570c0bc6df086cb43dbd`
+
+While you can always derive an implicit address, if you want to sign any transaction you will need to initialize the account by sending some NEAR - can be 0 NEAR, which will create the account with no balance - to it.
+
+> [!TIP]
+>
+> In NEAR, you can delete the private key of an implicit account, which effectively locks the account and prevents anyone to control it
+
+See [Creating Implicit & Named Accounts](https://docs.near.org/protocol/tutorials/creating-implicit-and-named-accounts.md#create-an-implicit-account) to generate a key pair and fund the account.
+
+> [accordion] 🧑‍💻 Technical: How to derive an implicit account from a public key
+>
+> You can derive the implicit account address from a public key by removing the `ed25519:` prefix, decoding the resulting Base58 string into bytes, and then converting those bytes into a hexadecimal string.
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // vanilla js
+> import bs58 from 'bs58';
+> Buffer.from(bs58.decode(publicKey.replace('ed25519:', ''))).toString('hex')
+>
+> // or using near-api-js
+> import { keyToImplicitAddress } from 'near-api-js';
+> keyToImplicitAddress(publicKey);
+> ```
+
+***
+
+## Named Address
+
+Users can register **named accounts** (e.g. `bob.near`) which are easy to remember and share.
+
+A feature of named accounts is that they can create **sub-accounts** of themselves, effectively working as domains:
+
+1. The [`registrar`](https://nearblocks.io/address/registrar) account can create top-level accounts (e.g. `near` or `sweat`).
+2. The `near` account can create sub-accounts such as `bob.near` or `alice.near`
+3. `bob.near` can create sub-accounts of itself, such as `app.bob.near`
+4. Accounts cannot create sub-accounts of other accounts
+   * `near` **cannot** create `app.bob.near`
+   * `account.near` **cannot** create `sub.another-account.near`
+5. Accounts have **no control** over their sub-account, they are different entities
+
+See [Creating Implicit & Named Accounts](https://docs.near.org/protocol/tutorials/creating-implicit-and-named-accounts.md#create-a-named-account) to create a named account using the CLI, a faucet, or an existing funded account.
+
+***
+
+## Ethereum-like Address
+
+NEAR also supports Ethereum-like accounts which are identified by a hexadecimal address (e.g. `0x85f17cf997934a597031b2e18a9ab6ebd4b9f6a4`). These accounts are automatically created when a user signs in on a NEAR application using an Ethereum wallet such as MetaMask.
+
+***
+
+## Deterministic Address
+
+Deterministic addresses are a special type of address, derived from accounts with a pre-defined initial contract and storage.
+
+They start with `0s`, followed by 40 hex characters **deterministically derived** from the **initial code and storage** of the account - e.g. `0sfa485e3a3e4d6c4ab18b2df9f26631f1485f13c0` represents a `Hello World` contract initialized with the greeting "Howdy".
+
+> [!TIP]
+>
+> Deterministic accounts are useful for protocols and applications that need to reference a contract address before deployment.
+
+> [accordion] 🧑‍💻 Technical: How is the address derived?
+>
+> The deterministic account ID is computed by:
+>
+> 1. Constructing a `DeterministicAccountStateInit::V1` value. The type is a versioned enum, and `V1` is its only version. The value contains:
+>    * **Code**: a global contract, referenced by its code hash, or by account ID if it was [deployed by account ID](https://docs.near.org/smart-contracts/global-contracts.md). The global contract must already exist, or the action fails with `GlobalContractDoesNotExist`.
+>    * **Initial data**: a key-value mapping pre-populating the contract's storage. Each key can be at most 2 KiB (2048 bytes) and each value at most 4 MiB. From protocol version 87 (nearcore 2.14.0), the state init actions in one receipt can hold at most 1,500 entries in total.
+> 2. Borsh-encoding that value into bytes. The encoding starts with the version byte `0`. The code reference starts with `0` for a code hash or `1` for an account ID. The data entries are sorted by key.
+> 3. Applying the formula: `'0s' + keccak256(bytes)[12:32].hex()`
+>
+> This guarantees that two accounts with identical code and initial state will always have the same address.
+
+> [accordion] 🧑‍💻 Technical: How are deterministic accounts created?
+>
+> Deterministic accounts are created using the `DeterministicStateInit` action — **not** the standard `CreateAccount` action. The protocol validates that the supplied account ID matches the hash of the provided initial state.
+>
+> See [Creating Deterministic Accounts](https://docs.near.org/protocol/tutorials/creating-deterministic-accounts.md) for a walkthrough, or use [smart contracts](https://docs.near.org/smart-contracts/anatomy/actions.md#create-deterministic-accounts) and [NEAR API libraries such as `near-kit`](https://docs.near.org/tools/near-api#create-deterministic-account).
+>
+> Any NEAR attached beyond the required storage deposit is refunded to the sender.
+
+> [!NOTE]
+>
+> A NEAR transfer to a `0s` address that does not exist yet creates the account with a balance, but no code, keys, or storage. Its contract and initial storage are installed when a matching `DeterministicStateInit` action arrives.
+
+> [!NOTE]
+>
+> A deterministic account has no access keys when it is created, and creating it does not give the sender any control over it. Only the account itself can deploy new code, add keys, or delete the account. At first, this can happen only through the account's own contract. If the contract adds a full-access key, the holder of that key can also do these things. A function-call key does not give this control. The contract can still change its storage like any other contract.
+>
+> The code comes from a global contract. If the initial state names the global contract by code hash, the code stays as initialized unless the account itself changes it, through its contract or through a full-access key that the contract added. If it names the global contract by account ID, the owner of that account can publish new code at any time, and the deterministic account then runs the new code without a change of address. If a deterministic account is deleted, anyone can create it again with the same initial state.
+
+***
+
+## Universal Address
+
+Similar to deterministic addresses, universal addresses are derived from an account's initial state. However, the initial state can also contain **access keys**.
+
+They start with `0u` followed by 52 lowercase characters (54 characters total) - e.g. `0uvjkhh8nsdtth98wq1k8hka97gw9e0yvga4a4th3vj0jqwa91y4yg` is the address of an account with a single `post-quantum` key (`ml-dsa-65:NJ7gjn5UMGPZ…MtbZ9pmk`) with no contract.
+
+> [!NOTE]
+>
+> **How is this different from a deterministic account?**
+>
+> Deterministic accounts are derived solely from `code` plus an `initial storage`, with no keys, so they can only be controlled through their contract's own logic. Universal accounts, meanwhile, hash code, storage, **and** a set of access keys together, so a universal account can be a key-controlled account with no contract at all, similar to an implicit account.
+>
+> One important difference though is that universal accounts can be created with [post-quantum (`ml-dsa-65`)](./access-keys#signature-schemes) keys, while implicit accounts can be created with `ed25519` keys only.
+
+> [accordion] 🧑‍💻 Technical: How is the address derived?
+>
+> The universal account ID is computed by:
+>
+> 1. Constructing a `UniversalStateInit` value containing:
+>    * **Code** (optional, omitted for a key-only account): a global contract, referenced by its code hash, or by account ID if it was deployed by account ID
+>    * **Data**: a key-value mapping pre-populating the contract's storage, empty for a key-only account
+>    * **Access keys**: a set of access-key handles the account starts with, empty for a contract-only account. A handle is the full public key for `ed25519`/`secp256k1`, or the 32-byte hash for `ml-dsa-65` — the same [compact form](https://docs.near.org/protocol/accounts-contracts/access-keys.md#signature-schemes) used everywhere else
+> 2. Borsh-encoding that value into bytes
+> 3. Applying the formula: `'0u' + crockford_base32(sha3_256(bytes))`
+>
+> Unlike the `0s` scheme, the protocol does not re-serialize the bytes into a canonical form before hashing: the id commits to the **exact bytes supplied** — but those bytes must themselves already be the one canonical encoding (`data` and `access_keys` entries sorted with no duplicates, and no trailing bytes), or the state init is rejected outright rather than accepted under a different id.
+
+> [accordion] 🧑‍💻 Technical: How are universal accounts created?
+>
+> Universal accounts are created using the `UniversalStateInit` action, a distinct action from `CreateAccount` - used for named accounts - and `DeterministicStateInit` - used for deterministic accounts.
+>
+> See [Creating Universal Accounts](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md) for creation flows and code examples, or [Create universal accounts](https://docs.near.org/smart-contracts/anatomy/actions.md#create-universal-accounts) for the host functions used by smart contracts.
+
+> [!NOTE]
+>
+> A NEAR transfer to a `0u` address that does not exist yet **auto-creates it as uninitialized**: it holds the transferred balance but has no code, keys, or storage until a matching `UniversalStateInit` arrives. See [The uninitialized account](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md#the-uninitialized-account) for what an uninitialized account can and can't do.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

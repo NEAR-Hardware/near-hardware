@@ -1,0 +1,601 @@
+/* NEAR accounts: the page, its forms (also used by the setup guide) and the sidebar section */
+
+.near-mark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+}
+
+/* Pixel avatars: crisp at any size, with softly rounded corners */
+.account-avatar {
+  flex-shrink: 0;
+  clip-path: inset(0 round 24%);
+  image-rendering: pixelated;
+}
+
+.near-tile {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--tile);
+  color: var(--text);
+}
+
+.near-tile.testnet {
+  color: var(--text-muted);
+}
+
+.near-network-tag {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--tile);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.near-network-tag.mainnet {
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--success);
+}
+
+/* --- Page --- */
+
+.near-policy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.near-policy > svg {
+  flex-shrink: 0;
+  color: var(--icon);
+}
+
+.near-policy-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.near-policy-text strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.near-policy-text span {
+  color: var(--text-muted);
+}
+
+.near-policy-toggle {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+.near-policy-toggle input {
+  accent-color: var(--accent);
+}
+
+.near-section {
+  margin-top: 24px;
+}
+
+.near-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.near-section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.near-section-header p {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.near-section-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.near-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.near-row-wrap + .near-row-wrap {
+  border-top: 1px solid var(--border);
+}
+
+.near-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px 12px 14px;
+}
+
+.near-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.near-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.near-row-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+
+.near-primary-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.12);
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.near-row-detail {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.near-row-balance {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.near-row-balance.muted {
+  color: var(--text-muted);
+}
+
+.near-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+}
+
+.near-empty-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.near-empty-text strong {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.near-empty-text span {
+  color: var(--text-muted);
+}
+
+.near-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.near-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.near-secret-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 14px 14px;
+  padding: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.near-secret-warning {
+  display: flex;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.near-secret-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+.near-words {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.near-words li {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  user-select: text;
+}
+
+.near-words li span {
+  min-width: 16px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.near-secret-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.near-secret-actions .near-form-hint {
+  flex: 1;
+}
+
+/* --- Forms --- */
+
+.near-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.near-name-row {
+  display: flex;
+  gap: 8px;
+}
+
+.near-name-input {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.near-name-input:focus-within {
+  border-color: var(--accent);
+}
+
+/* Grows with the name so .testnet follows right after it */
+.near-name-input input {
+  flex: 0 1 auto;
+  min-width: 1ch;
+  height: 100%;
+  padding: 0 0 0 10px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  field-sizing: content;
+  user-select: text;
+}
+
+.near-name-input input::placeholder {
+  color: var(--icon-dim);
+}
+
+.near-name-suffix {
+  flex: 1;
+  padding-right: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.near-name-row .btn {
+  height: 34px;
+}
+
+.near-form-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 18px;
+}
+
+.near-name-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.near-name-status.ok {
+  color: var(--success);
+}
+
+.near-name-status.bad {
+  color: var(--warning);
+}
+
+.near-form-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.near-form-error {
+  color: var(--danger);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.near-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.near-form-actions .near-form-hint {
+  flex: 1;
+}
+
+.near-secret {
+  position: relative;
+}
+
+.near-secret textarea {
+  display: block;
+  width: 100%;
+  padding: 8px 36px 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: none;
+  user-select: text;
+}
+
+.near-secret textarea:focus {
+  border-color: var(--accent);
+}
+
+.near-secret textarea::placeholder {
+  color: var(--icon-dim);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/* Hidden like a password field until the eye is clicked */
+.near-secret textarea.masked {
+  -webkit-text-security: disc;
+}
+
+.near-secret .icon-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+.near-candidates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.near-candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.near-candidate:has(input:checked) {
+  border-color: var(--accent-border);
+  background: rgba(255, 106, 26, 0.05);
+}
+
+.near-candidate.disabled {
+  opacity: 0.55;
+}
+
+.near-candidate input {
+  accent-color: var(--accent);
+}
+
+.near-candidate .near-tile {
+  border-radius: 6px;
+}
+
+.near-candidate-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.near-candidate-name.muted {
+  color: var(--text-secondary);
+}
+
+.near-candidate-meta {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.near-manual {
+  display: flex;
+  gap: 8px;
+}
+
+.near-manual input,
+.near-manual select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.near-manual input {
+  flex: 1;
+  min-width: 0;
+  user-select: text;
+}
+
+.near-manual input:focus,
+.near-manual select:focus {
+  border-color: var(--accent);
+}
+
+/* --- Sidebar: primary accounts pinned under the projects --- */
+
+.sidebar-near {
+  flex-shrink: 0;
+  padding: 6px 8px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-near .sidebar-section-header {
+  margin-top: 0;
+  padding: 0 4px 0 8px;
+}
+
+.sidebar-section-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+
+.sidebar-section-link:hover {
+  color: var(--text);
+}
+
+.sidebar-near-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-near .nav-row:hover .nav-item,
+.sidebar-near .nav-row:focus-within .nav-item {
+  padding-right: 34px;
+}
+
+.sidebar-near .nav-row:hover .near-network-tag {
+  display: none;
+}
+
+/* An account the sidebar sent you to, flashed once */
+.near-row-wrap.focused {
+  animation: near-focus 1.6s ease;
+}
+
+@keyframes near-focus {
+  0%,
+  40% {
+    background: rgba(255, 106, 26, 0.12);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.sidebar-near .nav-item {
+  height: 30px;
+}
+
+.sidebar-near .nav-item .near-mark {
+  color: var(--icon);
+}
+
+.sidebar-near .nav-item.empty .nav-item-label {
+  color: var(--text-muted);
+}
+
+.sidebar-near .nav-item .near-network-tag {
+  padding: 0 6px;
+  font-size: 10.5px;
+}
+
+.sidebar-near .near-more {
+  height: 26px;
+  padding-left: 34px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}

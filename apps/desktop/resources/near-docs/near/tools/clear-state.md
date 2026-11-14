@@ -1,0 +1,98 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# State Cleaner
+
+> Clean up a contract's state.
+
+State Cleaner is an extension for [NEAR CLI](https://docs.near.org/tools/cli.md) that wipes a contract account's on-chain state without deleting the account, so you can redeploy a fresh contract or free the storage staked NEAR.
+
+## How it works
+
+Under the hood, it deploys a small cleanup contract to the target account and, in a single transaction, calls its `clean` method with every key in the account's state. The cleanup contract is left in place — it is not removed — until you deploy a new contract over it.
+
+> [!TIP]
+>
+> To learn more, check out the source code for both the [State Cleaner tool](https://github.com/near-examples/near-clear-state) and the [cleanup contract](https://github.com/near/core-contracts/tree/master/state-manipulation).
+
+## How to use
+
+**1. Install NEAR CLI**
+
+The State Cleaner is invoked through NEAR CLI, so you need it installed first. If you do not already have it installed, visit the [NEAR CLI page](https://docs.near.org/tools/cli.md).
+
+**2. Install the State Cleaner extension**
+
+Install it straight from the GitHub repository:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo install --locked --git https://github.com/near-examples/near-clear-state near-clear-state
+```
+
+> [!NOTE]
+>
+> Requires a Rust toolchain **≥ 1.88**.
+
+**3. Make sure the extension is on your PATH**
+
+Confirm it's picked up with:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near clear-state --help
+```
+
+**4. Run the command**
+
+Run the extension in interactive mode and follow the prompts:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near clear-state
+```
+
+Or pass everything in one go:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+export CONTRACT_ID=contract.testnet
+near clear-state $CONTRACT_ID network-config testnet sign-with-keychain send
+```
+
+**5. Use an RPC with a larger view-state cap**
+
+If the account's state is large, you may hit:
+
+```
+Account state is too large for this RPC's view_state cap
+```
+
+Most public RPCs cap `view_state` responses (around 50 KB). Point NEAR CLI at an RPC with a higher cap:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near config edit-connection testnet
+```
+
+Set the `rpc_url` value to a higher-capacity provider, then re-run the command. [Intear](https://intea.rs)'s RPCs work well:
+
+* Testnet: `https://testnet-rpc.intea.rs`
+* Mainnet: `https://rpc.intea.rs`
+
+You can also update it without the prompts:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near config edit-connection testnet --key rpc_url --value https://testnet-rpc.intea.rs
+```
+
+**6. (Optional) Verify the bundled wasm**
+
+The wasm embedded in the extension isn't built here — it's NEAR's prebuilt `state-manipulation` cleanup contract, vendored from [`near/core-contracts`](https://github.com/near/core-contracts). The extension pins a specific upstream commit, recorded in `extension/wasm/state_cleanup.wasm.provenance`.
+
+To verify that the wasm in the tool matches the wasm from `core-contracts`, clone the tool and run the verify script. It re-downloads the upstream wasm at the pinned commit and confirms the bundled bytes match:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+git clone https://github.com/near-examples/near-clear-state.git
+cd near-clear-state
+./scripts/verify-wasm.sh
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

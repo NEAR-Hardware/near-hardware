@@ -1,0 +1,431 @@
+/* First-run setup guide: a step rail on the left, one step at a time on the right */
+
+.setup {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  background: var(--bg);
+  /* Covers the app's drag strips; the rail and title bar opt back in */
+  -webkit-app-region: no-drag;
+}
+
+.setup-rail {
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--titlebar-height) + 16px) 12px 16px;
+  border-right: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  -webkit-app-region: drag;
+}
+
+.setup-rail button {
+  -webkit-app-region: no-drag;
+}
+
+.setup-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 20px;
+}
+
+.setup-brand img {
+  width: 30px;
+  height: 30px;
+}
+
+.setup-brand-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.setup-brand-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-step {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: default;
+}
+
+.setup-step:hover {
+  background: var(--hover);
+  color: var(--text-secondary);
+}
+
+.setup-step.current {
+  background: var(--active);
+  color: var(--text);
+}
+
+.setup-step-mark {
+  display: grid;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.setup-step.current .setup-step-mark {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.setup-step.done .setup-step-mark {
+  border-color: transparent;
+  background: rgba(74, 222, 128, 0.14);
+  color: var(--success);
+}
+
+.setup-rail-footer {
+  margin-top: auto;
+  padding: 0 6px;
+}
+
+.setup-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.setup-titlebar {
+  flex-shrink: 0;
+  height: var(--titlebar-height);
+  -webkit-app-region: drag;
+}
+
+.setup-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 40px 32px;
+}
+
+.setup-content,
+.setup-footer-inner {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.setup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup-content h1 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.setup-content h2 {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.setup-lead {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.setup-lead code {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.setup-hero {
+  width: 64px;
+  height: 64px;
+}
+
+.setup-footer {
+  flex-shrink: 0;
+  padding: 14px 40px;
+  border-top: 1px solid var(--border);
+}
+
+.setup-footer-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setup-footer-spacer {
+  flex: 1;
+}
+
+/* A card of rows: things to check or install */
+
+.setup-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.setup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.setup-row + .setup-row {
+  border-top: 1px solid var(--border);
+}
+
+.setup-row-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--tile);
+  color: var(--icon);
+}
+
+.setup-row .agent-icon {
+  border-radius: 8px;
+}
+
+.setup-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.setup-row-title {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.setup-row-detail {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.setup-row-action {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.setup-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.setup-status.ok {
+  color: var(--success);
+}
+
+.setup-status.failed {
+  color: var(--warning);
+}
+
+.setup-note {
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.setup-note > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--icon);
+}
+
+.setup-note.warning {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.setup-note.warning > svg {
+  color: var(--warning);
+}
+
+.setup-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.setup-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.setup-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* An agent's installer or sign-in, running in a real terminal */
+
+.setup-terminal {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.setup-terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+.setup-terminal-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setup-terminal-body {
+  height: 240px;
+  padding-bottom: 6px;
+}
+
+.setup-log {
+  max-height: 200px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.setup-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setup-path code {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setup-tour {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.setup-tour-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.setup-tour-card p {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* A form in a card: NEAR account create and import */
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.setup-card > .link-button {
+  align-self: flex-start;
+  font-size: 12.5px;
+}
+
+.setup-step-number {
+  font-size: 13px;
+  font-weight: 600;
+}

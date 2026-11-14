@@ -1,34 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Check, Download, LoaderCircle } from 'lucide-react'
-import type { PlatformioStatus } from '../../../shared/hardware'
+import { usePlatformio } from '../hooks/usePlatformio'
 
 // PlatformIO builds and flashes firmware; agents use it through their shell
 function PlatformioCard(): React.JSX.Element {
-  const [status, setStatus] = useState<PlatformioStatus>()
-  const [installing, setInstalling] = useState(false)
-  const [log, setLog] = useState<string[]>([])
+  const { status, installing, log, install } = usePlatformio()
   const logRef = useRef<HTMLPreElement>(null)
-
-  useEffect(() => {
-    window.api.platformio.status().then(setStatus)
-    return window.api.platformio.onLog((line) =>
-      setLog((current) => [...current.slice(-300), line])
-    )
-  }, [])
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
   }, [log])
-
-  const install = async (): Promise<void> => {
-    setInstalling(true)
-    setLog([])
-    try {
-      setStatus(await window.api.platformio.install())
-    } finally {
-      setInstalling(false)
-    }
-  }
 
   return (
     <section className="env-panel">

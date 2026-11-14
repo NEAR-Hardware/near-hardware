@@ -1,0 +1,312 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Wallet Login
+
+> Enable users to login with their NEAR wallet
+
+The `@hot-labs/near-connect` library provides a secure, zero-dependency wallet connector for NEAR blockchain with a unique sandbox-based architecture.
+
+> [!WARNING]
+>
+> **Do not use NEAR Wallet Selector (`@near-wallet-selector/*`).** It is deprecated and no longer maintained. Use NEAR Connect (`@hot-labs/near-connect`) to integrate wallets in new and existing apps.
+
+![Preview](https://github.com/user-attachments/assets/c4422057-38bb-4cd9-8bd0-568e29f46280)
+
+> [!TIP]
+>
+> **Example**
+>
+> We have a [working example](https://github.com/near-examples/hello-near-examples/tree/main/frontend), which you can easily get through `create-near-app`:
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> npx create-near-app@latest
+> ```
+
+***
+
+## Why NEAR Connect?
+
+Unlike traditional wallet selectors, it offers a dynamic manifest system that allows wallets to be added and updated without requiring developers to update their dependencies.
+
+* **Secure Execution**: Wallet scripts run in isolated sandboxed iframes for maximum security
+* **Dynamic Wallets**: Wallets are loaded from a manifest and can be updated without code changes
+* **Zero Dependencies**: Lightweight library with no external dependencies
+* **Automatic Detection**: Supports both injected wallets (extensions) and manifest-based wallets
+
+***
+
+## Installation
+
+Install the `@hot-labs/near-connect` and `near-api-js` packages:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+npm install @hot-labs/near-connect near-api-js
+```
+
+***
+
+## Initializing the Connector
+
+Initialize the `NearConnector` instance in your application:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+import { NearConnector } from "@hot-labs/near-connect";
+
+const connector = new NearConnector({ network: "testnet" });
+```
+
+For React apps, we recommend [wrapping the connector, wallet state, and contract helpers in a React Context provider](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx), then exposing them through a local hook. This lets components share one connector instance and keeps connection handling in one place.
+
+[Wrap your app with the provider](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/pages/_app.tsx) so all components can access the wallet functionality.
+
+> [accordion] Selecting Wallets
+>
+> Unlike traditional wallet selectors that bundle wallet code, NEAR Connect uses a **manifest-based approach**:
+>
+> 1. Wallet providers register their integration scripts in a public manifest
+> 2. The connector dynamically loads wallet scripts when users want to connect
+>
+> This architecture eliminates the need to install individual wallet packages and ensures wallet code can be updated independently from your app.
+>
+> ```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> const connector = new NearConnector({
+>   network: "testnet", // or "mainnet"
+>   features: {
+>     signMessage: true,  // Only show wallets that support message signing
+>     signTransaction: true,
+>     signInWithoutAddKey: true,
+>     signAndSendTransaction: true,
+>     signAndSendTransactions: true
+>   },
+> });
+> ```
+
+***
+
+## Signing In / Out
+
+Subscribe to the `wallet:signIn` and `wallet:signOut` events to update your application's wallet state:
+
+```tsx title="near-provider.tsx" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const handleSignIn = (payload: EventMap['wallet:signIn']) => {
+  if (!cancelled) {
+    setWallet(payload.wallet);
+    setSignedAccountId(payload.accounts[0]?.accountId ?? '');
+  }
+};
+const handleSignOut = () => {
+  if (!cancelled) {
+    setWallet(undefined);
+    setSignedAccountId('');
+  }
+};
+
+connector.on('wallet:signIn', handleSignIn);
+connector.on('wallet:signOut', handleSignOut);
+```
+
+[See code on GitHub](https://github.com/near-examples/hello-near-examples/blob/8420b0ea2bc312c401ee79c2066d1bb8e57ee4e6/frontend/src/providers/near-provider.tsx#L95-L109)
+
+Call `connector.connect()` to open the wallet selection modal and `connector.disconnect(wallet)` to sign out. In the React provider, these calls also update the local wallet and account state:
+
+```tsx title="near-provider.tsx" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const signIn = useCallback(async () => {
+  const connectedWallet = await connector.connect();
+  setWallet(connectedWallet);
+  const accounts = await connectedWallet.getAccounts();
+  setSignedAccountId(accounts[0]?.accountId ?? '');
+}, [connector]);
+
+const signOut = useCallback(async () => {
+  if (!wallet) return;
+  await connector.disconnect(wallet);
+  setWallet(undefined);
+  setSignedAccountId('');
+}, [connector, wallet]);
+```
+
+[See code on GitHub](https://github.com/near-examples/hello-near-examples/blob/8420b0ea2bc312c401ee79c2066d1bb8e57ee4e6/frontend/src/providers/near-provider.tsx#L132-L144)
+
+[Restore an existing wallet connection](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx#L88-L92) during initialization and [remove event listeners](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx#L115-L129) when the component unmounts.
+
+***
+
+## Calling Contract Method
+
+To call a contract method, first get the connected wallet instance using `connector.wallet()`, then use the wallet's `signAndSendTransaction` method to make a function call:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// Get the connected wallet
+const wallet = await connector.wallet();
+
+// Call a change method
+const result = await wallet.signAndSendTransaction({
+  receiverId: "hello.near-examples.testnet",
+  actions: [
+    {
+      type: "FunctionCall",
+      params: {
+        methodName: "set_greeting",
+        args: { greeting: "Hello from NEAR Connect!" },
+        gas: "30000000000000", // 30 TGas
+        deposit: "0", // No deposit
+      },
+    },
+  ],
+});
+
+console.log("Transaction:", result.transaction.hash);
+```
+
+***
+
+## Calling Read-only Methods
+
+NEAR Connect does not provide a built-in way to call read-only (view) methods.
+
+However, you can use the `near-api-js` package (or any of your preferred APIs) to create a JSON-RPC provider and call view methods directly:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+import { JsonRpcProvider } from "near-api-js";
+
+const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+
+const greeting = await provider.callFunction({
+  contractId: "hello.near-examples.testnet",
+  method: "get_greeting",
+  args: {},
+});
+```
+
+***
+
+## Get Balance
+
+NEAR Connect does not provide a built-in way to get the account balance.
+
+However, you can use the `near-api-js` package (or any of your preferred APIs) to create a JSON-RPC provider and query the account balance directly:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+import { JsonRpcProvider } from "near-api-js";
+
+const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+
+const account = await provider.viewAccount({ accountId: "hello.near-examples.testnet" });
+```
+
+***
+
+## Send Multiple Transactions
+
+You can request the user to sign and send multiple transactions in parallel through a single prompt:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const wallet = await connector.wallet();
+
+const results = await wallet.signAndSendTransactions({
+  transactions: [
+    {
+      receiverId: "token.near",
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: "ft_transfer",
+            args: {
+              receiver_id: "alice.near",
+              amount: "1000000",
+            },
+            gas: "30000000000000",
+            deposit: "1", // 1 yoctoNEAR for security
+          },
+        },
+      ],
+    },
+    {
+      receiverId: "nft.near",
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: "nft_mint",
+            args: {
+              token_id: "token-1",
+              receiver_id: "alice.near",
+            },
+            gas: "30000000000000",
+            deposit: "10000000000000000000000", // 0.01 NEAR
+          },
+        },
+      ],
+    },
+  ],
+});
+
+console.log(`Completed ${results.length} transactions`);
+```
+
+***
+
+## Sign Messages (NEP-413)
+
+In NEAR, users can sign messages for authentication purposes without needing to send a transaction on-chain:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const wallet = await connector.wallet();
+
+const signature = await wallet.signMessage({
+  message: "Please sign this message to authenticate",
+  recipient: "your-app.near",
+  nonce: Buffer.from(crypto.randomUUID()),
+});
+
+console.log("Signature:", signature.signature);
+console.log("Public Key:", signature.publicKey);
+
+// Verify the signature on your backend
+```
+
+***
+
+## Function-call keys at login
+
+To request a [function-call access key](https://docs.near.org/protocol/accounts-contracts/access-keys.md#function-call-keys) during login, use [`function-call-key-plugin`](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx#L54-L66). After the user approves the key, the app can sign permitted contract calls locally without opening the wallet for each transaction.
+
+Install the plugin alongside NEAR Connect and `near-api-js`:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+npm install function-call-key-plugin
+```
+
+Create the plugin and register it with your connector before calling `connect()`:
+
+```tsx theme={"theme":{"light":"github-light","dark":"github-dark"}}
+import { createAccessKeyPlugin } from "function-call-key-plugin";
+import { nearToYocto } from "near-api-js";
+
+const accessKeyPlugin = createAccessKeyPlugin({
+  network: connector.network,
+  providers: connector.providers,
+  signIn: {
+    contractId: "hello.near-examples.testnet",
+    methodNames: ["set_greeting"],
+    allowance: nearToYocto("0.25").toString(),
+  },
+});
+
+await connector.use(accessKeyPlugin);
+
+// Call this when the user clicks the login button.
+const wallet = await connector.connect();
+```
+
+This configuration permits calls to `set_greeting` on `hello.near-examples.testnet`, with zero attached deposit and a gas allowance of 0.25 NEAR. The allowance limits how much the key can spend on gas; the account still pays transaction fees from its balance.
+
+The plugin generates the key pair during sign-in and stores the private key locally after sign-in succeeds. Continue calling `wallet.signAndSendTransaction()` as shown in [Calling Contract Method](#calling-contract-method): the plugin signs eligible calls with the local key and sends calls outside its permissions to the wallet for approval. It also falls back to the wallet if the key's allowance runs out or the key has been removed on-chain.
+
+In React, [create the plugin once](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx#L54-L66) and [await its registration during initialization](https://github.com/near-examples/hello-near-examples/blob/main/frontend/src/providers/near-provider.tsx#L79-L86).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

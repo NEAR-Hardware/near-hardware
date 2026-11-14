@@ -137,20 +137,24 @@ export function registerHardwareIpc(): void {
     return installPlatformio()
   })
 
+  // A shell in the project folder, or with no project, one command in the home
+  // folder (the setup guide's installs and sign-ins)
   ipcMain.handle(
     'terminal:create',
-    async (event, projectId: string, cols: number, rows: number) => {
+    async (event, projectId: string | null, cols: number, rows: number, command?: string) => {
       window = event.sender
-      const project = await getProject(projectId)
+      const cwd = projectId === null ? homedir() : (await getProject(projectId)).path
+      const shell =
+        process.env.SHELL || (process.platform === 'win32' ? 'powershell.exe' : '/bin/zsh')
       const id = crypto.randomUUID()
       const pty = spawnPty(
-        process.env.SHELL || (process.platform === 'win32' ? 'powershell.exe' : '/bin/zsh'),
-        [],
+        shell,
+        typeof command === 'string' && process.platform !== 'win32' ? ['-l', '-c', command] : [],
         {
           name: 'xterm-256color',
           cols,
           rows,
-          cwd: project.path,
+          cwd,
           env: {
             ...process.env,
             // PlatformIO first, so `pio` works in the terminal right after installing it

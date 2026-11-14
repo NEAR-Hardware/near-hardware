@@ -1,0 +1,59 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Runtime
+
+> Explore NEAR Protocol's runtime system, including core runtime operations, cross-contract calls, action and data receipts, and state management.
+
+The runtime applies NEAR's execution rules to transactions and receipts. It checks permissions, executes actions and smart contract code, updates account state, and accounts for gas and fees.
+
+NEAR separates this execution logic from the blockchain layer, which handles consensus, block and chunk production, validator selection, and routing messages between shards. The sections below explain their responsibilities and include code walkthrough videos.
+
+***
+
+## Runtime Overview
+
+The blockchain layer determines which transactions and receipts to process, and the runtime computes the resulting state changes. Keeping these responsibilities separate lets execution rules be described independently of how nodes communicate and reach consensus.
+
+| Component | Responsibilities |
+| - | - |
+| Blockchain layer | Consensus, blocks and chunks, shard routing, state synchronization, and validator coordination |
+| Runtime layer | Account permissions, action execution, contract execution, storage updates, and fee and reward accounting |
+
+For example, the runtime creates an outgoing receipt addressed to a receiver account. The blockchain layer determines where to deliver it.
+
+The video below walks through the runtime implementation.
+
+[https://www.youtube-nocookie.com/embed/Xi\_8PapFCjo](https://www.youtube-nocookie.com/embed/Xi_8PapFCjo)
+
+***
+
+## Runtime Action and Data Receipts
+
+Users submit signed transactions, while the runtime creates receipts when processing transactions or other receipts. Action receipts request operations on a receiver account; data receipts carry results needed by dependent calls.
+
+During a contract call, the contract can read and write its own storage. It cannot directly access another account's contract storage, even when both accounts are on the same shard. Interactions with other contracts use asynchronous calls and callbacks, so applications should not depend on accounts being colocated.
+
+See [Cross-contract Calls](https://docs.near.org/smart-contracts/anatomy/crosscontract.md) for the programming model and [Lifecycle of a Transaction](https://docs.near.org/protocol/transactions/transaction-execution.md) for execution stages.
+
+The video below reviews how the runtime implements these interactions.
+
+[https://www.youtube-nocookie.com/embed/RBb3rJGtqOE](https://www.youtube-nocookie.com/embed/RBb3rJGtqOE)
+
+***
+
+## Runtime State
+
+Account state includes the NEAR balance, balance locked for validator staking, access keys, contract code or a reference to global code, and contract storage. Each account is assigned to a shard, which processes changes to that account's state.
+
+NEAR stores shard state in **tries**, tree structures that associate keys with values and use hashes to verify their contents. Execution reads and updates this state; the blockchain layer handles synchronizing and validating state across nodes.
+
+Contracts access their storage through the runtime's [storage functions](https://nomicon.io/RuntimeSpec/Components/BindingsSpec/TrieAPI.html). For implementation details, see [Trie Storage](https://nomicon.io/architecture/storage/trie_storage.html).
+
+The video below explains how the runtime works with state.
+
+[https://www.youtube-nocookie.com/embed/JCkSNL4ie1U](https://www.youtube-nocookie.com/embed/JCkSNL4ie1U)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,54 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Protocol Call Reference
+
+> Overview of tools and methods for interacting with the NEAR Protocol.
+
+NEAR Protocol provides multiple ways to interact with the network — from low-level JSON-RPC calls to visual explorers and wallets.
+
+## Tools
+
+> [card] [NEAR Explorer](https://nearblocks.io)
+>
+> Browse transactions, accounts, blocks, and contracts on mainnet and testnet.
+
+> [card] [NEAR Wallet](https://wallet.near.org)
+>
+> Create and manage NEAR accounts, send tokens, and interact with dApps.
+
+## RPC API
+
+NEAR exposes a JSON-RPC 2.0 API for programmatic access to the network. Send requests with `POST` to the root of a provider endpoint and put the method name in the JSON request body.
+
+> [!NOTE]
+>
+> The endpoint reference in the RPC sidebar is generated from `openapi.json` and is the source of truth for request and response schemas. The hand-written RPC pages provide guidance, context, and worked examples.
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+curl -X POST https://rpc.mainnet.near.org/ \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":"status","method":"status","params":[]}'
+```
+
+See [RPC Providers](https://docs.near.org/api/rpc/providers.md) for the full list of public endpoints. Send one JSON-RPC request object per HTTP request. nearcore does not support JSON-RPC batch requests.
+
+## Available Methods
+
+| Category | Methods |
+| - | - |
+| [**Transactions**](https://docs.near.org/api/rpc/transactions.md) | `send_tx`, `tx`, `tx_status` (or `EXPERIMENTAL_tx_status` before nearcore 2.14.0), `EXPERIMENTAL_receipt`, `EXPERIMENTAL_receipt_to_tx`, `broadcast_tx_async`, `broadcast_tx_commit` |
+| [**Query**](https://docs.near.org/api/rpc/contracts.md) | `query` — see [Accounts / Contracts](https://docs.near.org/api/rpc/contracts.md) for every supported `request_type` |
+| **Accounts & access keys** | `EXPERIMENTAL_view_account`, `changes`, `EXPERIMENTAL_changes`, `EXPERIMENTAL_view_access_key`, `EXPERIMENTAL_view_access_key_list` |
+| **Smart contracts** | `EXPERIMENTAL_view_code`, `EXPERIMENTAL_view_state`, `EXPERIMENTAL_call_function` |
+| [**Blocks & chunks**](https://docs.near.org/api/rpc/block-chunk.md) | `block`, `chunk`, `block_effects`, `EXPERIMENTAL_changes_in_block` |
+| **Network** | `status`, `health`, `network_info`, `validators`, `client_config`, `EXPERIMENTAL_validators_ordered` |
+| [**Gas & configuration**](https://docs.near.org/api/rpc/gas.md) | `gas_price`, `genesis_config`, `EXPERIMENTAL_genesis_config`, `EXPERIMENTAL_protocol_config`, `EXPERIMENTAL_congestion_level` |
+| **Light client** | `light_client_proof`, `next_light_client_block`, `EXPERIMENTAL_light_client_proof`, `EXPERIMENTAL_light_client_block_proof` |
+| **Maintenance & storage** | `maintenance_windows`, `EXPERIMENTAL_maintenance_windows`, `EXPERIMENTAL_split_storage_info` |
+
+Explore the full interactive reference in the sidebar, or start with [RPC Providers](https://docs.near.org/api/rpc/providers.md) to configure your endpoint.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

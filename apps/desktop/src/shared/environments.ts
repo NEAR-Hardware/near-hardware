@@ -11,6 +11,8 @@ export type EnvironmentDefinition = {
   // Official macOS/Linux install commands from each tool's docs (checked Nov 2026)
   installCommand: string
   installUrl: string
+  // Signs in from a terminal; run in the user's home folder
+  signInCommand: string
 }
 
 export const ENVIRONMENTS: readonly EnvironmentDefinition[] = [
@@ -20,7 +22,8 @@ export const ENVIRONMENTS: readonly EnvironmentDefinition[] = [
     vendor: 'Anthropic',
     description: "Anthropic's agentic coding tool for the terminal.",
     installCommand: 'curl -fsSL https://claude.ai/install.sh | bash',
-    installUrl: 'https://code.claude.com/docs/en/setup'
+    installUrl: 'https://code.claude.com/docs/en/setup',
+    signInCommand: 'claude auth login'
   },
   {
     id: 'codex',
@@ -28,7 +31,8 @@ export const ENVIRONMENTS: readonly EnvironmentDefinition[] = [
     vendor: 'OpenAI',
     description: "OpenAI's coding agent for the terminal and desktop.",
     installCommand: 'curl -fsSL https://chatgpt.com/codex/install.sh | sh',
-    installUrl: 'https://learn.chatgpt.com/docs/codex/cli'
+    installUrl: 'https://learn.chatgpt.com/docs/codex/cli',
+    signInCommand: 'codex login'
   },
   {
     id: 'cursor',
@@ -36,7 +40,8 @@ export const ENVIRONMENTS: readonly EnvironmentDefinition[] = [
     vendor: 'Anysphere',
     description: 'AI code editor, with an agent CLI for headless runs.',
     installCommand: 'curl https://cursor.com/install -fsS | bash',
-    installUrl: 'https://cursor.com/download'
+    installUrl: 'https://cursor.com/download',
+    signInCommand: 'cursor-agent login'
   },
   {
     id: 'opencode',
@@ -44,7 +49,8 @@ export const ENVIRONMENTS: readonly EnvironmentDefinition[] = [
     vendor: 'Open source',
     description: 'Open-source coding agent that works with any model.',
     installCommand: 'curl -fsSL https://opencode.ai/v2/install | bash',
-    installUrl: 'https://opencode.ai/docs'
+    installUrl: 'https://opencode.ai/docs',
+    signInCommand: 'opencode auth login'
   }
 ]
 
@@ -70,6 +76,10 @@ export type EnvironmentStatus = {
 export type ConnectedEnvironment = EnvironmentStatus & {
   connectedAt: string
 }
+
+// Whether the agent's CLI is signed in. OpenCode runs free models without an
+// account, so it never needs signing in.
+export type AuthStatus = 'signed-in' | 'signed-out' | 'not-needed' | 'unknown'
 
 export type ConnectEnvironmentResult =
   { ok: true; environment: ConnectedEnvironment } | { ok: false; status: EnvironmentStatus }

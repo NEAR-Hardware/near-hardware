@@ -1,0 +1,220 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# OpenCode
+
+> Configure OpenCode to use NEAR AI Cloud as an OpenAI-compatible provider.
+
+[OpenCode](https://opencode.ai/) is a terminal coding agent that resolves its providers from the public [models.dev](https://models.dev/) catalog. NEAR AI Cloud is already in that catalog as the `nearai` provider, so in the common case you do not write a provider block at all: set an API key, point `model` at a NEAR AI model, and OpenCode handles the rest.
+
+You only need a manual provider entry when the model you want is newer than the catalog or your OpenCode version predates the catalog's `nearai` entry. Both cases use the Gateway configuration below.
+
+## Prerequisites
+
+* OpenCode installed (verified against `1.18.31`).
+* A NEAR AI Cloud API key from the [NEAR AI Cloud Dashboard](https://cloud.near.ai/dashboard/organizations).
+
+Store the key in the environment variable the catalog declares for this provider, `NEARAI_API_KEY`:
+
+```bash theme={"dark"}
+export NEARAI_API_KEY="YOUR_NEAR_AI_API_KEY"
+```
+
+Alternatively, run `/connect` inside the OpenCode TUI, pick **NEAR AI Cloud**, and paste the key. OpenCode stores it in `~/.local/share/opencode/auth.json` so you do not need the environment variable.
+
+> [!WARNING]
+>
+> Do not paste a literal key into `opencode.json`. Config files are frequently committed to source control. Use `NEARAI_API_KEY`, `/connect`, or the `{env:NEARAI_API_KEY}` substitution syntax shown below.
+
+## Base URL
+
+The catalog already sets the gateway base URL for the `nearai` provider:
+
+```text theme={"dark"}
+https://cloud-api.near.ai/v1
+```
+
+You only set `options.baseURL` yourself in a full provider block. Do not append `/chat/completions`; OpenCode adds the path when it calls the API.
+
+## Model ID
+
+OpenCode addresses a model as `<provider>/<model-id>`. Because NEAR AI model IDs already contain a slash, the resulting string has two:
+
+```text theme={"dark"}
+nearai/z-ai/glm-5.3-flash
+```
+
+This is expected. The provider is `nearai`; everything after the first slash is the NEAR AI model ID.
+
+Check [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md) for the current list.
+
+## Configure
+
+### Catalog models
+
+For any model already in the models.dev catalog, a `model` line is the whole configuration. Put it in `~/.config/opencode/opencode.json` for all projects, or `opencode.json` in a project root to override it there:
+
+```json opencode.json theme={"dark"}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "nearai/anthropic/claude-haiku-4-5"
+}
+```
+
+With `NEARAI_API_KEY` exported, `opencode` starts against NEAR AI Cloud. You can also skip the config file entirely and pick the model with `/models` in the TUI.
+
+`z-ai/glm-5.3-flash` is not in the catalog yet, so it needs the extra step in the next section. Use the check under [Refresh models](#refresh-models) to see which side of the line a given model falls on.
+
+### Models newer than the catalog
+
+The catalog lags NEAR AI Cloud releases. If `/models` does not list the model you want, declare it under `provider.nearai.models`. OpenCode merges this with the catalog entry, so you only supply what is missing:
+
+```json opencode.json theme={"dark"}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "nearai/z-ai/glm-5.3-flash",
+  "provider": {
+    "nearai": {
+      "models": {
+        "z-ai/glm-5.3-flash": {
+          "name": "GLM 5.3 Flash",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Set `tool_call` and `reasoning` to match the model's `supported_features` in `/v1/models`, and set `limit` from its `context_length` and `max_output_length`. OpenCode uses these to decide whether to offer tool use and thinking-effort variants; a model with tool support left at the default will behave as though it has none.
+
+### Full provider block
+
+If your OpenCode version predates the catalog's `nearai` entry, define the provider outright:
+
+```json opencode.json theme={"dark"}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "nearai/z-ai/glm-5.3-flash",
+  "provider": {
+    "nearai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NEAR AI Cloud",
+      "options": {
+        "baseURL": "https://cloud-api.near.ai/v1",
+        "apiKey": "{env:NEARAI_API_KEY}"
+      },
+      "models": {
+        "z-ai/glm-5.3-flash": {
+          "name": "GLM 5.3 Flash",
+          "tool_call": true,
+          "reasoning": true,
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Trimming the model picker
+
+NEAR AI Cloud exposes 50+ models. OpenCode's documented `whitelist` and `blacklist` options keep `/models` short:
+
+```json opencode.json theme={"dark"}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "nearai": {
+      "whitelist": ["z-ai/glm-5.3-flash"]
+    }
+  }
+}
+```
+
+## Refresh models
+
+OpenCode does not call NEAR AI Cloud's `/v1/models`. Its picker comes from the models.dev catalog, so a newly released NEAR AI model appears only after the catalog updates.
+
+To check whether a model is available without a manual entry:
+
+```bash theme={"dark"}
+curl -s https://models.dev/api.json | jq -r '.nearai.models | keys[]'
+```
+
+Compare that against the live list:
+
+```bash theme={"dark"}
+curl -s https://cloud-api.near.ai/v1/models | jq -r '.data[].id'
+```
+
+Anything present in the second list but not the first needs a manual `provider.nearai.models` entry until the catalog catches up. `opencode models nearai` shows what OpenCode currently resolves, catalog plus your config combined.
+
+> [!NOTE]
+>
+> NEAR AI model IDs are aliased. Retired IDs often keep working because they resolve to their successor — `z-ai/glm-5.2` and `zai-org/GLM-5.1-FP8` both route to `z-ai/glm-5.3-flash` today. Prefer the canonical ID from `/v1/models`; an alias can be repointed without notice.
+
+## Quick test
+
+Verify the key, base URL, and model against the API before debugging OpenCode:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/chat/completions \
+  -H "Authorization: Bearer $NEARAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "z-ai/glm-5.3-flash",
+    "messages": [
+      {"role": "user", "content": "Reply with only: near-ai-ok"}
+    ],
+    "max_tokens": 256
+  }'
+```
+
+Keep `max_tokens` generous on reasoning models. GLM 5.3 Flash spends its first tokens on `reasoning_content`, so a tight limit returns `"content": null` with `"finish_reason": "length"` and looks like a failure.
+
+Once curl succeeds, test the same path through OpenCode:
+
+```bash theme={"dark"}
+opencode run "Reply with only: near-ai-ok"
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+| - | - |
+| model not listed: the model is missing from `/models` | The models.dev catalog is behind. Add it under `provider.nearai.models` as shown above, then confirm with `opencode models nearai`. |
+| Requests return `401` | `NEARAI_API_KEY` is not set in the shell that launched OpenCode, or no credential was stored. Export the variable, or run `/connect` and select NEAR AI Cloud. |
+| wrong base URL includes `/chat/completions` | Set `options.baseURL` to `https://cloud-api.near.ai/v1`. The `/chat/completions` path belongs only in full request URLs such as the curl test. |
+| OpenCode reports an unknown provider or model | The provider key must be `nearai`, and `model` must be `nearai/<model-id>` — including the slash inside the model ID, as in `nearai/z-ai/glm-5.3-flash`. |
+| The model replies but never calls tools | The manual model entry is missing `tool_call: true`. Catalog entries set this; hand-written ones default to off. |
+| Replies are empty or truncated mid-thought | A reasoning model hit the output limit. Raise `limit.output` in the model entry to match `max_output_length` from `/v1/models`. |
+
+## Related guides
+
+* [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md)
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md)
+* [Available Models](https://docs.near.ai/cloud/models.md)
+* [Goose](https://docs.near.ai/cloud/guides/opencode-goose.md)
+* [Cline, Roo Code, and Kilo Code](https://docs.near.ai/cloud/guides/integrations/cline-roo-kilo.md)
+
+## Sources Checked
+
+Sources checked on 2026-09-22, against OpenCode `1.18.31`:
+
+* [OpenCode providers](https://opencode.ai/docs/providers/)
+* [OpenCode config](https://opencode.ai/docs/config/)
+* [models.dev catalog](https://models.dev/) — `nearai` provider entry
+* NEAR AI Cloud `GET /v1/models`
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

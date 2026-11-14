@@ -1,0 +1,52 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Communities
+
+> Connect with the NEAR community through various channels and join specialized communities.
+
+NEAR is a global community of Web3 enthusiasts and innovators. Connect with developers, builders, and founders across our social channels.
+
+> [card] [Telegram](https://t.me/neardev)
+
+> [card] [Discord](https://discord.gg/RhZGHPXPf2)
+
+> [card] [GitHub](https://github.com/near)
+
+> [card] [X](https://twitter.com/nearprotocol)
+
+***
+
+## Frequently Asked Questions
+
+> [accordion] What is the expectation for a support resolution?
+>
+> Upon submitting a support ticket, you can expect to receive an initial response from our team within 72 hours during our business hours. Our business hours are on weekdays in the PST timezone, excluding US holidays.
+
+> [accordion] Where can I find help to troubleshoot a development issue?
+>
+> Social channels such as [Telegram](https://t.me/neardev) and [Discord](https://discord.gg/RhZGHPXPf2) are a great resource to tap into for community support on development issues.
+
+> [accordion] Where can I find funding for my project?
+>
+> You can find information on grants and funding opportunities on the [main NEAR portal](https://www.near.org/funding).
+
+> [accordion] How can I find out about the latest product developments?
+>
+> Follow [NEAR on X](https://twitter.com/nearprotocol) for our latest product announcements.
+
+> [accordion] I found a bug — where can I flag this?
+>
+> For any issues or concerns you've encountered, please feel free to provide us with detailed information through our [Bug Bounty Program](https://hackenproof.com/near). Your cooperation and additional details will assist us in addressing and resolving any potential vulnerabilities effectively. We appreciate your proactive approach in helping us maintain the security and integrity of the NEAR ecosystem.
+
+> [accordion] What happened to Near Wallet?
+>
+> wallet.near.org is now a wallet hub: a curated list of the wallets available in our ecosystem. Your funds are safe! Accounts exist on the blockchain, not in a wallet. Wallets are just an interface into using the blockchain with your account, so you can import your account into any of the [available wallets](https://wallet.near.org/)
+
+> [accordion] Question about Transfer Exchange?
+>
+> For issues relating to a third-party exchange, such as Binance or Coinbase, we're unable to investigate issues on external platforms. To address your concern effectively, we recommend contacting the customer support team of the specific exchange where you're experiencing issues. They are most equipped to assist you in resolving the matter.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

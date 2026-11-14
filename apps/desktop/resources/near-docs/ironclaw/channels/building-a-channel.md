@@ -1,0 +1,464 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.ironclaw.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# How to build a channel
+
+> Build a WASM messaging channel that plugs into IronClaw
+
+Channels are WASM components that handle communication with external messaging platforms (Telegram, WhatsApp, Slack, etc.). They run in a sandboxed environment and communicate with the host via the WIT (WebAssembly Interface Types) interface.
+
+***
+
+## Prerequisites
+
+Install Rust and add the WASM target:
+
+```bash theme={null}
+rustup target add wasm32-wasip2
+```
+
+Optional but useful for component conversion workflows:
+
+```bash theme={null}
+cargo install wasm-tools
+```
+
+***
+
+## 1. Create the project structure
+
+Create a new crate with this layout:
+
+```text theme={null}
+my-channel/
+├── Cargo.toml
+├── src/
+│   └── lib.rs
+├── wasm/
+│   └── my-channel.wasm         # built artifact
+└── manifest.toml
+```
+
+***
+
+## 2. Configure Cargo.toml
+
+```toml Cargo.toml theme={null}
+[package]
+name = "my-channel"
+version = "0.1.0"
+edition = "2021"
+description = "My messaging platform channel for IronClaw"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "=0.36"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1
+```
+
+***
+
+## 3. Implement the channel interface
+
+Implement the channel guest interface from `wit/channel.wit`:
+
+### Required Imports
+
+```rust theme={null}
+// Generate bindings from the WIT file
+wit_bindgen::generate!({
+    world: "sandboxed-channel",
+    // Relative to the guest crate, e.g. crates/extensions/packages/<name>/wasm-src.
+    path: "../../../../ironclaw_wasm/wit/channel.wit",
+});
+
+use serde::{Deserialize, Serialize};
+
+// Re-export generated types
+use exports::near::agent::channel::{
+    AgentResponse, ChannelConfig, Guest, HttpEndpointConfig, IncomingHttpRequest,
+    OutgoingHttpResponse, PollConfig,
+};
+use near::agent::channel_host::{self, EmittedMessage};
+```
+
+### Implementing the Guest Trait
+
+```rust theme={null}
+struct MyChannel;
+
+impl Guest for MyChannel {
+    /// Called once when the channel starts.
+    /// Returns configuration for webhooks and polling.
+    fn on_start(config_json: String) -> Result<ChannelConfig, String> {
+        // Parse config from config_json
+        let config: MyConfig = serde_json::from_str(&config_json)
+            .unwrap_or_default();
+
+        // The manifest [channel.ingress] controls how the host routes inbound
+        // webhooks. The ChannelConfig here configures runtime registration with
+        // the platform API (e.g., registering a webhook URL with Telegram).
+        Ok(ChannelConfig {
+            display_name: "My Channel".to_string(),
+            http_endpoints: vec![
+                HttpEndpointConfig {
+                    path: "/webhook/my-channel".to_string(),
+                    methods: vec!["POST".to_string()],
+                    require_secret: true,
+                },
+            ],
+            poll: None,
+        })
+    }
+
+    /// Handle incoming HTTP requests (webhooks).
+    fn on_http_request(req: IncomingHttpRequest) -> OutgoingHttpResponse {
+        // Parse webhook payload
+        // Emit messages to agent
+        // Return response to webhook caller
+    }
+
+    /// Called periodically if polling is enabled.
+    fn on_poll() {
+        // Fetch new messages from API
+        // Emit any new messages
+    }
+
+    /// Send a response back to the messaging platform.
+    fn on_respond(response: AgentResponse) -> Result<(), String> {
+        // Parse metadata to get routing info
+        // Call platform API to send message
+    }
+
+    /// Send a proactive message without a prior inbound event.
+    fn on_broadcast(user_id: String, response: AgentResponse) -> Result<(), String> {
+      // Send a message to a known user or chat ID.
+    }
+
+    /// React to agent status changes such as thinking or tool activity.
+    fn on_status(update: StatusUpdate) {
+      // Show typing indicators or status messages when useful.
+    }
+
+    /// Called when channel is shutting down.
+    fn on_shutdown() {
+        channel_host::log(channel_host::LogLevel::Info, "Channel shutting down");
+    }
+}
+
+// Export the channel implementation
+export!(MyChannel);
+```
+
+> [!NOTE]
+>
+> `on_start` configures how the channel registers with its platform API. The manifest's `[channel.ingress]` controls how the host routes inbound webhooks — they are separate concerns. `on_http_request` and `on_poll` ingest external messages; `on_respond` delivers replies to an existing conversation; `on_broadcast` sends proactive messages; `on_status` lets channels surface thinking indicators and other progress updates.
+
+***
+
+## 4. Preserve routing metadata (critical)
+
+Once your channel can receive messages, keep enough metadata to send responses back to the right chat and sender.
+
+Store routing info in message metadata so responses can be delivered to the right chat and sender.
+
+```rust theme={null}
+// When receiving a message, store routing info:
+#[derive(Debug, Serialize, Deserialize)]
+struct MyMessageMetadata {
+    chat_id: String,           // Where to send response
+    sender_id: String,         // Who sent it (becomes recipient)
+    original_message_id: String,
+}
+
+// In on_http_request or on_poll:
+let metadata = MyMessageMetadata {
+    chat_id: message.chat.id.clone(),
+    sender_id: message.from.clone(),
+    original_message_id: message.id.clone(),
+};
+
+channel_host::emit_message(&EmittedMessage {
+    user_id: message.from.clone(),
+    user_name: Some(name),
+    content: text,
+    thread_id: None,
+    metadata_json: serde_json::to_string(&metadata).unwrap_or_default(),
+});
+
+// On respond, the stored sender_id becomes the recipient:
+fn on_respond(response: AgentResponse) -> Result<(), String> {
+    let metadata: MyMessageMetadata = serde_json::from_str(&response.metadata_json)?;
+    send_message(metadata.chat_id, metadata.sender_id, response.content);
+}
+```
+
+> [!NOTE]
+>
+> `response.metadata_json` contains the metadata from the original inbound message. Treat it as the source of truth for reply routing.
+
+***
+
+## 5. Add secure credential placeholders
+
+Now that the message path is set, configure API credentials using placeholders instead of hardcoded tokens.
+
+> [!WARNING]
+>
+> Never hardcode credentials. Use placeholders that the host replaces.
+
+### URL Placeholders (Telegram-style)
+
+```rust theme={null}
+// The host replaces {TELEGRAM_BOT_TOKEN} with the actual token
+let url = "https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage";
+channel_host::http_request("POST", url, &headers_json, Some(&body), None);
+```
+
+### Header Placeholders (WhatsApp-style)
+
+```rust theme={null}
+let headers = serde_json::json!({
+    "Content-Type": "application/json",
+    "Authorization": "Bearer {WHATSAPP_ACCESS_TOKEN}"
+});
+channel_host::http_request("POST", &url, &headers.to_string(), Some(&body), None);
+```
+
+The placeholder format is `{SECRET_NAME}` where `SECRET_NAME` matches the credential name in uppercase with underscores (e.g., `whatsapp_access_token` → `{WHATSAPP_ACCESS_TOKEN}`).
+
+***
+
+## 6. Create the extension manifest
+
+Channels are installed as extensions. The manifest declares the runtime surface and channel configuration in TOML format:
+
+```toml my-channel/manifest.toml theme={null}
+schema_version = "reborn.extension_manifest.v3"
+id = "my-channel"
+name = "My Channel"
+version = "0.1.0"
+description = "My messaging platform channel for IronClaw"
+trust = "third_party"
+
+[runtime]
+kind = "wasm"
+module = "wasm/my_channel.wasm"
+
+[admin_configuration]
+group_id = "extension.my-channel"
+display_name = "My Channel deployment configuration"
+fields = [
+  { handle = "my_channel_api_token", label = "API token", secret = true, required = true },
+  { handle = "my_channel_webhook_secret", label = "Webhook secret", secret = true, required = true },
+]
+
+[channel]
+id = "messages"
+display_name = "My Channel messages"
+inbound = true
+outbound = true
+conversation_model = "continuous"
+
+[channel.ingress]
+route_suffix = "webhook"
+method = "post"
+body_limit_bytes = 1048576
+
+[channel.ingress.verification]
+kind = "shared_secret_header"
+secret_handle = "my_channel_webhook_secret"
+header = "X-Webhook-Secret"
+
+[[channel.egress]]
+scheme = "https"
+host = "api.my-platform.com"
+methods = ["post"]
+credential_handle = "my_channel_api_token"
+paths = ["/send"]
+injection = { type = "header", name = "authorization", prefix = "Bearer " }
+
+[channel.presentation]
+supports_markdown = false
+supports_threads = false
+```
+
+Message-size limits are provider protocol details. Enforce the provider's
+actual unit (bytes, Unicode scalar values, or UTF-16 code units) inside the
+channel adapter while rendering and chunking outbound parts.
+
+Place the manifest alongside the WASM binary with this layout:
+
+```text theme={null}
+my-channel/
+├── Cargo.toml
+├── src/
+│   └── lib.rs
+├── wasm/
+│   └── my_channel.wasm
+└── manifest.toml
+```
+
+***
+
+## 7. Build and install
+
+Build the WASM component and place it in the extension asset directory alongside the manifest.
+
+```bash theme={null}
+cd my-channel
+cargo build --release --target wasm32-wasip2
+
+# Convert the raw wasm module into a component and strip it
+wasm-tools component new target/wasm32-wasip2/release/my_channel.wasm -o wasm/my_channel.wasm \
+  2>/dev/null || cp target/wasm32-wasip2/release/my_channel.wasm wasm/my_channel.wasm
+wasm-tools strip wasm/my_channel.wasm -o wasm/my_channel.wasm
+```
+
+The extension is installed through the IronClaw extension lifecycle. For host-bundled channels, add the package as a self-contained directory `crates/extensions/packages/<channel>/` (manifest + schemas + prompts + WASM) with a package module `crates/extensions/ironclaw_extension_support/src/packages/<channel>.rs` and its row in `PACKAGES` in `.../src/packages/mod.rs` — there is no separate registration file.
+
+At runtime every package is discovered at the virtual package root `/system/extensions/<extension-id>/manifest.toml`. Users install discovered packages by ID: `ironclaw extension search` lists them, and `ironclaw extension install <extension-id>` installs one — it takes an extension ID from search results, not a filesystem path. The WebUI Extensions area exposes the same list/install/import/remove lifecycle. For local development, place the extension directory under `<reborn-home>/local-dev/system/extensions/<channel>/`.
+
+***
+
+## 8. Host functions you can call
+
+### Core APIs (every channel uses these)
+
+```rust theme={null}
+// Logging and time
+channel_host::log(channel_host::LogLevel::Info, "message");
+let _now = channel_host::now_millis();
+
+// Durable per-channel workspace key-value storage
+let _ = channel_host::workspace_write("state/offset", "12345");
+let _ = channel_host::workspace_read("state/offset");
+
+// Make outbound HTTP requests to the messaging platform API
+let _response = channel_host::http_request("POST", &url, &headers, Some(&body), None);
+
+// Emit an inbound message to the agent
+channel_host::emit_message(&EmittedMessage { /* ... */ });
+
+// Check whether a deployment secret exists
+let has_secret = channel_host::secret_exists("telegram_bot_token");
+```
+
+### Advanced APIs (pairing, attachments)
+
+Channels that download binary payloads (voice notes, images) or support owner approval for unknown senders can use these:
+
+```rust theme={null}
+// Store binary attachment data received during a webhook or poll callback
+let _ = channel_host::store_attachment_data("attachment-id", &bytes);
+
+// Pairing: create a code for a user to prove ownership of a platform account
+let _ = channel_host::pairing_upsert_request("telegram", "123456", "{}")?;
+let _ = channel_host::pairing_resolve_identity("telegram", "123456")?;
+let _ = channel_host::pairing_read_allow_from("telegram")?;
+```
+
+***
+
+## 9. Common patterns
+
+### Polling with stored offsets
+
+```rust theme={null}
+const OFFSET_PATH: &str = "state/last_offset";
+
+fn on_poll() {
+    let offset = channel_host::workspace_read(OFFSET_PATH)
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or(0);
+
+    let updates = fetch_updates(offset);
+    let mut new_offset = offset;
+
+    for update in updates {
+        if update.id >= new_offset {
+            new_offset = update.id + 1;
+        }
+        emit_message(update);
+    }
+
+    if new_offset != offset {
+        let _ = channel_host::workspace_write(OFFSET_PATH, &new_offset.to_string());
+    }
+}
+```
+
+### Ignore status-only payloads
+
+```rust theme={null}
+if !payload.statuses.is_empty() && payload.messages.is_empty() {
+    return;
+}
+```
+
+### Ignore bot senders
+
+```rust theme={null}
+if sender.is_bot {
+    return;
+}
+```
+
+***
+
+## 10. Testing and troubleshooting
+
+Add tests for message parsing and metadata round-trips. The key assertions are that routing metadata is preserved through serialization:
+
+```rust theme={null}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_metadata_round_trip() {
+        let metadata = MyMessageMetadata {
+            chat_id: "123".into(),
+            sender_id: "user_456".into(),
+            original_message_id: "msg_789".into(),
+        };
+        let serialized = serde_json::to_string(&metadata).expect("serialize");
+        let deserialized: MyMessageMetadata =
+            serde_json::from_str(&serialized).expect("deserialize");
+        assert_eq!(deserialized.chat_id, "123");
+        assert_eq!(deserialized.sender_id, "user_456");
+    }
+
+    #[test]
+    fn test_rejects_missing_fields() {
+        let json = r#"{"chat_id":"123"}"#;
+        let result: Result<MyMessageMetadata, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+}
+```
+
+If you see `byte index N is not a char boundary`, avoid byte slicing and truncate by characters:
+
+```rust theme={null}
+let preview: String = content.chars().take(50).collect();
+```
+
+If credential placeholders are not resolved:
+
+1. Verify secret names match the declared placeholders in the manifest.
+2. Confirm the credential handle matches what the channel code expects.
+3. Check runtime logs for unresolved placeholder warnings.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

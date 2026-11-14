@@ -1,0 +1,68 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# What is NEAR?
+
+> An introduction to NEAR, a scalable and secure blockchain built with usability in mind
+
+NEAR is a **user-friendly** blockchain, built to be fast, secure, and infinitely scalable. It offers a simple user experience with named accounts, low fees, and a robust developer ecosystem.
+
+![img](https://mintcdn.com/neardocs/qO2GD-gji1aakHqN/assets/docs/welcome-pages/1.near-protocol.webp?fit=max\&auto=format\&n=qO2GD-gji1aakHqN\&q=85\&s=4502662a5f54608702e3453254f5412c)
+
+In technical terms, NEAR is a [layer one](https://coinmarketcap.com/academy/glossary/layer-1-blockchain), [sharded](https://near.org/blog/near-launches-nightshade-sharding-paving-the-way-for-mass-adoption), [proof-of-stake](https://en.wikipedia.org/wiki/Proof_of_stake) blockchain built with usability in mind.
+
+In simpler terms, NEAR is the **blockchain for everyone**.
+
+> [accordion] What do these Technical Terms mean?
+>
+> [Layer-1](https://coinmarketcap.com/academy/glossary/layer-1-blockchain) means NEAR is the foundation that supports everything else built on it. It keeps all the transaction records safe and unchangeable which keeps the network secure and trustworthy.
+>
+> [Sharded](https://near.org/blog/near-launches-nightshade-sharding-paving-the-way-for-mass-adoption) means the network is broken into pieces that work in parallel. This helps NEAR process transactions quickly and efficiently.
+>
+> [Proof-of-stake](https://en.wikipedia.org/wiki/Proof_of_stake) uses less electricity compared with other blockchains which use proof-of-work. Users show they own NEAR tokens to help run the network. This makes it cheaper and lets more people use it.
+
+***
+
+## Why Choose NEAR?
+
+NEAR offers built-in features such as named accounts and account abstraction. For developers, NEAR offers everything needed for their applications, from smart contracts to indexers. All while being interoperable with other chains.
+
+### Simple to Use
+
+1. Use [**named accounts**](https://docs.near.org/protocol/accounts-contracts/account-model.md) like `alice.near`
+2. Simple sign-up: create an [account for free](https://docs.near.org/getting-started/create-account.md), login with socials (through [NEAR Auth](https://docs.near.org/web3-apps/tutorials/near-auth.md) or [Privy](https://docs.near.org/web3-apps/tutorials/privy.md)) or [telegram](https://web.telegram.org/k/#@herewalletbot)
+3. Transactions are **fast** *(\~1.2s finality, with blocks every 600ms)* and **cheap** *(\< 1¢ in fees)*
+4. Users don't need to buy crypto: apps can pay their gas fees through [**meta transactions**](https://docs.near.org/web3-apps/tutorials/meta-transactions.md)
+5. [Access Keys](https://docs.near.org/protocol/accounts-contracts/access-keys.md) make it safe and easy to use
+6. Control accounts on **other chains** thanks to [chain signatures](https://docs.near.org/chain-abstraction/chain-signatures.md)
+
+### Battle-Tested
+
+1. **100% uptime** since its 2020 launch and [**over 5.4 Billion** transactions](https://chainspect.app/chain/near) processed
+2. NEAR has sustained peaks of [>13M transactions](https://pikespeak.ai/near-world/overview) in a single day
+3. NEAR is home to decentralized apps with [millions of users](https://dappradar.com/rankings/protocol/near?sort=uawCount\&order=desc\&range=30d):
+   * [NEAR Intents](https://docs.near-intents.org/near-intents)
+   * [Sweat](https://swe.at/)
+   * [Hot Wallet](https://t.me/herewalletbot/)
+
+### Great Developer Experience
+
+1. Build smart contracts in **Rust** with the [official NEAR SDK](https://docs.near.org/tools/sdk.md)
+2. **Simple onboarding**, thanks to its complete documentation and examples
+3. Earn from your contract's gas fees
+4. **EVM compatible** with [Project Aurora](http://www.aurora.dev) *(Deploy your Solidity contracts with ease)*
+
+### Environmentally Friendly
+
+1. In 2021, NEAR was **[certified carbon-neutral](https://near.org/blog/the-near-blockchain-is-climate-neutral/)**
+2. NEAR **consumes in a year** the same energy [**bitcoin consumes in a few minutes**](https://medium.com/nearprotocol/how-near-went-carbon-neutral-e656db96da47#:~:text=The%20firm%20found%20that%20NEAR,PoS%20technology%20instead%20of%20PoW)
+
+***
+
+## Start Building
+
+Ready to build on NEAR? Check [Start Building](https://docs.near.org/getting-started/start-building.md) to choose what you want to build, and find the guides and tools you need for it.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

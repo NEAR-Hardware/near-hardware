@@ -1,0 +1,67 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Do not panic in callbacks
+
+> Handle failed cross-contract calls without aborting the cleanup or refund path.
+
+A callback runs in its own receipt. If it panics, **all state changes made by that callback are reverted**, and any later transfer is never scheduled.
+
+Do not panic when an expected cross-contract call fails. Settle the operation instead.
+
+Panicking is only one way a callback can fail. See [callbacks can fail](https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-failures.md).
+
+***
+
+## The vulnerable pattern
+
+This callback tries to remove a pending mint and refund the user after the mint fails:
+
+```rust title="Pseudocode: vulnerable flow" theme={"theme":{"light":"github-light","dark":"github-dark"}}
+private mint_callback(user, amount):
+    if call failed
+        pending_mints.remove(user)
+        transfer amount NEAR tokens to user
+        panic("mint failed") // [!code --]
+```
+
+The `panic` aborts the callback. The pending mint is restored because its removal is reverted, and the transfer line never runs.
+
+***
+
+## How the issue happens
+
+1. The contract calls another contract to mint for a user, attaching NEAR tokens.
+2. The mint fails, so the attached NEAR tokens return to the calling contract.
+3. `mint_callback` starts, removes the pending operation, then panics.
+4. The entire callback receipt is reverted: the pending operation remains and no refund transfer is scheduled.
+
+The user has neither the mint nor their NEAR tokens back. Repeating the operation can make the state even harder to settle.
+
+***
+
+## The safe pattern
+
+Handle the failure and return normally:
+
+```rust title="Pseudocode: safe flow" theme={"theme":{"light":"github-light","dark":"github-dark"}}
+private mint_callback(user, amount):
+    pending_mints.remove(user)
+
+    if call failed
+        transfer amount NEAR tokens to user
+    else
+        record minted token for user
+```
+
+Now the cleanup persists and the refund is scheduled. If the refund needs more checks or gas than this callback can safely provide, credit a withdrawable balance instead.
+
+## General rule
+
+Use `panic` for invalid input or a broken invariant before changing state. In a callback's expected failure path, record the outcome, clean up, and refund or otherwise settle the operation without panicking.
+
+See [refund NEAR tokens](https://docs.near.org/smart-contracts/security/cross-contract-calls/refunds.md) for the refund pattern and [private callbacks](https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks.md) for callback access control.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

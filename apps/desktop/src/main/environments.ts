@@ -33,6 +33,11 @@ export function getSearchPath(): Promise<string[]> {
   return searchPath
 }
 
+// Forgets the cached PATH, so CLIs installed since launch are found
+export function refreshSearchPath(): void {
+  searchPath = undefined
+}
+
 async function resolveSearchPath(): Promise<string[]> {
   const dirs = new Set<string>()
   const add = (value?: string): void => {
@@ -50,7 +55,9 @@ async function resolveSearchPath(): Promise<string[]> {
     join(home, '.claude/local'),
     join(home, '.opencode/bin'),
     // PlatformIO's virtualenv, so agents can run `pio` once it's installed
-    join(home, '.platformio/penv/bin')
+    join(home, '.platformio/penv/bin'),
+    // rustup, cargo-near and NEAR CLI, for smart contracts
+    join(home, '.cargo/bin')
   ]) {
     dirs.add(dir)
   }
@@ -71,7 +78,7 @@ async function readLoginShellPath(): Promise<string | undefined> {
   }
 }
 
-async function findExecutable(name: string, dirs: string[]): Promise<string | undefined> {
+export async function findExecutable(name: string, dirs: string[]): Promise<string | undefined> {
   const extensions =
     process.platform === 'win32' ? (process.env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : ['']
   for (const dir of dirs) {

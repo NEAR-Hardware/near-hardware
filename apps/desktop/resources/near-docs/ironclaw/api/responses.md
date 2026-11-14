@@ -1,0 +1,557 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.ironclaw.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Responses API
+
+> OpenAI-compatible Responses endpoint backed by the full IronClaw agent loop
+
+IronClaw exposes an OpenAI-compatible Responses API. Unlike a raw LLM passthrough, requests route through the full agent loop, so callers get tools, memory, safety, and server-side conversation state via a standard wire format.
+
+```
+POST /api/v1/responses
+GET  /api/v1/responses/{id}
+```
+
+The legacy `/v1/responses` path is still accepted as an alias for clients pinned to it.
+
+## When to use this vs. the Chat Completions proxy
+
+| Endpoint | Behavior |
+| - | - |
+| `/api/v1/responses` | Routes through the agent. The model can call IronClaw tools (file, web, memory, MCP, extensions), retain conversation state via `previous_response_id`, and pause for caller-supplied tools. |
+| `/v1/chat/completions` | Raw LLM proxy. No tools, no memory, no agent loop. Use it when you only need a model call. |
+
+If you want IronClaw's capabilities behind an OpenAI-shaped wire contract, this is the endpoint.
+
+***
+
+## Authentication
+
+Every protected route requires a bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+You have two options:
+
+> [tab] Instance token (single-user)
+>
+> The bearer token provisioned during [onboarding](https://docs.ironclaw.com/onboard.md) authenticates both the web interface and this API. It is written to `webui-token` in your IronClaw home:
+>
+> ```bash theme={null}
+> cat ~/.ironclaw/reborn/webui-token
+> ```
+>
+> Supply your own instead by setting `IRONCLAW_REBORN_WEBUI_TOKEN` before starting `serve`.
+>
+> ```bash theme={null}
+> export IRONCLAW_REBORN_WEBUI_TOKEN="your-secure-token"
+> ```
+>
+> > [!WARNING]
+> >
+> > This token carries operator privileges, including configuration changes. For anything beyond a single-user instance, use per-user tokens instead.
+
+> [tab] Per-user tokens (multi-user)
+>
+> In a multi-user deployment, an admin creates each user through the admin surface, which mints that user's API bearer exactly once:
+>
+> ```bash theme={null}
+> curl -X POST https://your-host/api/webchat/v2/admin/users \
+>   -H "Authorization: Bearer $ADMIN_TOKEN" \
+>   -H "Content-Type: application/json" \
+>   -d '{"email":"alice@example.com","display_name":"Alice","role":"member"}'
+> ```
+>
+> `role` is required — one of `owner`, `admin`, or `member`. `owner` and `admin` clear
+> the admin authorization boundary; `member` does not. `email` and `display_name` are
+> optional.
+>
+> The token is top-level; the user's identity is nested under `user`:
+>
+> ```json theme={null}
+> {
+>   "user": {
+>     "user_id": "...",
+>     "email": "alice@example.com",
+>     "status": "active",
+>     "role": "member",
+>     "created_at": "2026-07-27T18:00:00Z",
+>     "updated_at": "2026-07-27T18:00:00Z"
+>   },
+>   "api_token": "<shown ONCE>"
+> }
+> ```
+>
+> Store the `api_token` when it is returned; it cannot be retrieved again. These tokens are scoped to one user and carry user identity only — they do not inherit operator configuration privileges.
+>
+> Users signed in through Google or GitHub SSO receive an equivalent session bearer. See [Web Interface](https://docs.ironclaw.com/using/webui.md#single-sign-on).
+
+A missing or wrong token returns `401`. Chat send endpoints (including this one) are rate-limited to 30 requests per 60 seconds per user.
+
+***
+
+## Quickstart
+
+The simplest request, with no session state and no tools:
+
+```bash theme={null}
+curl -X POST https://your-host/api/v1/responses \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "default",
+    "input": "What time is it?"
+  }'
+```
+
+Response:
+
+```json theme={null}
+{
+  "id": "resp_<64hex>",
+  "object": "response",
+  "created_at": 1715846400,
+  "model": "default",
+  "status": "completed",
+  "output": [
+    {
+      "type": "message",
+      "id": "item_...",
+      "role": "assistant",
+      "content": [
+        { "type": "output_text", "text": "It is 14:23 UTC." }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 42, "output_tokens": 11, "total_tokens": 53 }
+}
+```
+
+The OpenAI Python and TypeScript SDKs work as-is. Point `base_url` at `https://your-host/api/v1` (or `/v1` for the alias).
+
+```python theme={null}
+from openai import OpenAI
+
+client = OpenAI(base_url="https://your-host/api/v1", api_key=TOKEN)
+resp = client.responses.create(model="default", input="What time is it?")
+print(resp.output_text)
+```
+
+***
+
+## Request fields
+
+```json theme={null}
+{
+  "input": "...",
+  "model": "default",
+  "instructions": null,
+  "previous_response_id": null,
+  "stream": false,
+  "tools": null,
+  "x_context": null
+}
+```
+
+| Field | Required | Description |
+| - | - | - |
+| `input` | yes | A string, or an array of `message` / `function_call_output` items. See [External tools](#external-tools) for the array form. |
+| `model` | yes | Any well-formed model name: non-empty, no surrounding whitespace, no control characters, at most 256 bytes. Carried through as a server-side routing hint and echoed back in the create response; retrieval and cancel responses report the server placeholder `"reborn"` instead of the submitted name. Provider and model selection is configured via settings. `"default"` is the conventional placeholder. |
+| `instructions` | no | System/developer instructions. Injected ahead of `input` as an `<instructions>` block and stored as part of the persisted user message. See [Per-request instructions](#per-request-instructions) for the IronClaw-specific replay caveat. |
+| `previous_response_id` | no | The `id` from a prior response. Resumes the same thread; see [Session continuity](#session-continuity). |
+| `metadata` | no | Accepted and ignored — parsed as part of the request but not persisted or echoed back. |
+| `stream` | no | `true` for SSE; `false` (default) for a single JSON response. |
+| `temperature` | no | Sampling temperature, `0.0`–`2.0` inclusive; values outside the range are rejected with `400`. Validated and carried in the submitted turn payload; it is not currently applied as a provider sampling parameter. |
+| `tools` | no | Caller-supplied function tools. See [External tools](#external-tools). An empty `tools: []` is treated as omitted. |
+| `tool_choice` | no | Accepted and ignored — there is no per-request tool-choice surface. |
+| `x_context` | no | IronClaw extension. Structured JSON context (≤ 10 KB) prepended as `<user-context>`. The alias `context` is also accepted but may collide with future OpenAI fields. Prefer `x_context`. |
+
+These are rejected with `400` so callers know they were not honoured:
+
+* `temperature` outside `0.0`–`2.0`
+* A malformed `model` (empty, surrounding whitespace, over 256 bytes, or control characters)
+* `x_context` larger than 10 KB
+
+Other OpenAI request fields not listed above (for example `max_output_tokens`)
+are **accepted and ignored**: the endpoint deliberately tolerates unknown
+fields so newer SDK payloads keep working, but unlisted fields have no effect.
+
+> [!NOTE]
+>
+> External-tools support is always wired on a standard `ironclaw serve`
+> deployment, which is why `tools` and `tool_choice` are accepted above. A
+> custom composition that mounts the Responses routes without external-tool
+> wiring instead rejects non-empty `tools` and any `tool_choice` with `400`
+> naming the field.
+
+***
+
+## Session continuity
+
+Each response embeds its thread UUID in the `id`. Pass the previous `id` back as `previous_response_id` to continue the same conversation:
+
+```json theme={null}
+{
+  "model": "default",
+  "input": "What did I just ask?",
+  "previous_response_id": "resp_abc...xyz"
+}
+```
+
+IronClaw replays the thread's history from the conversation store and runs the new turn against it. There is no client-side state to manage. Threads are user-scoped, so a token belonging to a different user cannot resume someone else's thread (the lookup returns `404`).
+
+Each POST mints a fresh `response_uuid`, so two turns on the same thread produce different `id`s.
+
+### Retrieving a past response
+
+```bash theme={null}
+curl https://your-host/api/v1/responses/$ID \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Returns the output items reconstructed from the stored conversation. The `usage` field is read best-effort from persisted run state (token totals plus USD cost); it can be zero when the run reported no usage.
+
+***
+
+## Streaming
+
+Set `"stream": true` to receive Server-Sent Events:
+
+```bash theme={null}
+curl -N -X POST https://your-host/api/v1/responses \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"default","input":"Summarize the news.","stream":true}'
+```
+
+Events follow the OpenAI Responses streaming format. The SSE `event:` field matches the JSON `type`:
+
+| `event:` | `type` | Payload |
+| - | - | - |
+| `response.created` | `response.created` | Initial in-progress shell. |
+| `response.output_item.added` | `response.output_item.added` | A new `message` or `function_call` item began. |
+| `response.output_text.delta` | `response.output_text.delta` | Token delta inside an `output_text` content block. |
+| `response.output_item.done` | `response.output_item.done` | An item is finalised. |
+| `response.completed` | `response.completed` | Terminal success. |
+| `response.failed` | `response.failed` | Terminal failure (turn-level error). |
+
+A keepalive frame fires every 15 seconds to prevent intermediate proxies from closing idle connections.
+
+The non-streaming path has a 120-second turn timeout. Long-running tool work (sandbox jobs, multi-step agentic flows) should use `stream: true` so the connection stays responsive.
+
+***
+
+## External tools
+
+You can register your own function tools per request. The agent treats them as first-class actions alongside built-in tools and pauses execution when it wants to call one. Your client executes the call and feeds the result back on the next request.
+
+This is a function-calling round-trip, not a prompt-level convention. The wire shape matches the OpenAI Responses API spec.
+
+### Define tools
+
+```json theme={null}
+{
+  "model": "default",
+  "input": "What is the weather in NYC?",
+  "tools": [
+    {
+      "type": "function",
+      "name": "lookup_weather",
+      "description": "Return the current weather for a city.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": { "type": "string", "description": "City name" }
+        },
+        "required": ["city"]
+      }
+    }
+  ]
+}
+```
+
+Constraints (validated up-front, `400` on violation):
+
+* Only `type: "function"` is accepted. `web_search`, `file_search`, `code_interpreter`, etc. are rejected. IronClaw routes those through its own registry, not caller-provided definitions.
+* Names: `^[A-Za-z0-9_-]{1,64}$`, unique within the request.
+* Names must not shadow a registered IronClaw action (built-in tool, extension tool, or an agent capability like `mission_*`, `skill_*`, `memory_*`). Shadowing is rejected to prevent confused-deputy behavior.
+* The entire `tools[]` payload caps at 16 KiB of canonical JSON.
+
+### The round trip
+
+When the model calls one of your tools, the response completes with a `function_call` output item and the thread sits in `Waiting`:
+
+```json theme={null}
+{
+  "id": "resp_...",
+  "status": "completed",
+  "output": [
+    {
+      "type": "function_call",
+      "id": "item_...",
+      "call_id": "call_ext_lookup_1",
+      "name": "lookup_weather",
+      "arguments": "{\"city\":\"NYC\"}"
+    }
+  ]
+}
+```
+
+The model may emit prose before the call. Any pre-call text is flushed as a leading `message` item so you see both pieces in order.
+
+Execute the call locally, then POST a follow-up with a `function_call_output` item. Include `previous_response_id` so the resume targets the same thread:
+
+```json theme={null}
+{
+  "model": "default",
+  "previous_response_id": "resp_...",
+  "input": [
+    {
+      "type": "function_call_output",
+      "call_id": "call_ext_lookup_1",
+      "output": "{\"temp_f\":72,\"conditions\":\"sunny\"}"
+    }
+  ],
+  "tools": [ /* same tools array */ ]
+}
+```
+
+The agent resumes, the LLM sees your tool result, and the final answer comes back as a normal `message` output item.
+
+Pass the same `tools[]` on the resume request. The catalog is per-thread; passing the definitions keeps the tool available for any follow-up calls the model makes.
+
+### Resume validation
+
+The resume request must satisfy the bridge:
+
+* A `function_call_output` item without a live external-tool gate on this thread returns `400`.
+* A `function_call_output` item whose `call_id` does not match the pending gate returns `400`.
+* A `function_call_output` item with an empty `call_id` or missing `output` returns `400`.
+* A resume request that omits `previous_response_id` returns `400`.
+* A resume `input` array must contain **only** `function_call_output` items — mixing in a `message` item returns `400`.
+* If the thread is paused on an unrelated gate (OAuth, approval, pairing), resolve that first.
+
+To ask a follow-up question alongside a tool result, complete the resume first, then send the new `message` as its own request with `previous_response_id` pointing at the resumed response.
+
+### Multi-call batching
+
+The engine pauses on the **first** external tool call in an assistant turn. If the model wants to invoke `tool_a` and `tool_b` together, only `tool_a` surfaces on the first response. After you resume, `tool_b` is emitted on the next turn. This is a known limitation; OpenAI-style "post all results together" is a follow-up.
+
+### Streaming flow
+
+With `stream: true`, the external-tool flow looks like:
+
+1. `response.created`
+2. Optional `response.output_text.delta` events for any leading prose.
+3. `response.output_item.added` with the `function_call` item.
+4. `response.output_item.done` with the same item.
+5. `response.completed`.
+
+The stream closes after `response.completed`. Send the resume as a fresh POST with `previous_response_id`.
+
+***
+
+## Structured context (`x_context`)
+
+For integrations that need to pass structured state alongside the user message (notification approval, webhook payload, environment hints), use `x_context`:
+
+```json theme={null}
+{
+  "model": "default",
+  "input": "Process the latest webhook.",
+  "x_context": {
+    "webhook": { "source": "stripe", "event": "invoice.paid", "amount_cents": 4200 }
+  }
+}
+```
+
+The handler renders it as a `<user-context>` block ahead of the user message. Total serialized size caps at 10 KB. Pass a flat `{key: {object}}` structure; deeper nesting is serialized as raw JSON.
+
+`x_context` is an IronClaw extension and is not part of the OpenAI Responses API spec.
+
+***
+
+## Per-request instructions
+
+Use `instructions` to inject a one-turn system/developer message:
+
+```json theme={null}
+{
+  "model": "default",
+  "input": "Summarize this.",
+  "instructions": "Respond in three bullet points, no preamble."
+}
+```
+
+**IronClaw caveat — diverges from the OpenAI spec.** The OpenAI Responses API contract is that `instructions` apply only to the current turn and are not carried by `previous_response_id`. IronClaw currently prepends the `<instructions>` block into the user message and persists it as part of the conversation, so it *is* visible on later turns when history is replayed. Until the handler stores instructions out-of-band, treat them as sticky for the thread and re-send (or override) them explicitly on each turn that needs different behaviour.
+
+The agent's persistent identity files (`AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`) come from workspace memory and are not affected by this field.
+
+***
+
+## Errors
+
+Errors from the Responses handler use the OpenAI envelope:
+
+```json theme={null}
+{
+  "error": {
+    "message": "function_call_output items must include a non-empty `call_id` field",
+    "type": "invalid_request_error",
+    "code": null
+  }
+}
+```
+
+Common codes:
+
+| Status | `type` | When |
+| - | - | - |
+| `400` | `invalid_request_error` | Schema, validation, shadowed tool name, missing pending gate, unsupported field. |
+| `429` | `rate_limit_error` | More than 30 requests in 60 seconds for this user. |
+| `503` | `server_error` | Agent loop not started, database unavailable, or connection cap reached. |
+
+A turn that completes but fails mid-flight (the model errored, a required tool raised) returns `200` with `"status": "failed"` and a populated `error` field. Inspect `status` before reading `output`.
+
+Two cases do **not** use the JSON envelope and need separate handling:
+
+* **`401` Unauthorized** comes from the gateway auth middleware before the request reaches the handler, and the body is a plain-text string (`Invalid or missing auth token`). Same for `403` (`Forbidden` for OIDC domain violations) and the `503` (`Database unavailable`) emitted by the middleware when the token store is down.
+* **`GET /api/v1/responses/{id}`** returns `404` (still JSON-enveloped) when the response id is unknown or the thread does not belong to the authenticated user. `POST` with a foreign `previous_response_id` does **not** return `404`; the handler only decodes the UUID and dispatches into the agent, where the cross-user resume surfaces as a turn-level failure rather than an HTTP error. Treat cross-user resume as undefined and avoid relying on the response shape.
+
+The Responses API does **not** support interactive approvals or authentication gates in the response stream. If the agent hits a tool that requires user approval (e.g. shell with a destructive command) or an extension OAuth flow, the turn fails with a clear error directing you to resolve the gate via the web UI or a different channel.
+
+***
+
+## SDK usage
+
+The OpenAI SDKs are the easiest way to use this endpoint. Point them at IronClaw and they "just work":
+
+```python Python theme={null}
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://your-host/api/v1",
+    api_key="<your-bearer-token>",
+)
+
+# Basic
+resp = client.responses.create(model="default", input="Hello.")
+print(resp.output_text)
+
+# With session continuity
+follow_up = client.responses.create(
+    model="default",
+    input="What did I just say?",
+    previous_response_id=resp.id,
+)
+
+# With caller tools
+import json
+
+resp = client.responses.create(
+    model="default",
+    input="What is the weather in NYC?",
+    tools=[
+        {
+            "type": "function",
+            "name": "lookup_weather",
+            "description": "Return current weather.",
+            "parameters": {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        }
+    ],
+)
+
+# Inspect the function_call item, run it locally, resume.
+call = next(item for item in resp.output if item.type == "function_call")
+result = {"temp_f": 72, "conditions": "sunny"}  # your code
+
+final = client.responses.create(
+    model="default",
+    previous_response_id=resp.id,
+    input=[
+        {
+            "type": "function_call_output",
+            "call_id": call.call_id,
+            "output": json.dumps(result),
+        }
+    ],
+    tools=[ ... ],  # same definitions
+)
+print(final.output_text)
+```
+
+```typescript TypeScript theme={null}
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://your-host/api/v1",
+  apiKey: process.env.IRONCLAW_TOKEN,
+});
+
+const resp = await client.responses.create({
+  model: "default",
+  input: "What is the weather in NYC?",
+  tools: [
+    {
+      type: "function",
+      name: "lookup_weather",
+      description: "Return current weather.",
+      parameters: {
+        type: "object",
+        properties: { city: { type: "string" } },
+        required: ["city"],
+      },
+    },
+  ],
+});
+
+const call = resp.output.find((it) => it.type === "function_call");
+if (call) {
+  const result = { temp_f: 72, conditions: "sunny" };
+  const final = await client.responses.create({
+    model: "default",
+    previous_response_id: resp.id,
+    input: [
+      {
+        type: "function_call_output",
+        call_id: call.call_id,
+        output: JSON.stringify(result),
+      },
+    ],
+    tools: [ /* same definitions */ ],
+  });
+  console.log(final.output_text);
+}
+```
+
+***
+
+## Limits and quirks
+
+* **Rate limit**: 30 requests per 60 seconds per user (shared with `/api/chat/send`).
+* **Body size**: 14 MiB request limit at the gateway.
+* **Turn timeout (non-streaming)**: 30 seconds. Use `stream: true` for long-running work.
+* **Tool batching**: one external-tool call per round trip. The engine resumes the next call on the next turn.
+* **Approvals and auth gates**: not surfaced over the Responses API. Resolve them via the web UI before retrying.
+* **`tool_choice`**: accepted and ignored — there is no per-request tool-choice surface. `max_output_tokens` and other unlisted OpenAI fields are likewise accepted and ignored.
+* **`model`**: required, any well-formed name (≤ 256 bytes). It is a routing hint echoed back in the create response; `GET` and cancel responses report the server placeholder `"reborn"`. Provider and model selection is server-side via settings.
+* **Token usage on retrieval**: `GET /api/v1/responses/{id}` reads `usage` best-effort from persisted run state (token totals plus USD cost); it can be zero when the run reported no usage.
+
+***
+
+## Related
+
+* [Inference Providers](https://docs.ironclaw.com/capabilities/llm-providers.md) — configure the model that backs `"default"`.
+* [Configuration](https://docs.ironclaw.com/capabilities/configuration.md) — configuration file layout, profiles, and environment overrides.
+* [Sandboxed Tools](https://docs.ironclaw.com/capabilities/sandboxed-tools.md) — how IronClaw's built-in tools execute when the agent calls them.
+* [MCP](https://docs.ironclaw.com/extensions/mcp.md) — connect Model Context Protocol servers to extend the agent's tool surface server-side instead of supplying caller tools per-request.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

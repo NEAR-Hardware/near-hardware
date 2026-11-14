@@ -1,0 +1,142 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Contract Events
+
+> Emit structured events from your contract so indexers and frontends can track on-chain activity.
+
+Smart contracts can emit **events** — structured log messages that follow [NEP-297](https://nomicon.io/Standards/EventsFormat) and are stored on-chain. Events allow indexers, frontends, and external services to track meaningful contract activity without parsing arbitrary log strings.
+
+Events are most useful when several contracts must report the same kind of activity in a standard format, as the FT and NFT standards do. If you only need to read the calls made to your own contract, an indexer can read their arguments directly from the transactions. See [A contract is not a backend](https://docs.near.org/smart-contracts/what-is.md#a-contract-is-not-a-backend).
+
+An event is a log line prefixed with `EVENT_JSON:` followed by a JSON object with a fixed schema:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+EVENT_JSON:{"standard":"nep171","version":"1.0.0","event":"nft_mint","data":[{"owner_id":"alice.near","token_ids":["1"]}]}
+```
+
+***
+
+## Defining and Emitting Events
+
+The `near-sdk` provides a high-level macro-based API for defining and emitting events. Annotate an enum with `#[near(event_json(standard = "..."))]` and mark each variant with `#[event_version("...")]`.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_sdk::near;
+use near_sdk::serde::Serialize;
+
+#[derive(Serialize)]
+pub struct MintData {
+    pub owner_id: String,
+    pub token_ids: Vec<String>,
+}
+
+#[derive(Serialize)]
+pub struct TransferData {
+    pub old_owner_id: String,
+    pub new_owner_id: String,
+    pub token_ids: Vec<String>,
+}
+
+#[near(event_json(standard = "nep171"))]
+pub enum NftEvent {
+    #[event_version("1.0.0")]
+    NftMint(Vec<MintData>),
+
+    #[event_version("1.0.0")]
+    NftTransfer(Vec<TransferData>),
+}
+```
+
+Call `.emit()` on an event variant to write it to the on-chain log:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_sdk::near;
+
+#[near(contract_state)]
+#[derive(Default)]
+pub struct Contract {}
+
+#[near]
+impl Contract {
+    pub fn mint(&mut self, owner_id: String, token_id: String) {
+        // ... minting logic ...
+
+        NftEvent::NftMint(vec![MintData {
+            owner_id,
+            token_ids: vec![token_id],
+        }])
+        .emit();
+    }
+
+    pub fn transfer(&mut self, old_owner_id: String, new_owner_id: String, token_id: String) {
+        // ... transfer logic ...
+
+        NftEvent::NftTransfer(vec![TransferData {
+            old_owner_id,
+            new_owner_id,
+            token_ids: vec![token_id],
+        }])
+        .emit();
+    }
+}
+```
+
+The macro automatically serializes the enum variant to the `EVENT_JSON:` format and calls `env::log_str` under the hood.
+
+> [!TIP]
+>
+> You can emit multiple data entries in a single event by passing a `Vec` with more than one element. This keeps gas costs lower than emitting one event per entry.
+
+***
+
+## Custom Events
+
+You are not limited to standard NEP events. Define your own standard name for application-specific activity:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_sdk::near;
+use near_sdk::serde::Serialize;
+
+#[derive(Serialize)]
+pub struct OrderPlaced {
+    pub order_id: u64,
+    pub buyer: String,
+    pub amount: u128,
+}
+
+#[near(event_json(standard = "my-marketplace"))]
+pub enum MarketplaceEvent {
+    #[event_version("1.0.0")]
+    OrderPlaced(Vec<OrderPlaced>),
+}
+
+// In your contract method:
+MarketplaceEvent::OrderPlaced(vec![OrderPlaced {
+    order_id: 42,
+    buyer: "alice.near".to_string(),
+    amount: 1_000_000,
+}])
+.emit();
+```
+
+***
+
+## Standard Events (FT & NFT)
+
+If you are implementing Fungible Tokens or Non-Fungible Tokens, the standard events are already defined:
+
+* **NEP-141 (FT):** `ft_transfer`, `ft_mint`, `ft_burn` — see the [Fungible Token](https://docs.near.org/primitives/ft) docs.
+* **NEP-171 (NFT):** `nft_mint`, `nft_transfer`, `nft_burn` — see the [Non-Fungible Token](https://docs.near.org/primitives/nft) docs.
+
+Using the standard event names ensures compatibility with explorers and indexers that already know how to parse them.
+
+***
+
+## Consuming Events with Indexers
+
+Emitted events are stored as transaction logs on-chain and can be consumed by any indexer that listens for `EVENT_JSON:` prefixed log lines. See the [indexing guide](https://docs.near.org/data-infrastructure/indexers.md) to choose a data source for consuming these events.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

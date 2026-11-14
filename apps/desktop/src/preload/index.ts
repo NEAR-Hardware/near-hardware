@@ -18,7 +18,31 @@ const api: NearHardwareApi = {
     detect: (id) => ipcRenderer.invoke('environments:detect', id),
     listConnected: () => ipcRenderer.invoke('environments:list-connected'),
     connect: (id) => ipcRenderer.invoke('environments:connect', id),
-    disconnect: (id) => ipcRenderer.invoke('environments:disconnect', id)
+    disconnect: (id) => ipcRenderer.invoke('environments:disconnect', id),
+    authStatus: (id) => ipcRenderer.invoke('environments:auth-status', id)
+  },
+  setup: {
+    state: () => ipcRenderer.invoke('setup:state'),
+    complete: () => ipcRenderer.invoke('setup:complete'),
+    installDevTools: () => ipcRenderer.invoke('setup:install-dev-tools'),
+    moveToApplications: () => ipcRenderer.invoke('setup:move-to-applications'),
+    prepareProjectsFolder: (path) => ipcRenderer.invoke('setup:prepare-projects-folder', path),
+    openPrivacySettings: () => ipcRenderer.invoke('setup:open-privacy-settings')
+  },
+  near: {
+    list: () => ipcRenderer.invoke('near:list'),
+    checkName: (name) => ipcRenderer.invoke('near:check-name', name),
+    createTestnet: (name) => ipcRenderer.invoke('near:create-testnet', name),
+    lookupImport: (secret) => ipcRenderer.invoke('near:lookup-import', secret),
+    import: (input) => ipcRenderer.invoke('near:import', input),
+    setPrimary: (network, accountId) => ipcRenderer.invoke('near:set-primary', network, accountId),
+    setAutoApproveTestnet: (on) => ipcRenderer.invoke('near:set-auto-approve-testnet', on),
+    shuffleAvatar: (network, accountId) =>
+      ipcRenderer.invoke('near:shuffle-avatar', network, accountId),
+    remove: (network, accountId) => ipcRenderer.invoke('near:remove', network, accountId),
+    reveal: (network, accountId) => ipcRenderer.invoke('near:reveal', network, accountId),
+    balance: (network, accountId) => ipcRenderer.invoke('near:balance', network, accountId),
+    onChange: (listener) => subscribe('near:changed', listener)
   },
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
@@ -50,12 +74,16 @@ const api: NearHardwareApi = {
     onError: (listener) => subscribe('serial:error', listener)
   },
   terminal: {
-    create: (projectId, cols, rows) => ipcRenderer.invoke('terminal:create', projectId, cols, rows),
+    create: (projectId, cols, rows, command) =>
+      ipcRenderer.invoke('terminal:create', projectId, cols, rows, command),
     write: (id, data) => ipcRenderer.invoke('terminal:write', id, data),
     resize: (id, cols, rows) => ipcRenderer.invoke('terminal:resize', id, cols, rows),
     kill: (id) => ipcRenderer.invoke('terminal:kill', id),
     onData: (listener) => subscribe('terminal:data', listener),
     onExit: (listener) => subscribe('terminal:exit', listener)
+  },
+  contractTools: {
+    status: () => ipcRenderer.invoke('contract-tools:status')
   },
   platformio: {
     status: () => ipcRenderer.invoke('platformio:status'),

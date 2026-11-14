@@ -1,0 +1,89 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Avoiding Token Loss
+
+> Learn about scenarios that can lead to token loss in NEAR Protocol and how to prevent them, including key management, account deletion, and smart contract failures.
+
+This document outlines the common errors that can lead to token loss and how to avoid them.
+
+> [!WARNING]
+>
+> Careful! Losing tokens means losing money!
+
+> [!NOTE]
+>
+> **Building a frontend?**
+>
+> If your application lets users enter a recipient account, follow the [Validating Recipient Accounts](https://docs.near.org/web3-apps/tutorials/account-validation.md) guide to catch typos and non-existent accounts before broadcasting a transaction.
+
+Token loss is possible under multiple scenarios. These scenarios can be grouped into a few related classes:
+
+1. Improper key management
+2. Refunding deleted accounts
+3. Failed function calls in batches
+
+***
+
+## Improper key management
+
+Improper key management may lead to token loss. Mitigating such scenarios may be done by issuing backup keys
+allowing for recovery of accounts whose keys have been lost or deleted.
+
+### Loss of `FullAccess` key
+
+A user may lose their private key of a `FullAccess` key pair for an account with no other keys.
+No one will be able to recover the funds. Funds will remain locked in the account forever.
+
+### Loss of `FunctionCall` access key
+
+An account may have its one and only `FunctionCall` access key deleted.
+No one will be able to recover the funds. Funds will remain locked in the account forever.
+
+***
+
+## Refunding deleted accounts
+
+System refunds require an existing receiving account. If a refund cannot be delivered because the account no longer exists, its amount is burned.
+
+### Deleting account with non-existent beneficiary
+
+> [!WARNING]
+>
+> Never use `DeleteAccount` as a replacement for `Transfer`, including when moving an account's entire balance. If the beneficiary does not exist, the remaining balance is burned.
+
+Deleting an account and paying its beneficiary happen in separate receipts:
+
+1. Account `A` is deleted with account `B` as its beneficiary.
+2. The runtime sends `A`'s remaining balance to `B` in a system payout receipt.
+3. If `B` does not exist when that receipt executes, the payout fails and its amount is burned. The deletion of `A` is not rolled back.
+
+Unlike an ordinary transfer, this system payout does not create an implicit account or generate another refund on failure. See the runtime's [account deletion](https://github.com/near/nearcore/blob/2.13.4/runtime/runtime/src/actions.rs#L399) and [failed system refund handling](https://github.com/near/nearcore/blob/2.13.4/runtime/runtime/src/lib.rs#L929).
+
+To move funds and then close the source account:
+
+1. Send a normal `Transfer`, leaving enough NEAR for transaction fees and any required storage balance.
+2. Wait for finalized success and for all outstanding receipts and refunds to complete. If the transfer fails, resolve the failure before deleting the account.
+3. Verify that the beneficiary exists, then submit a separate `DeleteAccount` transaction to send the remaining account balance, including any dust or released storage balance, to that beneficiary. Check the payout's finalized outcome as well.
+
+Before deletion, also [withdraw any gas key balances](https://docs.near.org/integrations/errors/introduction.md#deleting-gas-keys-or-accounts-that-hold-gas-key-balances); they are not included in the beneficiary payout.
+
+### Account deleted before it receives a refund
+
+If an account is explicitly deleted while refunds are outstanding, those refunds can become undeliverable and be burned. Keep the account until all outstanding receipts and refund outcomes have finalized.
+
+***
+
+## Failed function calls in batches
+
+> [!WARNING]
+>
+> When designing a smart contract, you should always consider the asynchronous nature of NEAR Protocol.
+
+If a contract function `f1` calls two (or more) other functions `f2` and `f3`, and at least one of these functions, `f2` and `f3` fails, then tokens will be refunded from the function that failed, but tokens will be appropriately credited to the function(s) which succeed.
+
+The successful call's tokens may be considered lost depending on your use case if a single failure in the batch means the whole batch failed.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,336 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Transfers & Actions
+
+> Learn how contracts can make transfers, call other contracts, and more
+
+This page describes the different types of actions that a smart contract can perform on NEAR like transferring NEAR, calling other contracts, creating sub-accounts, and deploying contracts. It also explains how to add access keys to accounts.
+
+Smart contracts can perform specific `Actions` such as transferring NEAR, or calling other contracts.
+
+An important property of `Actions` is that they can be batched together when acting on the same contract. **Batched actions** act as a unit: they execute in the same [receipt](https://docs.near.org/protocol/transactions/transaction-execution.md#receipts--finality), and if **any fails**, then they **all get reverted**.
+
+> [!NOTE]
+>
+> `Actions` can be batched only when they act on the **same contract**. You can batch calling two methods on a contract,
+> but **cannot** call two methods on different contracts.
+
+***
+
+## Transfer NEAR Ⓝ
+
+You can send `$NEAR` from your contract to any other account on the network. The gas cost of a transfer is set by the protocol's runtime parameters, and it depends on the type of the receiver:
+
+| Receiver | Gas cost |
+| - | - |
+| Named account, for example `alice.near` | about `0.45 TGas` |
+| Ethereum-like (`0x`) or deterministic (`0s`) address | about `8.15 TGas` |
+| Universal (`0u`) address, from protocol version 88 (nearcore 2.14.0) | about `8.15 TGas` |
+| 64-hex implicit account | about `8.35 TGas` |
+
+For every receiver except a named account, the cost includes the fee for creating the account, even if the account already exists. For a 64-hex implicit account, it also includes the fee for adding its full access key.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, AccountId, Promise, NearToken};
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  #[near]
+  impl Contract {
+    pub fn transfer(&self, to: AccountId, amount: NearToken){
+      Promise::new(to).transfer(amount);
+    }
+  }
+```
+
+> [!TIP]
+>
+> **Why is there no callback?**
+> The only case where a transfer will fail is if the receiver account does **not** exist.
+
+> [!WARNING]
+>
+> Remember that your balance is used to cover for the contract's storage. When sending money, make sure you always leave enough to cover for future storage needs.
+
+***
+
+## Function Call
+
+Your smart contract can call methods in another contract. In the snippet below we call a method
+in a deployed [Hello NEAR](https://docs.near.org/smart-contracts/quickstart.md) contract, and check if everything went
+right in the callback.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, env, log, Promise, Gas, PromiseError};
+  use serde_json::json;
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const HELLO_NEAR: &str = "hello-nearverse.testnet";
+  const NO_DEPOSIT: u128 = 0;
+  const CALL_GAS: Gas = Gas(5_000_000_000_000);
+
+  #[near]
+  impl Contract {
+    pub fn call_method(&self){
+      let args = json!({ "message": "howdy".to_string() })
+                .to_string().into_bytes().to_vec();
+
+      Promise::new(HELLO_NEAR.parse().unwrap())
+      .function_call("set_greeting".to_string(), args, NO_DEPOSIT, CALL_GAS)
+      .then(
+        Promise::new(env::current_account_id())
+        .function_call("callback".to_string(), Vec::new(), NO_DEPOSIT, CALL_GAS)
+      );
+    }
+
+    pub fn callback(&self, #[callback_result] result: Result<(), PromiseError>){
+      if result.is_err(){
+          log!("Something went wrong")
+      }else{
+          log!("Message changed")
+      }
+    }
+  }
+```
+
+> [!WARNING]
+>
+> The snippet showed above is a low level way of calling other methods. We recommend make calls to other contracts as explained in the [Cross-contract Calls section](https://docs.near.org/smart-contracts/anatomy/crosscontract.md).
+
+***
+
+## Create a Sub Account
+
+Your contract can create direct sub accounts of itself, for example, `user.near` can create `sub.user.near`.
+
+Accounts do **NOT** have control over their sub-accounts, since they have their own keys.
+
+Sub-accounts are simply useful for organizing your accounts (e.g. `dao.project.near`, `token.project.near`).
+
+> [!NOTE]
+>
+> Creating an account costs a fixed [`0.007Ⓝ`](https://docs.near.org/protocol/transactions/gas#creating-an-account), or about `0.00707Ⓝ` in total once the send fees are added. That `0.007Ⓝ` already includes the gas burned while creating the account, and it is taken out of the transaction's gas refund, not out of the deposit you attach for storage.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, env, Promise, NearToken};
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const MIN_STORAGE: NearToken = NearToken::from_millinear(1); //0.001Ⓝ
+
+  #[near]
+  impl Contract {
+    pub fn create(&mut self, prefix: String) {
+      let account_id = prefix + "." + &env::current_account_id().to_string();
+      Promise::new(account_id.parse().unwrap())
+        .create_account()
+        .transfer(MIN_STORAGE);
+    }
+  }
+```
+
+> [!TIP]
+>
+> Notice that in the snippet we are transferring some money to the new account for storage
+
+> [!WARNING]
+>
+> When you create an account from within a contract, it has no keys by default. If you don't explicitly [add keys](#add-keys) to it or [deploy a contract](#deploy-a-contract) on creation then it will be [locked](https://docs.near.org/protocol/accounts-contracts/access-keys.md#locked-accounts).
+
+***
+
+#### Creating `.testnet` / `.near` Accounts
+
+Accounts can only create immediate sub-accounts of themselves.
+
+If your contract wants to create a `.mainnet` or `.testnet` account, then it needs to [call](#function-call)
+the `create_account` method of `near` or `testnet` root contracts.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, Promise, Gas, NearToken };
+  use serde_json::json;
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const CALL_GAS: Gas = Gas::from_gas(28_000_000_000_000);
+  const MIN_STORAGE: NearToken = NearToken::from_yoctonear(1_820_000_000_000_000_000_000); //0.00182Ⓝ
+
+  #[near]
+  impl Contract {
+    pub fn create_account(&mut self, account_id: String, public_key: String){
+      let args = json!({
+                  "new_account_id": account_id,
+                  "new_public_key": public_key,
+                }).to_string().into_bytes().to_vec();
+
+      // Use "near" to create mainnet accounts
+      Promise::new("testnet".parse().unwrap())
+        .function_call("create_account".to_string(), args, MIN_STORAGE, CALL_GAS);
+    }
+  }
+```
+
+***
+
+## Create deterministic accounts
+
+Your contract can create a [deterministic account](https://docs.near.org/protocol/accounts-contracts/account-id.md#deterministic-address) whose `0s` address is derived from its initial code and storage. Use the `DeterministicStateInit` action instead of `CreateAccount`; the protocol validates that the supplied account ID matches the hash of the provided initial state.
+
+Smart contracts can build this action using the following host functions:
+
+* `promise_batch_action_state_init` — creates a `DeterministicStateInit` action referencing a code hash
+* `promise_batch_action_state_init_by_account_id` — creates the action referencing an existing account's code
+* `set_state_init_data_entry` — adds a key-value entry to the account's initial storage
+* `current_contract_code` — returns the calling contract's own code hash, useful for deploying clones
+
+Any NEAR attached beyond the required storage deposit is refunded to the sender.
+
+***
+
+## Create universal accounts
+
+Your contract can create a [universal account](https://docs.near.org/protocol/accounts-contracts/account-id.md#universal-address) whose `0u` address is derived from its initial code, storage, and access keys. Use the `UniversalStateInit` action instead of `CreateAccount`.
+
+Smart contracts can build this action using two host functions:
+
+* `universal_state_init_to_account_id` — derives the `0u` account ID from a state init and reports whether the bytes are valid, with no side effects
+* `promise_batch_action_universal_state_init` — appends a `UniversalStateInit` action to a promise, with an attached deposit that tops up the account's storage stake if needed. Any unused amount is refunded; use a separate `Transfer` action to add to the account's balance.
+
+See [Creating Universal Accounts](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md#contract-triggered-creation) for a contract example and [relayer-assisted creation](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md#relayer-assisted-creation) for details on funding.
+
+***
+
+## Deploy a Contract
+
+When creating an account you can also batch the action of deploying a contract to it. Note that for this, you will need to pre-load the byte-code you want to deploy in your contract.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, env, Promise, NearToken};
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const MIN_STORAGE: NearToken = NearToken::from_millinear(1100); //1.1Ⓝ
+  const HELLO_CODE: &[u8] = include_bytes!("./hello.wasm");
+
+  #[near]
+  impl Contract {
+    pub fn create_hello(&self, prefix: String){
+      let account_id = prefix + "." + &env::current_account_id().to_string();
+      Promise::new(account_id.parse().unwrap())
+        .create_account()
+        .transfer(MIN_STORAGE)
+        .deploy_contract(HELLO_CODE.to_vec());
+    }
+  }
+```
+
+> [!TIP]
+>
+> If an account with a contract deployed does **not** have any access keys, this is known as a locked contract. When the account is locked, it cannot sign transactions therefore, actions can **only** be performed from **within** the contract code.
+
+***
+
+## Add Keys
+
+When you use actions to create a new account, the created account does not have any [access keys](https://docs.near.org/protocol/accounts-contracts/access-keys.md), meaning that it **cannot sign transactions** (e.g. to update its contract, delete itself, transfer money).
+
+There are two options for adding keys to the account:
+
+1. `add_access_key`: adds a key that can only call specific methods on a specified contract.
+2. `add_full_access_key`: adds a key that has full access to the account.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, env, Promise, NearToken, PublicKey};
+
+  #[near(serializers = [json, borsh])]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const MIN_STORAGE: NearToken = NearToken::from_millinear(1100); //1.1Ⓝ
+  const HELLO_CODE: &[u8] = include_bytes!("./hello.wasm");
+
+  #[near]
+  impl Contract {
+    pub fn create_hello(&self, prefix: String, public_key: PublicKey){
+      let account_id = prefix + "." + &env::current_account_id().to_string();
+      Promise::new(account_id.parse().unwrap())
+        .create_account()
+        .transfer(MIN_STORAGE)
+        .deploy_contract(HELLO_CODE.to_vec())
+        .add_full_access_key(public_key);
+    }
+  }
+```
+
+Notice that what you actually add is a "public key". Whoever holds its private counterpart, i.e. the private-key, will be able to use the newly access key.
+
+> [!NOTE]
+>
+> The `public_key` can use any of NEAR's [signature schemes](https://docs.near.org/protocol/accounts-contracts/access-keys.md#signature-schemes) — `ed25519`, `secp256k1`, or the post-quantum `ml-dsa-65`. Adding an `ml-dsa-65` key needs no code changes: pass an `ml-dsa-65:...` key exactly like the examples above.
+
+> [!TIP]
+>
+> If an account with a contract deployed does **not** have any access keys, this is known as a locked contract. When the account is locked, it cannot sign transactions therefore, actions can **only** be performed from **within** the contract code.
+
+***
+
+## Delete Account
+
+There are two scenarios in which you can use the `delete_account` action:
+
+1. As the **last** action in a chain of batched actions.
+2. To make your smart contract delete its own account.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  use near_sdk::{near, env, Promise, NearToken, AccountId};
+
+  #[near(contract_state)]
+  #[derive(Default)]
+  pub struct Contract { }
+
+  const MIN_STORAGE: NearToken = NearToken::from_millinear(1); //0.001Ⓝ
+
+  #[near]
+  impl Contract {
+    pub fn create_delete(&self, prefix: String, beneficiary: AccountId){
+      let account_id = prefix + "." + &env::current_account_id().to_string();
+      Promise::new(account_id.parse().unwrap())
+        .create_account()
+        .transfer(MIN_STORAGE)
+        .delete_account(beneficiary);
+    }
+
+    pub fn self_delete(beneficiary: AccountId){
+      Promise::new(env::current_account_id())
+        .delete_account(beneficiary);
+    }
+  }
+```
+
+> [!WARNING]
+>
+> **Token Loss**
+>
+> If the beneficiary account does not exist the funds will be [**dispersed among validators**](https://docs.near.org/protocol/network/token-loss.md).
+
+> [!WARNING]
+>
+> **Token Loss**
+>
+> Do **not** use `delete` to try fund a new account. Since the account doesn't exist the tokens will be lost.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

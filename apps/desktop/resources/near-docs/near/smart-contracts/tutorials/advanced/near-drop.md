@@ -1,0 +1,385 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Token Drops
+
+> Learn how NEAR Drop enables token drops (NEAR, FT, NFT) claimable via private keys.
+
+NEAR Drop is a smart contract that allows users to create token drops (`$NEAR`, Fungible and Non-Fungible Tokens), and link them to specific private keys. Whoever has a private key can claim its drop into an existing account.
+
+Particularly, it shows:
+
+1. How to create token drops of NEAR, FTs, and NFTs
+2. How to use Function Call keys to let someone claim tokens without signing in to the funder's account
+
+The [example repository](https://github.com/near-examples/near-drop) contains the contract and its tests.
+
+***
+
+## Contract Overview
+
+The contract exposes `create_drop` to create a NEAR, FT, or NFT drop, and `claim_for` to claim it into an existing account. It uses [FunctionCall keys](https://docs.near.org/protocol/accounts-contracts/access-keys.md) on the contract's own account to authorize claims.
+
+Imagine Alice wants to drop some NEAR to Bob:
+
+1. Alice calls `create_drop` with a NEAR amount and one or more public keys, attaching enough NEAR to fund the drop and its costs.
+2. The contract records the drop and adds the public keys to its own account as FunctionCall keys that can only call `claim_for`.
+3. Alice gives a corresponding private key to Bob.
+4. Bob uses that key to sign a transaction as the drop contract's account, calling `claim_for` with his existing account ID.
+5. The contract consumes the key and transfers the drop to Bob.
+
+The key authorizes a claim on the contract's account. It does not give Bob full access to that account or to Alice's account.
+
+> [accordion] Contract's interface
+>
+> #### `create_drop(drop)`
+>
+> Creates a drop from a `NEAR`, `FT`, or `NFT` input and returns its `drop_id`. The caller becomes the funder.
+>
+> #### `get_drop_cost(funder, drop)`
+>
+> Quotes the NEAR deposit needed to create a drop for the given funder and input.
+>
+> #### `claim_for(account_id)`
+>
+> Claims a drop into an existing account, using its FunctionCall key.
+>
+> #### `delete_drop(drop_id)`
+>
+> Lets the funder cancel the remaining keys and request refunds for unused assets and budgets.
+>
+> #### `get_drop_by_id(drop_id)` and `get_drop_id_by_key(public_key)`
+>
+> Return the stored drop or the drop ID associated with a public key.
+
+***
+
+## Contract's State
+
+The contract links each public key to a `DropId`, which identifies a drop. Its state contains:
+
+* `next_drop_id`: A counter used to assign identifiers to new drops
+* `drop_by_id`: A map from each `DropId` to its drop data
+* `drop_id_by_key`: A map from each public key to the drop it can claim
+* `keys_by_drop`: The remaining public keys for each drop, used when claiming or deleting it
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[derive(PanicOnDefault)]
+#[near(contract_state)]
+pub struct Contract {
+    pub next_drop_id: DropId,
+    pub drop_by_id: LookupMap<DropId, Drop>,
+    pub drop_id_by_key: LookupMap<PublicKey, DropId>,
+    pub(crate) keys_by_drop: LookupMap<DropId, Vec<PublicKey>>,
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/lib.rs#L30-L37)
+
+***
+
+## Drop Types
+
+There are three types of drops, which differ in what the recipient receives. `CreateDrop` defines their inputs:
+
+```rust title="drop_types.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+/// Inputs for creating a drop; the contract assigns ownership and funding state.
+#[near(serializers = [json])]
+pub enum CreateDrop {
+    NEAR {
+        public_keys: Vec<PublicKey>,
+        amount_per_drop: NearToken,
+    },
+    FT {
+        public_keys: Vec<PublicKey>,
+        ft_contract: AccountId,
+        amount_per_drop: NearToken,
+    },
+    NFT {
+        public_key: PublicKey,
+        nft_contract: AccountId,
+    },
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/drop_types.rs#L10-L26)
+
+NEAR and FT drops can have multiple public keys, each receiving `amount_per_drop`. A NEAR amount is expressed in yoctoNEAR; an FT amount is expressed in that token's smallest units. An NFT drop has one public key and identifies the NFT contract. Its token ID is recorded when the funder approves the NFT for the drop.
+
+> [tab] NEAR Drop
+>
+> ```rust title="near_drop.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[derive(Clone, Debug, BorshDeserialize, BorshSerialize)]
+> #[near(serializers = [json])]
+> #[borsh(crate = "near_sdk::borsh")]
+> pub struct NearDrop {
+>     pub(crate) funder: AccountId, // An account which created the drop and funded it
+>     pub(crate) amount: NearToken, // Reflects how much NEAR tokens will be transfer to claiming user
+>     counter: u32,                 // Reflects how much times the drop can be claimed
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/near_drop.rs#L8-L15)
+
+> [tab] FT Drop
+>
+> ```rust title="ft_drop.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[derive(Clone, Debug, BorshDeserialize, BorshSerialize)]
+> #[near(serializers = [json])]
+> #[borsh(crate = "near_sdk::borsh")]
+> pub struct FTDrop {
+>     pub(crate) funder: AccountId, // Account which created the drop and funded it
+>     pub(crate) amount: NearToken, // Reflects how much fungible tokens will be transfer to claiming user
+>     pub(crate) ft_contract: AccountId, // Contract of fungible tokens which will be transfer to claiming user
+>     counter: u32,                      // Reflects how much times the drop can be claimed
+>     pub(crate) funded: bool,           // Reflects if the drop is funded
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/ft_drop.rs#L17-L26)
+
+> [tab] NFT Drop
+>
+> ```rust title="nft_drop.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[derive(Clone, Debug, BorshDeserialize, BorshSerialize)]
+> #[near(serializers = [json])]
+> #[borsh(crate = "near_sdk::borsh")]
+> pub struct NFTDrop {
+>     pub(crate) funder: AccountId, // Account which created the drop and funded it
+>     pub(crate) token_id: String,  // Id of token which will be transfer to claiming user
+>     pub(crate) nft_contract: AccountId, // Contract of non-fungible token which will be transfer to claiming user
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/nft_drop.rs#L14-L21)
+
+> [!NOTE]
+>
+> Each drop contains one type of asset. To distribute a mixture of NEAR, FTs, and NFTs, create separate drops.
+
+***
+
+## Create a drop
+
+`create_drop` builds the requested drop, checks that its keys are available, saves the drop, and charges for storage and the per-key budgets. Keys must be unique, and a key already associated with a drop cannot be reused.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn create_drop(&mut self, drop: CreateDrop) -> DropId {
+    let (drop, public_keys, deposit_per_key) = drop.build(env::predecessor_account_id());
+    self.assert_keys_available(&public_keys);
+    let num_of_keys = public_keys.len().try_into().unwrap();
+    let storage_before = env::storage_usage();
+    let drop_id = self.save_drop(drop);
+    self.save_drop_id_by_keys(&public_keys, drop_id);
+    self.charge_storage_and_refund(storage_before, deposit_per_key, num_of_keys);
+    drop_id
+}
+
+/// Quote the deposit create_drop will charge for these inputs and funder.
+pub fn get_drop_cost(&self, funder: AccountId, drop: CreateDrop) -> NearToken {
+    let (drop, public_keys, deposit_per_key) = drop.build(funder);
+    drop_cost(&drop, &public_keys, deposit_per_key)
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/lib.rs#L52-L68)
+
+The contract adds the supplied keys to its own account with permission to call only `claim_for`:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+fn save_drop_id_by_key(&mut self, public_key: PublicKey, drop_id: DropId) -> Promise {
+    self.drop_id_by_key.insert(public_key.clone(), drop_id);
+
+    // Add key so it can be used to call `claim_for`
+    Promise::new(env::current_account_id()).add_access_key_allowance(
+        public_key,
+        Allowance::limited(ACCESS_KEY_ALLOWANCE).unwrap(),
+        env::current_account_id(),
+        "claim_for".to_string(),
+    )
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/lib.rs#L133-L143)
+
+### Storage Costs
+
+Before creating a drop, call `get_drop_cost` with the creator's account as `funder` and the same `drop` input you will pass to `create_drop`. The quote is returned in yoctoNEAR as a JSON string.
+
+The deposit covers the stored drop, its key mappings, access-key storage, and a gas contribution for each claim. NEAR drops also include the tokens being distributed. FT drops include a recipient-registration budget, while NFT drops reserve space for the token ID. The contract measures storage during creation and refunds any excess deposit.
+
+The per-key gas contribution and the FunctionCall key's spending allowance serve different purposes. The contract account also needs a liquid NEAR reserve to purchase gas before protocol refunds arrive; that reserve must be maintained separately from storage backing and assets owed to users.
+
+### Funding FT and NFT Drops
+
+Creating an FT or NFT drop records its configuration. The funder then supplies or approves the asset:
+
+* **FT:** Call the token contract's `ft_transfer_call`, with the drop contract as `receiver_id` and the returned `drop_id` encoded as a string in `msg`. Transfer exactly `amount_per_drop` multiplied by the number of keys, and attach 1 yoctoNEAR. Only the drop's funder can fund it.
+* **NFT:** Call the NFT contract's `nft_approve`, with the drop contract as `account_id` and the returned `drop_id` encoded as a string in `msg`. Attach the approval storage deposit required by the NFT contract. The NFT remains with the funder until claimed.
+
+An FT claim checks whether the recipient is registered and registers it if necessary. The implementation budgets 0.00126 NEAR for registration. An unneeded registration budget is refunded to the funder; any excess refunded by the FT contract after a new registration remains in the drop contract.
+
+***
+
+## Claim a drop
+
+To claim a drop, sign a transaction as the drop contract's account using the private key corresponding to one of its FunctionCall keys. Pass an existing recipient account ID to `claim_for`.
+
+```rust title="claim.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl Contract {
+    #[private]
+    pub fn claim_for(&mut self, account_id: AccountId) -> PromiseOrValue<bool> {
+        let (drop, storage_refund) = self.consume_key(env::signer_account_pk());
+        if !drop.is_ready() {
+            self.refund_keys(drop, 1, storage_refund, false).detach();
+            return PromiseOrValue::Value(false);
+        }
+        PromiseOrValue::Promise(drop.promise_for_claiming(account_id, storage_refund))
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/claim.rs#L6-L17)
+
+The contract consumes the key before starting the asset transfer. It removes the key's mapping and requests deletion of the access key. When the last key is consumed, it removes the drop's stored data; otherwise, it updates the remaining key count.
+
+```rust title="claim.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// Consume the key before any asynchronous work, even if that work fails.
+fn consume_key(&mut self, public_key: PublicKey) -> (Drop, NearToken) {
+    let drop_id = *self
+        .drop_id_by_key
+        .get(&public_key)
+        .expect("No drop for public key");
+    let drop = self.drop_by_id.get(&drop_id).expect("Missing drop").clone();
+    let mut keys = self
+        .keys_by_drop
+        .get(&drop_id)
+        .expect("Missing drop keys")
+        .clone();
+    let position = keys
+        .iter()
+        .position(|key| key == &public_key)
+        .expect("Missing drop key");
+    let storage_before = env::storage_usage();
+    keys.swap_remove(position);
+    self.drop_id_by_key.remove(&public_key);
+    Promise::new(env::current_account_id())
+        .delete_key(public_key)
+        .detach();
+    if keys.is_empty() {
+        self.drop_by_id.remove(&drop_id);
+        self.keys_by_drop.remove(&drop_id);
+    } else {
+        let mut updated = drop.clone();
+        updated
+            .set_counter(keys.len() as u32)
+            .expect("Drop has no counter");
+        self.drop_by_id.insert(drop_id, updated);
+        self.keys_by_drop.insert(drop_id, keys);
+    }
+    self.flush_maps();
+    let freed = storage_before.saturating_sub(env::storage_usage());
+    let refund = env::storage_byte_cost()
+        .saturating_mul(freed as u128)
+        .saturating_add(drop.unused_storage_padding());
+    (drop, refund)
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/near-drop/blob/1c0070a41c4fef62e239eba0a6a64e137f5c2911/src/claim.rs#L20-L59)
+
+Read the returned boolean: `true` means the asset was delivered, while `false` indicates a handled failure, including an unfunded drop. A successful transaction alone does not establish delivery. Handled failures consume the key and request refunds of unused assets and deposits to the funder. Transaction rejection or a runtime failure can still fail without returning a boolean.
+
+### Cancel a Drop
+
+The funder can call `delete_drop` to cancel its remaining keys. The contract requests deletion of those keys and refunds unused assets, storage, and the remaining keys' gas and registration budgets. For NFT drops, the funder still owns the NFT and can revoke its approval separately.
+
+***
+
+## Testing the Contract
+
+Clone the repository, navigate to its directory, and run the tests:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+git clone https://github.com/near-examples/near-drop.git
+cd near-drop
+cargo install cargo-near --version 0.21.1 --locked --no-default-features
+cargo test --locked -- --test-threads=2
+```
+
+The sandbox tests build the drop contract and its FT/NFT fixtures from source, then use `near-sandbox` and `near-api` to exercise creation, funding, claiming, deletion, and refunds. Claims are signed with the restricted drop keys. The suite also checks exact deposit quotes, storage reserves, and callback access controls. The gas benchmark is opt-in.
+
+***
+
+## Deploying the Contract to the NEAR network
+
+Create and fund a testnet account using the [NEAR CLI](https://docs.near.org/tools/cli.md#account), then build and deploy the contract. Initialize it with `new`, which takes an empty JSON object:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near build
+
+cargo near deploy <drop-contract.testnet> with-init-call new json-args '{}' prepaid-gas '100 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
+```
+
+***
+
+## CLI: Interacting with the Contract
+
+### Quote and Create a Drop
+
+Save a drop input in `drop-args.json`, replacing the public keys with keys you generated for the recipients. For example, this input creates two NEAR claims of 0.01 NEAR each:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "drop": {
+    "NEAR": {
+      "public_keys": ["<public-key-1>", "<public-key-2>"],
+      "amount_per_drop": "10000000000000000000000"
+    }
+  }
+}
+```
+
+To quote the cost, copy that input to `drop-cost-args.json` and add a top-level `funder` field containing the account that will create the drop:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "funder": "<creator.testnet>",
+  "drop": {
+    "NEAR": {
+      "public_keys": ["<public-key-1>", "<public-key-2>"],
+      "amount_per_drop": "10000000000000000000000"
+    }
+  }
+}
+```
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-read-only <drop-contract.testnet> get_drop_cost file-args drop-cost-args.json network-config testnet now
+
+near contract call-function as-transaction <drop-contract.testnet> create_drop file-args drop-args.json prepaid-gas '300 Tgas' attached-deposit '<quoted-deposit> yoctoNEAR' sign-as <creator.testnet> network-config testnet sign-with-keychain send
+```
+
+Record the returned `drop_id`. For FT and NFT drops, use the corresponding variant in the `drop` field, quote its cost, create it, and complete the funding or approval step described above.
+
+### Claim into an Existing Account
+
+Give each recipient the private key corresponding to their public key. A recipient can claim with 32 TGas and no attached deposit:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction <drop-contract.testnet> claim_for json-args '{"account_id":"<recipient.testnet>"}' prepaid-gas '32 Tgas' attached-deposit '0 NEAR' sign-as <drop-contract.testnet> network-config testnet sign-with-plaintext-private-key --signer-public-key <public-key> --signer-private-key <private-key> send
+```
+
+### Delete a Drop
+
+To cancel a drop, sign as its funder and pass the returned `drop_id`:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction <drop-contract.testnet> delete_drop json-args '{"drop_id":0}' prepaid-gas '100 Tgas' attached-deposit '0 NEAR' sign-as <creator.testnet> network-config testnet sign-with-keychain send
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

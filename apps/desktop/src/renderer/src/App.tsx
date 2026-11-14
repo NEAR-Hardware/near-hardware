@@ -8,9 +8,12 @@ import EditorTabs from './components/editor/EditorTabs'
 import FileEditor from './components/editor/FileEditor'
 import EnvironmentsView from './components/EnvironmentsView'
 import FilesPanel from './components/FilesPanel'
+import AccountsView from './components/near/AccountsView'
 import NewProjectDialog from './components/NewProjectDialog'
 import PanelResizer from './components/PanelResizer'
 import ProjectHome from './components/ProjectHome'
+import SetupGuide from './components/setup/SetupGuide'
+import { takePendingNewProject } from './components/setup/pendingNewProject'
 import Sidebar, { SidebarHeader } from './components/Sidebar'
 import { saveDocument } from './editor/documents'
 import { basename, revealLabel } from './format'
@@ -19,19 +22,49 @@ import { useEditorTabs } from './hooks/useEditorTabs'
 import { useNow } from './hooks/useNow'
 import { usePanel } from './hooks/usePanel'
 import { FILES_PANEL, MAIN_MIN_WIDTH, SIDEBAR_PANEL } from './panelLayout'
-import { loadView, saveView, type View } from './view'
+import { loadView, saveView, sameView, type View } from './view'
+import type { AccountsIntent } from './components/near/AccountsView'
 
 function App(): React.JSX.Element {
   const sidebar = usePanel(SIDEBAR_PANEL)
   const files = usePanel(FILES_PANEL)
-  const [requestedView, setView] = useState<View>(loadView)
+  // Every view visited, for Back and Forward (⌘[ and ⌘])
+  const [history, setHistory] = useState(() => ({ stack: [loadView()], index: 0 }))
+  const requestedView = history.stack[history.index]
+  const setView = useCallback(
+    (next: View) =>
+      setHistory(({ stack, index }) => {
+        if (sameView(stack[index], next)) return { stack, index }
+        const kept = [...stack.slice(0, index + 1), next].slice(-50)
+        return { stack: kept, index: kept.length - 1 }
+      }),
+    []
+  )
+  const canGoBack = history.index > 0
+  const canGoForward = history.index < history.stack.length - 1
+  // What the accounts page should open with: a form, or one account to show
+  const [accountsIntent, setAccountsIntent] = useState<AccountsIntent>({ key: 0 })
   const [projects, setProjects] = useState<Project[]>()
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const now = useNow()
   const [bottom, setBottom] = useState(loadBottomPanel)
   const [toast, setToast] = useState<string | null>(null)
+  // undefined until we know whether this is the first launch
+  const [setupOpen, setSetupOpen] = useState<boolean>()
 
   useEffect(() => saveBottomPanel(bottom), [bottom])
+
+  // The setup guide opens on first launch, and again from Help › Setup Guide
+  useEffect(() => {
+    window.api.setup.state().then((state) => {
+      setSetupOpen(!state.completed)
+      // Finishing setup with Move to Applications relaunched the app
+      if (state.completed && takePendingNewProject()) setNewProjectOpen(true)
+    })
+    return window.api.onMenuCommand((command) => {
+      if (command === 'setup-guide') setSetupOpen(true)
+    })
+  }, [])
 
   // Toast when a board is plugged in (not for devices already there at launch)
   useEffect(() => {
@@ -88,6 +121,33 @@ function App(): React.JSX.Element {
     setView(next)
     if (next.kind === 'project') editor.showChat(next.projectId)
   }
+
+  const step = useCallback(
+    (by: -1 | 1) => {
+      const target = history.stack[history.index + by]
+      if (!target) return
+      setHistory((h) => ({ ...h, index: h.index + by }))
+      if (target.kind === 'project') editor.showChat(target.projectId)
+    },
+    [history, editor]
+  )
+
+  const openAccounts = (intent: Omit<AccountsIntent, 'key'> = {}): void => {
+    setAccountsIntent((current) => ({ ...intent, key: current.key + 1 }))
+    setView({ kind: 'accounts' })
+  }
+
+  // ⌘[ and ⌘] go back and forward, like a browser
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (!event.metaKey || event.altKey || event.shiftKey) return
+      if (event.key !== '[' && event.key !== ']') return
+      event.preventDefault()
+      step(event.key === '[' ? -1 : 1)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [step])
 
   // Other views can open a project file in a tab, e.g. the Wiring view's wiring.json
   useEffect(() => {
@@ -201,6 +261,7 @@ function App(): React.JSX.Element {
         projects={projects ?? []}
         now={now}
         onNavigate={navigate}
+        onOpenAccounts={openAccounts}
         onNewProject={() => setNewProjectOpen(true)}
         onProjectMenu={showProjectMenu}
         onChatMenu={showChatMenu}
@@ -245,6 +306,9 @@ function App(): React.JSX.Element {
             </div>
             <div className="main-content">
               {view.kind === 'environments' && <EnvironmentsView />}
+              {view.kind === 'accounts' && (
+                <AccountsView key={accountsIntent.key} intent={accountsIntent} />
+              )}
               {/* Stays mounted behind file tabs so a running chat keeps its place */}
               {project && (
                 <div className="main-pane" hidden={!!activeFile}>
@@ -329,7 +393,14 @@ function App(): React.JSX.Element {
         onReset={sidebar.reset}
       />
       {/* Must stay after the drag strips above, see SidebarHeader */}
-      <SidebarHeader open={sidebar.layout.open} onToggle={sidebar.toggle} />
+      <SidebarHeader
+        open={sidebar.layout.open}
+        onToggle={sidebar.toggle}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onBack={() => step(-1)}
+        onForward={() => step(1)}
+      />
       {/* Last so its no-drag backdrop overrides every drag strip while open */}
       {newProjectOpen && (
         <NewProjectDialog onClose={() => setNewProjectOpen(false)} onCreated={openProject} />
@@ -338,6 +409,16 @@ function App(): React.JSX.Element {
         <div className="toast" role="status">
           <Usb size={14} /> {toast}
         </div>
+      )}
+      {setupOpen === undefined && <div className="setup" />}
+      {setupOpen && (
+        <SetupGuide
+          hasProjects={(projects?.length ?? 0) > 0}
+          onDone={(newProject) => {
+            setSetupOpen(false)
+            if (newProject) setNewProjectOpen(true)
+          }}
+        />
       )}
     </div>
   )

@@ -1,0 +1,496 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Collections
+
+> Efficiently store, access, and manage data in smart contracts.
+
+When deciding on data structures it is important to understand their tradeoffs. Choosing the wrong structure can create a bottleneck as the application scales, and migrating the state to the new data structures will come at a cost.
+
+You can choose between two types of collections:
+
+1. Native Rust collections (e.g. `Vec`, `HashMap`, `HashSet`), provided by the language
+2. Persistent collections (e.g. `IterableMap`, `Vector`), provided by `near_sdk::store`
+
+> [!TIP]
+>
+> **Native vs SDK Collections**
+>
+> Use native collections for small amounts of data that need to be accessed altogether, and SDK collections for large amounts of data that do not need to be accessed altogether.
+>
+> If your collection has up to 100 entries, it's acceptable to use the native collection. For larger ones, prefer to use SDK collection. For comparison please refer to [this benchmark](https://www.github.com/volodymyr-matselyukh/near-benchmarking).
+
+***
+
+## Storage Management
+
+Each time the contract is executed, the first thing it will do is to read the values and [deserialize](https://docs.near.org/smart-contracts/anatomy/serialization.md) them into memory, and after the function finishes, it will [serialize](https://docs.near.org/smart-contracts/anatomy/serialization.md) and write the values back to the database.
+
+For native collections, the contract will fully load the collection into memory before any method executes. This happens even if the method you invoke does not use the collection. Know that this will have impact on GAS you spend for methods in your contract.
+
+> [accordion] Storage Cost
+>
+> Your contract needs to lock a portion of their balance proportional to the amount of data they stored in the blockchain. This means that:
+>
+> * If more data is added the **storage increases ↑**, and your contract's **balance decreases ↓**.
+> * If data is deleted the **storage decreases ↓**, and your contract's **balance increases ↑**.
+>
+> Currently, it costs approximately **1 Ⓝ** to store **100kb** of data.
+
+> [accordion] Storage Constraints on NEAR
+>
+> For storing data on-chain it’s important to keep in mind the following:
+>
+> * A [single transaction](https://docs.near.org/protocol/transactions/transaction-anatomy.md#transaction-limits) can be at most 1.5 MiB (1,572,864 bytes), including its arguments or contract code
+>
+> Let’s say for example, someone wants to put an NFT purely on-chain (rather than IPFS or some other decentralized storage solution) you’ll have almost an unlimited amount of storage but will have to pay 1 `$NEAR` per 100kb of storage used.
+>
+> Each transaction is limited to 1.5 MiB in size. This is a size limit, separate from the gas limit. The maximum amount of gas you can attach to a transaction is 1 PGas (1,000 TGas). Before protocol version 83 (nearcore 2.11.0), the limit was 300 TGas.
+
+> [!WARNING]
+>
+> Your contract will panic if you try to store data but don't have NEAR to cover its storage cost
+
+> [!CAUTION]
+>
+> Be mindful of potential [small deposit attacks](https://docs.near.org/smart-contracts/security/storage.md)
+
+***
+
+## Native Collections
+
+Native collections are those provided by the language, such as `Vec`, `HashMap`, `HashSet` in Rust.
+
+All entries in a native collection are **serialized into a single value** and **stored together** into the state. This means that every time a function execute, the SDK will read and **deserialize all entries** in the native collection.
+
+> [accordion] Serialization & Storage Example
+>
+> The array `[1,2,3,4]` will be serialized into the Borsh byte-stream `[0,0,0,4,1,2,3,4]` before being stored
+
+> [!TIP]
+>
+> **When to use them**
+>
+> Native collections are useful if you are planning to store smalls amounts of data that need to be accessed all together
+
+> [!CAUTION]
+>
+> **Keep Native Collections Small**
+>
+> As the native collection grows, deserializing it from memory will cost more and more gas. If the collections grows too large, your contract might expend all the gas trying to read its state, making it fail on each function call
+
+***
+
+## SDK Collections
+
+The Rust SDK exposes `near_sdk::store` collections that are optimized for random access of large amounts of data. SDK collections are instantiated using a "prefix", which is used as an index to split the data into chunks. This way, SDK collections can defer reading and writing to the store until needed.
+
+> [accordion] Serialization & Storage Example
+>
+> The sdk array `[1,2,3,4]` with prefix `"p"` will be stored as the string `"p"` in the contract's attribute, and create four entries in the contract's storage: `p-0:1`, `p-1:2`...
+
+> [accordion] SDK Collections' Features
+>
+> | Type | SDK Module | Iterable | Clear All Values | Preserves Insertion Order | Range Selection |
+> | - | :-: | :-: | :-: | :-: | :-: |
+> | `Vector` | `near_sdk::store` | ✅ | ✅ | ✅ | ✅ |
+> | `LookupSet` | `near_sdk::store` | | | | |
+> | `IterableSet` | `near_sdk::store` | ✅ | ✅ | | ✅ |
+> | `LookupMap` | `near_sdk::store` | | | | |
+> | `IterableMap` | `near_sdk::store` | ✅ | ✅ | | ✅ |
+
+> [accordion] SDK Collections' Time Complexities
+>
+> | Type | Access | Insert | Delete | Search | Traverse | Clear |
+> | - | :-: | :-: | :-: | :-: | :-: | :-: |
+> | `Vector` | O(1) | O(1)\* | O(1)\*\* | O(n) | O(n) | O(n) |
+> | `LookupSet` | O(1) | O(1) | O(1) | O(1) | N/A | N/A |
+> | `IterableSet` | O(1) | O(1) | O(1) | O(1) | O(n) | O(n) |
+> | `LookupMap` | O(1) | O(1) | O(1) | O(1) | N/A | N/A |
+> | `IterableMap` | O(1) | O(1) | O(1) | O(1) | O(n) | O(n) |
+>
+> *\* - to insert at the end of the vector using `push`*
+> *\*\* - to delete from the end of the vector using `pop`, or delete using `swap_remove` which swaps the element with the last element of the vector and then removes it.*
+
+These collections are built to have an interface similar to native collections.
+
+> [!TIP]
+>
+> **when to use them**
+>
+> SDK collections are useful when you are planning to store large amounts of data that do not need to be accessed all together
+
+### Instantiation
+
+All structures need to be initialized using a **unique `prefix`**, which will be used to index the collection's values in the account's state
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// Define the contract structure
+#[near(contract_state)]
+pub struct StorageExample {
+    pub vector: Vector<i32>,
+    pub lookup_set: LookupSet<i32>,
+    pub iterable_set: IterableSet<i32>,
+    pub lookup_map: LookupMap<String, i32>,
+    pub iterable_map: IterableMap<String, i32>,
+    pub nested: LookupMap<String, Vector<i32>>,
+}
+
+// Define the default, which automatically initializes the contract
+impl Default for StorageExample {
+    fn default() -> Self {
+        Self {
+            vector: Vector::new(Prefix::Vector),
+            lookup_set: LookupSet::new(Prefix::LookupSet),
+            iterable_set: IterableSet::new(Prefix::IterableSet),
+            lookup_map: LookupMap::new(Prefix::LookupMap),
+            iterable_map: IterableMap::new(Prefix::IterableMap),
+            nested: LookupMap::new(Prefix::Root),
+        }
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/lib.rs#L24-L47)
+
+> [!TIP]
+>
+> Notice how the `BorshStorageKey` enum gives each collection a distinct prefix. Variants carrying data, such as `Nested(String)`, include that data in their serialized prefix.
+
+> [!WARNING]
+>
+> If you see a `unresolved import near_sdk::BorshIntoStorageKey` compiler error, your code is following an outdated pattern from `near-sdk < 4.0`.
+>
+> To fix it, derive [`BorshStorageKey`](https://docs.rs/near-sdk/latest/near_sdk/derive.BorshStorageKey.html) on your prefix enum.
+
+> [!CAUTION]
+>
+> Be careful of not using the same prefix in two collections, otherwise, their storage space will collide, and you might overwrite information from one collection when writing in the other
+
+***
+
+### Vector
+
+Implements a [vector/array](https://en.wikipedia.org/wiki/Array_data_structure) that persists in the contract's storage. See the [Rust SDK collections reference](https://docs.rs/near-sdk/latest/near_sdk/store/index.html) for its complete interface.
+
+```rust title="vector.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn push(&mut self, value: i32) {
+        self.vector.push(value);
+    }
+
+    pub fn get(&self, index: u32) -> i32 {
+        self.vector[index]
+    }
+
+    pub fn replace(&mut self, index: u32, value: i32) {
+        self.vector[index] = value;
+    }
+
+    pub fn len(&self) -> u32 {
+        self.vector.len()
+    }
+
+    pub fn iter(&self, from_index: i32, limit: i32) -> Vec<&i32> {
+        self.vector
+            .iter()
+            .skip(from_index as usize)
+            .take(limit as usize)
+            .collect()
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/vector.rs#L4-L29)
+
+***
+
+### LookupMap
+
+Implements a [map/dictionary](https://en.wikipedia.org/wiki/Associative_array) that persists in the contract's storage. See the [Rust SDK collections reference](https://docs.rs/near-sdk/latest/near_sdk/store/index.html) for its complete interface.
+
+```rust title="lookup_map.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn insert_map(&mut self, key: String, value: i32) {
+        self.lookup_map.insert(key, value);
+    }
+
+    pub fn remove_map(&mut self, key: String) {
+        self.lookup_map.remove(&key);
+    }
+
+    pub fn get_map(&self, key: String) -> i32 {
+        self.lookup_map[&key]
+    }
+
+    pub fn contains_key_map(&self, key: String) -> bool {
+        self.lookup_map.contains_key(&key)
+    }
+}
+
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/lookup_map.rs#L4-L22)
+
+***
+
+### IterableMap
+
+Implements a [map/dictionary](https://en.wikipedia.org/wiki/Associative_array) that persists in the contract's storage. See the [Rust SDK collections reference](https://docs.rs/near-sdk/latest/near_sdk/store/index.html) for its complete interface.
+
+```rust title="iterable_map.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn insert_iterable_map(&mut self, key: String, value: i32) {
+        self.iterable_map.insert(key, value);
+    }
+
+    pub fn remove_iterable_map(&mut self, key: String) {
+        self.iterable_map.remove(&key);
+    }
+
+    pub fn get_iterable_map(&self, key: String) -> i32 {
+        self.iterable_map[&key]
+    }
+
+    pub fn contains_key_iterable_map(&self, key: String) -> bool {
+        self.iterable_map.contains_key(&key)
+    }
+
+    pub fn iter_iterable_map(&self, from_index: i32, limit: i32) -> Vec<(&String, &i32)> {
+        self.iterable_map
+            .iter()
+            .skip(from_index as usize)
+            .take(limit as usize)
+            .collect()
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/iterable_map.rs#L4-L29)
+
+***
+
+### LookupSet
+
+Implements a [set](https://en.wikipedia.org/wiki/Set_\(abstract_data_type\)) that persists in the contract's storage. See the [Rust SDK collections reference](https://docs.rs/near-sdk/latest/near_sdk/store/index.html) for its complete interface.
+
+```rust title="lookup_set.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn insert_set(&mut self, value: i32) {
+        self.lookup_set.insert(value);
+    }
+
+    pub fn remove_set(&mut self, value: i32) {
+        self.lookup_set.remove(&value);
+    }
+
+    pub fn contains_set(&self, value: i32) -> bool {
+        self.lookup_set.contains(&value)
+    }
+}
+
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/lookup_set.rs#L4-L18)
+
+***
+
+### IterableSet
+
+Implements a [set](https://en.wikipedia.org/wiki/Set_\(abstract_data_type\)) that persists in the contract's storage. See the [Rust SDK collections reference](https://docs.rs/near-sdk/latest/near_sdk/store/index.html) for its complete interface.
+
+```rust title="iterable_set.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn insert_iterable_set(&mut self, value: i32) {
+        self.iterable_set.insert(value);
+    }
+
+    pub fn remove_iterable_set(&mut self, value: i32) {
+        self.iterable_set.remove(&value);
+    }
+
+    pub fn contains_iterable_set(&self, value: i32) -> bool {
+        self.iterable_set.contains(&value)
+    }
+
+    pub fn iter_iterable_set(&self, from_index: i32, limit: i32) -> Vec<&i32> {
+        self.iterable_set
+            .iter()
+            .skip(from_index as usize)
+            .take(limit as usize)
+            .collect()
+    }
+}
+
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/iterable_set.rs#L4-L26)
+
+***
+
+## Nesting Collections
+
+When nesting SDK collections, be careful to **use different prefixes** for all collections, including the nested ones.
+
+```rust title="nested.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl StorageExample {
+    pub fn insert_nested(&mut self, key: String, value: i32) {
+        if self.nested.contains_key(&key) {
+            let vector = self.nested.get_mut(&key).expect("Wrong key");
+            vector.push(value);
+        } else {
+            let mut vector = Vector::new(Prefix::Nested(key.clone()));
+            vector.push(value);
+            self.nested.insert(key, vector);
+        }
+    }
+
+    pub fn remove_nested(&mut self, key: String) {
+        let vector = self.nested.get_mut(&key).expect("Wrong key");
+        vector.clear();
+        self.nested.remove(&key);
+    }
+
+    pub fn get_nested(&self, key: String) -> Vec<&i32> {
+        self.nested[&key].iter().collect()
+    }
+
+    pub fn contains_key_nested(&self, key: String) -> bool {
+        self.nested.contains_key(&key)
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/storage-examples/blob/9dfeb4e29c77f04ff4de220d241e56f1502a587b/collections-rs/store/src/nested.rs#L4-L30)
+
+> [!TIP]
+>
+> Notice how we use `enums` that take a `String` argument to ensure all collections have a different prefix
+
+***
+
+## Error prone patterns
+
+Because the values are not kept in memory and are lazily loaded from storage, it's important to make sure if a collection is replaced or removed, that the storage is cleared. In addition, it is important that if the collection is modified, the collection itself is updated in state because most collections will store some metadata.
+
+Some error-prone patterns to avoid that cannot be restricted at the type level are:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_sdk::store::IterableMap;
+
+let mut m = IterableMap::<u8, String>::new(b"m");
+m.insert(1, "test".to_string());
+assert_eq!(m.len(), 1);
+assert_eq!(m.get(&1), Some(&"test".to_string()));
+
+// Bug 1: Should not replace any collections without clearing state, this will reset any
+// metadata, such as the number of elements, leading to bugs. If you replace the collection
+// with something with a different prefix, it will be functional, but you will lose any
+// previous data and the old values will not be removed from storage.
+m = IterableMap::new(b"m");
+assert!(m.is_empty());
+assert_eq!(m.get(&1), Some(&"test".to_string()));
+
+// Bug 2: Should not use the same prefix as another collection
+// or there will be unexpected side effects.
+let m2 = IterableMap::<u8, String>::new(b"m");
+assert!(m2.is_empty());
+assert_eq!(m2.get(&1), Some(&"test".to_string()));
+
+// Bug 3: forgetting to save the collection in storage. When the collection is attached to
+// the contract state (`self` in `#[near]`) this will be done automatically, but if
+// interacting with storage manually or working with nested collections, this is relevant.
+use near_sdk::store::Vector;
+
+// Simulate roughly what happens during a function call that initializes state.
+{
+    let v = Vector::<u8>::new(b"v");
+    near_sdk::env::state_write(&v);
+}
+
+// Simulate what happens during a function call that just modifies the collection
+// but does not store the collection itself.
+{
+    let mut v: Vector<u8> = near_sdk::env::state_read().unwrap();
+    v.push(1);
+    // The bug is here that the collection itself if not written back
+}
+
+let v: Vector<u8> = near_sdk::env::state_read().unwrap();
+// This will report as if the collection is empty, even though the element exists
+assert!(v.get(0).is_none());
+assert!(
+    near_sdk::env::storage_read(&[b"v".as_slice(), &0u32.to_le_bytes()].concat()).is_some()
+);
+
+// Bug 4 (only relevant for `near_sdk::store`): These collections will cache writes as well
+// as reads, and the writes are performed on [`Drop`](https://doc.rust-lang.org/std/ops/trait.Drop.html)
+// so if the collection is kept in static memory or something like `std::mem::forget` is used,
+// the changes will not be persisted.
+use near_sdk::store::IterableSet;
+
+let mut m: IterableSet<u8> = IterableSet::new(b"l");
+m.insert(1);
+assert!(m.contains(&1));
+
+// This would be the fix, manually flushing the intermediate changes to storage.
+// m.flush();
+std::mem::forget(m);
+
+m = IterableSet::new(b"l");
+assert!(!m.contains(&1));
+```
+
+***
+
+## Pagination
+
+Persistent collections such as `IterableMap`, `IterableSet`, and `Vector` may
+contain more elements than the amount of gas available to read them all.
+In order to expose them all through view calls, we can use pagination.
+
+With Rust this can be done using iterators with [`Skip`](https://doc.rust-lang.org/std/iter/struct.Skip.html) and [`Take`](https://doc.rust-lang.org/std/iter/struct.Take.html). This will only load elements from storage within the range.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+  #[near(contract_state)]
+  #[derive(PanicOnDefault)]
+  pub struct Contract {
+      pub status_updates: IterableMap<AccountId, String>,
+  }
+
+  #[near]
+  impl Contract {
+      /// Retrieves multiple elements from the `IterableMap`.
+      /// - `from_index` is the index to start from.
+      /// - `limit` is the maximum number of elements to return.
+      pub fn get_updates(&self, from_index: usize, limit: usize) -> Vec<(AccountId, String)> {
+          self.status_updates
+              .iter()
+              .skip(from_index)
+              .take(limit)
+              .map(|(account_id, update)| (account_id.clone(), update.clone()))
+              .collect()
+      }
+  }
+```
+
+## Running the Examples
+
+The [Rust collection examples](https://github.com/near-examples/storage-examples) include unit tests and a local sandbox test covering the `near_sdk::store` collections shown above. The sandbox test builds the contract from source and uses `near-sandbox` with `near-api` to check collection operations through contract calls.
+
+From the repository root, run:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo install cargo-near --version 0.21.1 --locked --no-default-features
+cargo test --locked
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

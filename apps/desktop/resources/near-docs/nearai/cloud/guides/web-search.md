@@ -1,0 +1,68 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Web Search
+
+> Give models access to live web results with built-in web search tools
+
+NEAR AI Cloud provides built-in **server-side web search tools** for the Responses and Chat Completions APIs. The model decides when to search, the platform executes the search, and the results are fed back to the model without tool-handling code on your side.
+
+Web search is billed per request as a platform service in addition to model tokens. Current pricing is available from the public [`/v1/services`](https://cloud-api.near.ai/v1/services) endpoint.
+
+## Responses API
+
+Add `web_search` to the `tools` array. Set `count` to control the maximum number of results returned by **each** search in this request:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "Qwen/Qwen3.8-27B",
+    "input": "Find recent news about lunar missions and summarize it with sources.",
+    "store": false,
+    "tools": [{"type": "web_search", "count": 5}]
+  }'
+```
+
+`count` is optional and accepts integers from `0` through `20`. When set, it overrides the result count chosen by the model for every `web_search` call in the request. Omit it to let the model choose. With `count: 0`, search calls return empty results without calling the search provider; the model can still make a search tool call. Fewer results than requested may be returned.
+
+`count` applies to `web_search` in the Responses API. You can also use `web_context_search` in Responses, but it does not accept this request-level `count` setting. The response includes search activity as `web_search_call` output items alongside the model's answer.
+
+## Chat Completions API
+
+`web_context_search` is also available on `/v1/chat/completions`. It requires `stream: true`:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "Qwen/Qwen3.8-27B",
+    "messages": [{"role": "user", "content": "What is the current population of Tokyo? One short sentence."}],
+    "tools": [{"type": "web_context_search"}],
+    "stream": true
+  }'
+```
+
+The stream interleaves the search activity with the answer:
+
+1. `delta.tool_calls` chunks show the model composing its search query (function name `web_context_search`)
+2. a `delta.nearai_tool_result` chunk carries the search results that were injected back into the model's context
+3. regular `delta.content` (and `delta.reasoning_content`) chunks stream the final answer
+
+This makes it easy to display "searching the web…" states and surface sources in your UI.
+
+> [!NOTE]
+>
+> Unlike client-side function calling, you never receive a `finish_reason: "tool_calls"` response that you have to answer — the search loop runs entirely server-side, on infrastructure operated by NEAR AI.
+
+## See Also
+
+* [Stateless Responses](https://docs.near.ai/cloud/guides/stateless-responses.md) — native stateless requests and client-managed functions
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md) — SDK setup
+* [Prompt Caching](https://docs.near.ai/cloud/guides/prompt-caching.md) — search context benefits from cache-read pricing on repeated turns
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

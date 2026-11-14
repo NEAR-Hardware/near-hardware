@@ -1,0 +1,982 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Accounts / Contracts
+
+> Learn to query information from accounts and contracts using the NEAR RPC API.
+
+The RPC API enables you to view details about accounts and contracts as well as perform contract calls.
+
+## Quick Reference
+
+| Method | Purpose |
+| - | - |
+| [`view_account`](#view-account) | Get basic account information |
+| [`view_account_changes`](#view-account-changes) | Monitor account state changes |
+| [`view_access_key`](#view-access-key) | Get the nonce and permissions of a single access key |
+| [`view_access_key_list`](#view-access-key-list) | List all access keys on an account |
+| [`view_gas_key_nonces`](#view-gas-key-nonces) | List the parallel nonces of a gas key |
+| [`view_code`](#view-contract-code) | Get deployed contract WASM code |
+| [`view_global_contract_code`](#view-global-contract-code-by-hash) | Get global contract WASM code by its code hash |
+| [`view_global_contract_code_by_account_id`](#view-global-contract-code-by-account) | Get global contract WASM code by its owner account |
+| [`view_state`](#view-contract-state) | Get contract storage data |
+| [`data_changes`](#view-contract-state-changes) | Monitor contract state changes |
+| [`contract_code_changes`](#view-contract-code-changes) | Monitor contract deployments |
+| [`call_function`](#call-a-contract-function) | Execute read-only contract methods |
+
+***
+
+## View Account
+
+Returns basic account information.
+
+* **method**: `query`
+* **params**: `request_type: view_account`, `finality` OR `block_id`, `account_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_account",
+>     "finality": "final",
+>     "account_id": "account.rpc-examples.testnet"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_account',
+>   finality: 'final',
+>   account_id: 'account.rpc-examples.testnet',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_account","finality":"final","account_id":"account.rpc-examples.testnet"}'
+> ```
+
+> [accordion] Example response
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "amount": "999788200694421800000000",
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904,
+>     "code_hash": "11111111111111111111111111111111",
+>     "locked": "0",
+>     "storage_usage": 410
+>   },
+>   "id": "dontcare"
+> }
+> ```
+
+> [!TIP]
+>
+> **Extra fields on an uninitialized [universal account](https://docs.near.org/protocol/accounts-contracts/account-id.md#universal-address)**
+>
+> A `0u` account that's been funded but [not initialized](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md#the-uninitialized-account) returns `state: "uninitialized"` and a `bootstrap_nonce`.
+>
+> Both fields are omitted once the account initializes — see [Creating Universal Accounts](https://docs.near.org/protocol/tutorials/creating-universal-accounts.md#the-uninitialized-account) for a full example response.
+
+***
+
+## View Account Changes
+
+Returns account changes from transactions in a given account.
+
+* **method**: `changes`
+* **params**: `changes_type: account_changes`, `account_ids`, `finality` OR `block_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "changes",
+>   "params": {
+>     "changes_type": "account_changes",
+>     "account_ids": ["contract.rpc-examples.testnet"],
+>     "block_id": 187310139
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://archival-rpc.testnet.near.org" });
+>
+> const response = await provider.accountChanges(
+>   ['contract.rpc-examples.testnet'],
+>   { blockId: 187310139 }
+> );
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://archival-rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=changes \
+>   params:='{"changes_type":"account_changes","account_ids":["contract.rpc-examples.testnet"],"block_id":187310139}'
+> ```
+
+***
+
+## View Access Key
+
+Returns the nonce and permissions of a single [access key](https://docs.near.org/protocol/accounts-contracts/access-keys.md), given the account and the key's public key.
+
+* **method**: `query`
+* **params**: `request_type: view_access_key`, `finality` OR `block_id`, `account_id`, `public_key`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_access_key",
+>     "finality": "final",
+>     "account_id": "account.rpc-examples.testnet",
+>     "public_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_access_key',
+>   finality: 'final',
+>   account_id: 'account.rpc-examples.testnet',
+>   public_key: 'ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_access_key","finality":"final","account_id":"account.rpc-examples.testnet","public_key":"ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa"}'
+> ```
+
+> [accordion] Example response
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "nonce": 187310139000001,
+>     "permission": "FullAccess",
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+>
+> For a function-call key, `permission` is an object instead of the `"FullAccess"` string:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> "permission": {
+>   "FunctionCall": {
+>     "allowance": "250000000000000000000000",
+>     "receiver_id": "contract.rpc-examples.testnet",
+>     "method_names": ["get_greeting"]
+>   }
+> }
+> ```
+>
+> For a [gas key](https://docs.near.org/protocol/accounts-contracts/gas-keys.md), `permission` also carries the key's prepaid `balance` and number of nonce lanes (`num_nonces`). A full-access gas key uses `GasKeyFullAccess`:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> "permission": {
+>   "GasKeyFullAccess": {
+>     "balance": "5000000000000000000000000",
+>     "num_nonces": 8
+>   }
+> }
+> ```
+>
+> A function-call gas key uses `GasKeyFunctionCall`, which is a flat object carrying the same function-call restrictions (`allowance`, `receiver_id`, `method_names`) as `FunctionCall`, alongside the gas-key `balance` and `num_nonces`:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> "permission": {
+>   "GasKeyFunctionCall": {
+>     "balance": "5000000000000000000000000",
+>     "num_nonces": 8,
+>     "allowance": "250000000000000000000000",
+>     "receiver_id": "contract.rpc-examples.testnet",
+>     "method_names": ["get_greeting"]
+>   }
+> }
+> ```
+>
+> The nonces of the individual lanes are not included — query them with [`view_gas_key_nonces`](#view-gas-key-nonces).
+
+> [!NOTE]
+>
+> For a post-quantum [`ml-dsa-65`](https://docs.near.org/protocol/accounts-contracts/access-keys#signature-schemes) key, pass the **full** `ml-dsa-65:` public key in `public_key`. The network hashes it to locate the on-chain entry, so you query it exactly like an `ed25519` or `secp256k1` key.
+
+***
+
+## View Access Key List
+
+Returns the [access keys](https://docs.near.org/protocol/accounts-contracts/access-keys.md) of an account, each with its nonce and permissions.
+
+* **method**: `query`
+* **params**: `request_type: view_access_key_list`, `finality` OR `block_id`, `account_id`, optional `limit`, optional `after_key`
+
+> [!NOTE]
+>
+> From nearcore 2.14.0, a request without `limit` or `after_key` fails with `TOO_MANY_ACCESS_KEYS` if the account has more than 100 keys (the default limit). Use pagination for such accounts. See [Paginate the key list](#paginate-the-key-list).
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_access_key_list",
+>     "finality": "final",
+>     "account_id": "account.rpc-examples.testnet"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_access_key_list',
+>   finality: 'final',
+>   account_id: 'account.rpc-examples.testnet',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_access_key_list","finality":"final","account_id":"account.rpc-examples.testnet"}'
+> ```
+
+> [accordion] Example response
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "keys": [
+>       {
+>         "public_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa",
+>         "access_key": {
+>           "nonce": 187310139000001,
+>           "permission": "FullAccess"
+>         }
+>       },
+>       {
+>         "public_key": "ml-dsa-65-hash:7Xx2X4vHb9dG8pJ5tZqD3mN6kRfWcA1sLuYoP2eB4hT",
+>         "access_key": {
+>           "nonce": 187420021000003,
+>           "permission": "FullAccess"
+>         }
+>       }
+>     ],
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+
+> [!NOTE]
+>
+> Post-quantum [`ml-dsa-65`](https://docs.near.org/protocol/accounts-contracts/access-keys#signature-schemes) keys are stored on-chain by hash, so they appear here with an `ml-dsa-65-hash:` prefix (a base58-encoded 32-byte SHA3-256 digest) rather than the full `ml-dsa-65:` key. To match an entry to one of your own keys, derive its handle — the SHA3-256 of the domain-separation tag `near:ml-dsa-65-pubkey-hash:v1` followed by the raw public key — and compare it against the returned value (hashing the key without that prefix will not match).
+
+### Paginate the key list
+
+> [accordion] Pagination example
+>
+> Request the first page with `limit`:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_access_key_list",
+>     "finality": "final",
+>     "account_id": "account.rpc-examples.testnet",
+>     "limit": 1
+>   }
+> }
+> ```
+>
+> The response has `last_key` when more keys remain:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "keys": [
+>       {
+>         "public_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa",
+>         "access_key": {
+>           "nonce": 187310139000001,
+>           "permission": "FullAccess"
+>         }
+>       }
+>     ],
+>     "last_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa",
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+>
+> Request the next page with `after_key` set to that `last_key`. To read every page from the same state, also replace `finality` with `block_id` set to the `block_hash` of the first response:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_access_key_list",
+>     "block_id": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "account_id": "account.rpc-examples.testnet",
+>     "after_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa",
+>     "limit": 1
+>   }
+> }
+> ```
+>
+> A response without `last_key` is the last page.
+
+| Rule | Details |
+| - | - |
+| Keys per response | At most `view_access_keys_limit`, which is 100 by default. Node operators can change it. A larger `limit` is lowered to this value. |
+| Request without `limit` or `after_key` | Fails with `TOO_MANY_ACCESS_KEYS` if the account has more keys than `view_access_keys_limit`. |
+| Version | From nearcore 2.14.0. Nodes on nearcore 2.13 return all keys in one response and ignore `limit` and `after_key`. |
+
+***
+
+## View Gas Key Nonces
+
+Returns the current nonce of every parallel nonce lane of a [gas key](https://docs.near.org/protocol/accounts-contracts/gas-keys.md), given the account and the key's public key. The array is indexed by `nonce_index`: the first element is lane `0`, the second is lane `1`, and so on. Use [`view_access_key`](#view-access-key) to see the gas key's balance and permission.
+
+* **method**: `query`
+* **params**: `request_type: view_gas_key_nonces`, `finality` OR `block_id`, `account_id`, `public_key`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_gas_key_nonces",
+>     "finality": "final",
+>     "account_id": "account.rpc-examples.testnet",
+>     "public_key": "ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_gas_key_nonces',
+>   finality: 'final',
+>   account_id: 'account.rpc-examples.testnet',
+>   public_key: 'ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_gas_key_nonces","finality":"final","account_id":"account.rpc-examples.testnet","public_key":"ed25519:DCkbTMS8s4kqV4nGvz5kRBdNbY9YwjjvNGNXKpAg2eFa"}'
+> ```
+
+> [accordion] Example response
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "nonces": [
+>       187438921000012,
+>       187438921000003,
+>       187438921000000,
+>       187438921000000
+>     ],
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+>
+> Each lane starts at `block_height * 10^6` from when the key was added and advances independently as transactions use it.
+
+> [!NOTE]
+>
+> Querying a key that exists but is not a gas key (or does not exist at all) returns an `UnknownGasKey` error.
+
+***
+
+## View Contract Code
+
+Returns the contract code (Wasm binary) deployed to the account. The returned code is encoded in base64.
+
+* **method**: `query`
+* **params**: `request_type: view_code`, `finality` OR `block_id`, `account_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_code",
+>     "finality": "final",
+>     "account_id": "contract.rpc-examples.testnet"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_code',
+>   finality: 'final',
+>   account_id: 'contract.rpc-examples.testnet',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_code","finality":"final","account_id":"contract.rpc-examples.testnet"}'
+> ```
+
+***
+
+## View Global Contract Code by Hash
+
+Returns the global contract's Wasm binary for an immutable global contract identified by its code hash. The returned code is base64-encoded.
+
+* **method**: `query`
+* **params**: `request_type: view_global_contract_code`, `finality` OR `block_id`, `code_hash`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_global_contract_code",
+>     "finality": "final",
+>     "code_hash": "DxfRbrjT3QPmoANMDYTR6iXPGJr7xRUyDnQhcAWjcoFF"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_global_contract_code',
+>   finality: 'final',
+>   code_hash: 'DxfRbrjT3QPmoANMDYTR6iXPGJr7xRUyDnQhcAWjcoFF',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_global_contract_code","finality":"final","code_hash":"DxfRbrjT3QPmoANMDYTR6iXPGJr7xRUyDnQhcAWjcoFF"}'
+> ```
+
+***
+
+## View Global Contract Code by Account
+
+Returns the global contract's Wasm binary for the global contract published under an account ID. The returned code is base64-encoded.
+
+* **method**: `query`
+* **params**: `request_type: view_global_contract_code_by_account_id`, `finality` OR `block_id`, `account_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_global_contract_code_by_account_id",
+>     "finality": "final",
+>     "account_id": "nft-contract.testnet"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_global_contract_code_by_account_id',
+>   finality: 'final',
+>   account_id: 'nft-contract.testnet',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_global_contract_code_by_account_id","finality":"final","account_id":"nft-contract.testnet"}'
+> ```
+
+***
+
+## View Contract State
+
+Returns the state (key-value pairs) of a contract based on a key prefix (base64 encoded). Pass an empty string for `prefix_base64` to return the entire state.
+
+* **method**: `query`
+* **params**: `request_type: view_state`, `finality` OR `block_id`, `account_id`, `prefix_base64`, optional `limit`, optional `after_key_base64`, optional `include_proof`
+
+> [!WARNING]
+>
+> By default, a node rejects a `view_state` request with `TOO_LARGE_CONTRACT_STATE` if the account's state is above 50,000 bytes. A narrower `prefix_base64` does not avoid the error. To read a large state, use pagination. See [Paginate the state](#paginate-the-state).
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_state",
+>     "finality": "final",
+>     "account_id": "contract.rpc-examples.testnet",
+>     "prefix_base64": ""
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_state',
+>   finality: 'final',
+>   account_id: 'contract.rpc-examples.testnet',
+>   prefix_base64: '',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_state","finality":"final","account_id":"contract.rpc-examples.testnet","prefix_base64":""}'
+> ```
+
+### Paginate the state
+
+> [accordion] Pagination example
+>
+> Request the first page with `limit`:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_state",
+>     "finality": "final",
+>     "account_id": "contract.rpc-examples.testnet",
+>     "prefix_base64": "",
+>     "limit": 2
+>   }
+> }
+> ```
+>
+> The response has `last_key` when more entries remain. Keys and values are base64:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "values": [
+>       { "key": "YQ==", "value": "MQ==" },
+>       { "key": "Yg==", "value": "Mg==" }
+>     ],
+>     "last_key": "Yg==",
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+>
+> Request the next page with `after_key_base64` set to that `last_key`. To read every page from the same state, also replace `finality` with `block_id` set to the `block_hash` of the first response:
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_state",
+>     "block_id": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "account_id": "contract.rpc-examples.testnet",
+>     "prefix_base64": "",
+>     "after_key_base64": "Yg==",
+>     "limit": 2
+>   }
+> }
+> ```
+>
+> A response without `last_key` is the last page.
+
+A request without `limit` or `after_key_base64` is checked against the size of the whole account. This size is the account's storage usage without the contract code, so a narrower `prefix_base64` does not avoid the error. Paginated requests skip this check.
+
+| Rule | Details |
+| - | - |
+| Request without `limit` or `after_key_base64` | Fails with `TOO_LARGE_CONTRACT_STATE` if the account's state is above `trie_viewer_state_size_limit`. The default is 50,000 bytes, and the node operator can change it. |
+| Items per page | At most 10,000. A larger `limit` is lowered to 10,000. |
+| Bytes per page | The node stops adding items once the keys and values of the page reach 50,000 bytes. The last item can make a page larger than that. |
+| `after_key_base64` | After decoding, the key must start with the decoded `prefix_base64`. The base64 strings themselves do not have to match. Otherwise the node returns `INTERNAL_ERROR`. |
+| `include_proof` | Cannot be combined with `limit` or `after_key_base64`. If it is, the node returns `INTERNAL_ERROR`. |
+| Version | `limit` and `after_key_base64` are available from nearcore 2.13.0. |
+
+***
+
+## View Contract State Changes
+
+Returns state change details of a contract based on a key prefix (base64 encoded).
+
+* **method**: `changes`
+* **params**: `changes_type: data_changes`, `account_ids`, `key_prefix_base64`, `finality` OR `block_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "changes",
+>   "params": {
+>     "changes_type": "data_changes",
+>     "account_ids": ["contract.rpc-examples.testnet"],
+>     "key_prefix_base64": "",
+>     "block_id": 187310139
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://archival-rpc.testnet.near.org" });
+>
+> const response = await provider.contractStateChanges(
+>   ['contract.rpc-examples.testnet'],
+>   { blockId: 187310139 },
+>   ''
+> );
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://archival-rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=changes \
+>   params:='{"changes_type":"data_changes","account_ids":["contract.rpc-examples.testnet"],"key_prefix_base64":"","block_id":187310139}'
+> ```
+
+***
+
+## View Contract Code Changes
+
+Returns code changes made when deploying a contract. Change is returned as a base64 encoded WASM file.
+
+* **method**: `changes`
+* **params**: `changes_type: contract_code_changes`, `account_ids`, `finality` OR `block_id`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "changes",
+>   "params": {
+>     "changes_type": "contract_code_changes",
+>     "account_ids": ["contract.rpc-examples.testnet"],
+>     "block_id": 187309439
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://archival-rpc.testnet.near.org" });
+>
+> const response = await provider.contractCodeChanges(
+>   ['contract.rpc-examples.testnet'],
+>   { blockId: 187309439 }
+> );
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://archival-rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=changes \
+>   params:='{"changes_type":"contract_code_changes","account_ids":["contract.rpc-examples.testnet"],"block_id":187309439}'
+> ```
+
+***
+
+## Call a Contract Function
+
+Allows you to call a contract method as a view function (read-only).
+
+* **method**: `query`
+* **params**: `request_type: call_function`, `finality` OR `block_id`, `account_id`, `method_name`, `args_base64`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "call_function",
+>     "finality": "final",
+>     "account_id": "contract.rpc-examples.testnet",
+>     "method_name": "get_greeting",
+>     "args_base64": ""
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'call_function',
+>   finality: 'final',
+>   account_id: 'contract.rpc-examples.testnet',
+>   method_name: 'get_greeting',
+>   args_base64: '',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"call_function","finality":"final","account_id":"contract.rpc-examples.testnet","method_name":"get_greeting","args_base64":""}'
+> ```
+
+### Decode the result
+
+A `call_function` query returns the contract's serialized return value as an array of bytes. Decode those bytes as UTF-8 and parse as JSON.
+
+For example, `[34, 104, 101, 108, 108, 111, 34]` decodes to the JSON string `"hello"`.
+
+```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// Decoding a call_function result
+JSON.parse(Buffer.from(response.result.result).toString("utf8"));
+```
+
+#### Transaction return values
+
+Transaction and receipt outcomes encode successful return values in the base64 string `status.SuccessValue`. Decode that string, then parse it if the method returns JSON. An empty `SuccessValue` indicates no return value. Inspect `Failure` as an execution error.
+
+With a full transaction RPC response saved as `response.json`:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+node -e '
+const response = JSON.parse(require("node:fs").readFileSync("response.json", "utf8"));
+const status = response.result.status;
+if ("SuccessValue" in status) {
+  console.log(status.SuccessValue === "" ? undefined :
+    JSON.parse(Buffer.from(status.SuccessValue, "base64").toString("utf8")));
+} else {
+  console.log(status);
+}
+'
+```
+
+***
+
+## Error Handling
+
+Query errors come back in four ways. Check for an `error` object first, and then for `result.error`.
+
+### Request errors
+
+If the node cannot parse the request parameters, it returns an error with `error.name` set to `REQUEST_VALIDATION_ERROR` and `error.cause.name` set to `PARSE_ERROR`. This happens, for example, when `args_base64` is not valid base64.
+
+### Internal errors
+
+If the node fails internally, it returns an error with `error.name` set to `INTERNAL_ERROR`. The message is in `error.cause.info.error_message`. `view_state` also answers this way when `include_proof` is combined with pagination, or when `after_key_base64` is outside the prefix.
+
+### Handler errors
+
+For the errors below, the response has `error.name` set to `HANDLER_ERROR` and `error.cause.name` set to the listed value. For example:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "name": "HANDLER_ERROR",
+    "cause": {
+      "name": "TOO_LARGE_CONTRACT_STATE",
+      "info": {
+        "contract_account_id": "contract.rpc-examples.testnet",
+        "block_height": 187440904,
+        "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW"
+      }
+    },
+    "code": -32000,
+    "message": "Server error",
+    "data": "State of contract contract.rpc-examples.testnet is too large to be viewed"
+  },
+  "id": "dontcare"
+}
+```
+
+| `error.cause.name` | Description | Solution |
+| - | - | - |
+| `UNKNOWN_ACCOUNT` | Account does not exist | Check account ID spelling |
+| `INVALID_ACCOUNT` | Invalid account format | Use valid account ID (e.g., `account.near`) |
+| `UNKNOWN_BLOCK` | Block not found | Use a valid block hash or height |
+| `UNKNOWN_GAS_KEY` | Key is not a gas key or does not exist | Check the public key and that it was added as a gas key |
+| `GARBAGE_COLLECTED_BLOCK` | Block too old | Use archival node or more recent block |
+| `NO_CONTRACT_CODE` | No contract deployed (returned by `view_code`) | Verify the account has a deployed contract |
+| `NO_GLOBAL_CONTRACT_CODE` | No global contract for this code hash or account | Check the code hash or the publishing account ID |
+| `TOO_LARGE_CONTRACT_STATE` | Account state is above the node's `view_state` limit | Paginate with `limit` and `after_key_base64` |
+| `TOO_MANY_ACCESS_KEYS` | Account has more keys than one response can hold | Paginate with `limit` and `after_key` |
+
+### Errors in the result
+
+A view function call that fails while the contract runs does not return an `error` object. The node answers with HTTP status 200, and `result.error` holds a text message:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+    "block_height": 187440904,
+    "error": "wasm execution failed with error: MethodResolveError(MethodNotFound)",
+    "logs": []
+  },
+  "id": "dontcare"
+}
+```
+
+Check `result.error` before you decode `result.result`. `view_access_key` for a key that does not exist answers the same way.
+
+Common messages:
+
+* The method does not exist: `wasm execution failed with error: MethodResolveError(MethodNotFound)`.
+* The account has no contract: the message starts with `wasm execution failed with error: CompilationError(CodeDoesNotExist`.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

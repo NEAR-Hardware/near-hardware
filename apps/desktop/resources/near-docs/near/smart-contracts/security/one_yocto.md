@@ -1,0 +1,65 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Require one yoctoNEAR
+
+> Require a deposit-capable access key for sensitive smart contract methods.
+
+NEAR accounts can have two types of access keys:
+
+* Full-access keys have complete control over the account, including the ability to transfer NEAR tokens
+* Function-call keys are requested by third-party apps to sign transactions on behalf of the user. They can only call methods on a specific contract and cannot transfer NEAR tokens.
+
+The only way to assert that a caller is truly the owner of the account - and not a third-party application using a function-call key to make the function call - is to require the user to attach a deposit.
+
+In order to not make the user waste tokens on proving their identity, the standard is to require **exactly one yoctoNEAR**. This is the smallest possible deposit, and it cannot be attached with a function-call key.
+
+***
+
+## The vulnerable pattern
+
+Consider an NFT contract that checks that the caller owns the token, but does not require one yoctoNEAR:
+
+```rust title="Rust: vulnerable flow" theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId) {
+    let sender_id = env::predecessor_account_id(); // [!code --]
+    self.assert_token_owner(&token_id, &sender_id);
+    self.internal_transfer(&sender_id, receiver_id, token_id);
+}
+```
+
+***
+
+## How the issue happens
+
+1. A user gives a website a function-call
+2. The website calls `nft_transfer`, sending the NFT to its own account without opening the user's wallet
+3. `predecessor_account_id` is still the user's account, so the ownership check passes
+4. The contract transfers the NFT even though the user did not confirm this particular transfer
+
+The ownership check authorizes the account. It does not prove that the account holder approved this call.
+
+***
+
+## The safe pattern
+
+Make the method payable and require exactly one yoctoNEAR before transferring the NFT:
+
+```rust title="Rust: safe flow" highlight={3} theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn nft_transfer(&mut self, receiver_id: AccountId, token_id: TokenId) {
+    assert_one_yocto();
+
+    let sender_id = env::predecessor_account_id();
+    self.assert_token_owner(&token_id, &sender_id);
+    self.internal_transfer(&sender_id, receiver_id, token_id);
+}
+```
+
+Function-call keys cannot attach the one yoctoNEAR, so the call must use a deposit-capable key and receive wallet confirmation. Keep the ownership check: the one-yoctoNEAR check proves the type of key, while the ownership check authorizes the transfer.
+
+Use this pattern for transfers, permission changes, ownership changes, withdrawals, and other calls that should not run through a function-call key.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

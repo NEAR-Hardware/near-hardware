@@ -1,0 +1,337 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Serialization
+
+> Learn how contract serialize data for function calls and storage.
+
+Smart contracts need to be able to **communicate complex data** in a simple way, while also **reading and storing** such data into their states efficiently.
+
+To achieve such simple communication and efficient storage, smart contracts morph the data
+from their complex representation into simpler ones.
+
+This process of translating **complex objects into simpler single-value** representations is called
+**serialization**. NEAR uses two serialization formats: [JSON](https://www.json.org/json-en.html) and
+[Borsh](https://borsh.io/).
+
+1. [JSON](https://www.json.org/json-en.html) is used to serialize the contract's input/output during a function call
+2. [Borsh](https://borsh.io/) is used to serialize the contract's state.
+
+***
+
+## Overview of Serialization Formats
+
+Let's give a quick overview of both serialization formats, including their pros and cons, as well as
+an example of what their serializations look like.
+
+***
+
+### [JSON](https://www.json.org/json-en.html): Objects to Strings
+
+#### Features
+
+* Self-describing format
+* Easy interoperability with JavaScript
+* Multiple implementations readily available
+* But... it is not efficient both in computational times and resulting size
+
+#### Example
+
+```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+Example{
+  number: i32 = 2;
+  arr: Vector<i32> = [0, 1];
+}
+
+// serializes to
+"{\"number\": 2, \"arr\": [0, 1]}"
+```
+
+***
+
+### [Borsh](https://borsh.io/): Objects to Bytes
+
+#### Features
+
+* Compact, binary format built to be efficiently (de)serialized
+* Strict and canonical binary representation
+* Less overhead: it does not need to store attributes names
+* But... it is necessary to know the schema to (de)serialize the data
+
+#### Example
+
+```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+Example{
+  number: i32 = 2;
+  arr: Vector<i32> = [0, 1];
+}
+
+// serializes into
+[2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+```
+
+***
+
+## Serializing Input & Output
+
+NEAR contracts can implement methods that both take and return complex objects.
+In order to handle this data in a simple way, JSON serialization is used.
+
+Using JSON makes it easier for everyone to talk with the contracts, since most
+languages readily implement a JSON (de)serializer.
+
+#### Example
+
+Let's look at this example, written only for educational purposes:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(serializers = [json])]
+pub struct A {
+  pub a_number: i32,
+  pub b_number: u128
+}
+
+#[near(serializers = [json])]
+pub struct B {
+  pub success: bool,
+  pub other_number: i32
+}
+
+pub fn method(&self, struct_a: A): B {
+  B {
+     success: true,
+     other_number: 0
+  }
+}
+```
+
+#### Receiving Data
+
+When a user calls the `method`, the contract receives the arguments encoded as a JSON string
+(e.g. `"{\"a_number\":0, \"b_number\":\"100\"}"`), and proceed to (de)serialize them into
+the correct object (`A{0, 100}`) .
+
+#### Returning Data
+
+When returning the result, the contract will automatically encode the object `B{true, 0}`
+into its JSON serialized value: `"{\"success\":true, \"other_number\":0}"` and return this
+string.
+
+> [!WARNING]
+>
+> **JSON Limitations**
+> Since JSON is limited to `52 bytes` numbers, you cannot use `u64`/`u128` as input
+> or output. JSON simply cannot serialize them. Instead, you must use `Strings`.
+>
+> The `NEAR SDK RS` currently implements the `near_sdk::json_types::{U64, I64, U128, I128}`
+> that you can use for input / output of data.
+
+***
+
+## Borsh: State Serialization
+
+Under the hood smart contracts store data using simple **key/value pairs**. This means that
+the contract needs to translate complex states into simple key-value pairs.
+
+For this, NEAR contracts use [borsh](https://borsh.io) which is optimized for (de)serializing
+complex objects into smaller streams of bytes.
+
+#### Example
+
+Let's look at this example, written only for educational purposes:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(serializers = [json, borsh])]
+#[derive(PanicOnDefault)]
+pub struct Contract {
+  string: String,
+  vector: Vector<u8>
+}
+
+#[near]
+impl Contract {
+  #[init]
+  pub fn init(string: String, first_u8: u8) -> Self {
+    let mut vector: Vector<u8> = Vector::new("prefix".as_bytes());
+    vector.push(&first_u8);
+
+    Self { string, vector }
+  }
+
+  pub fn change_state(&mut self, string: String, number: u8) {
+    self.string = string;
+    self.vector.push(&number);
+  }
+}
+```
+
+#### Empty State On Deploy
+
+If we deploy the contract into a new account and immediately ask for the state we will see
+it is empty:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near view-state $CONTRACT --finality optimistic
+
+# Result is: []
+```
+
+#### Initializing the State
+
+If we initialize the state we can see how Borsh is used to serialize the state
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+# initialize with the string "hi" and 0
+near call $CONTRACT init '{"string":"hi", "first_u8":0}' --useAccount $CONTRACT
+
+# check the state
+near view-state $CONTRACT --utf8 --finality optimistic
+```
+
+> [accordion] Result
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> [
+>   {
+>     key: 'STATE',
+>     value: '\x02\x00\x00\x00hi\x01\x00\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00prefix'
+>   },
+>   { key: 'prefix\x00\x00\x00\x00\x00\x00\x00\x00', value: '\x00' }
+> ]
+> ```
+
+The first key-value is:
+
+```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+key: 'STATE'
+value: '\x02\x00\x00\x00hi\x01\x00\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00prefix'
+```
+
+Since the `Contract` has a structure `string, Vector<u8>` the value is interpreted as:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+[2, 0, 0, 0, "h", "i"] -> The `string` has 2 elements: "h" and "i".
+[1, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, "prefix"] -> The Vector has 1 element, and to see the values search for keys that start with (the 6 bytes prefix): "prefix"
+```
+
+Then, the second key-value shows the entries of the `Vector` denoted by the `"prefix"` string:
+
+```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+key: 'prefix\x00\x00\x00\x00\x00\x00\x00\x00'
+value: '\x00'
+```
+
+#### Modifying the State
+
+If we modify the stored string and add a new number, the state changes accordingly:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near call $CONTRACT change_state '{"string":"bye", "number":1}' --useAccount $CONTRACT
+```
+
+> [accordion] Result
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> [
+>   {
+>     key: 'STATE',
+>     value: '\x03\x00\x00\x00bye\x02\x00\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00prefix'
+>   },
+>   { key: 'prefix\x00\x00\x00\x00\x00\x00\x00\x00', value: '\x00' },
+>   { key: 'prefix\x01\x00\x00\x00\x00\x00\x00\x00', value: '\x01' }
+> ]
+> ```
+
+We can see that the `STATE` key changes to reflect the storage of the new string (`bye`), and that
+the vector now has 2 elements.
+
+At the same time, a new key-value was added adding the new vector entry: the `1u8` we just added.
+
+***
+
+### Deserialization Error
+
+When somebody invokes a smart contract method, the first step for the contract is to deserialize
+its own state.
+
+In the example used above, the contract will start by reading the `STATE` key and
+try to deserialize its value into an object `Contract{string: String, vector: Vector<u8>}`.
+
+If you deploy a contract into the account with a different Contract structure, then the
+contract will fail to deserialize the `STATE` key and panic `Cannot deserialize the contract state`.
+
+To solve this, you can either:
+
+1. Rollback to the previous contract code
+2. Implement a method to [migrate the contract's state](https://docs.near.org/smart-contracts/release/upgrade.md)
+
+***
+
+## Overriding interface serialization
+
+JSON is the default format for contract parameters and return values. You can opt into Borsh when smaller payloads and lower serialization costs are more important than a human-readable interface.
+
+The parameter and result serializers can be selected separately, but all parameters of a method must use the same format:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[result_serializer(borsh)]
+pub fn sum_borsh(
+    #[serializer(borsh)] a: u32,
+    #[serializer(borsh)] b: u32,
+) -> u32 {
+    a + b
+}
+```
+
+When calling a Borsh-serialized method through the CLI, pass its serialized bytes as Base64 arguments:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction rust-status-message.demo.testnet set_status_borsh base64-args 'DAAAAEFsb2hhIGhvbnVhIQ==' prepaid-gas '30 TeraGas' attached-deposit '0 NEAR' sign-as demo.testnet network-config testnet sign-with-keychain send
+```
+
+Use the same serialization format on both sides of a cross-contract call. JSON remains the better default when the interface is also used by frontends, scripts, or other languages.
+
+## JSON wrapper types
+
+The SDK provides wrapper types in `near_sdk::json_types` for Rust values whose default JSON representation is inconvenient.
+
+### Large integers
+
+JSON consumers cannot always represent `u64` and `u128` values without losing precision. `U64` and `U128` serialize those values as strings while retaining their native integer representation inside the contract.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl Contract {
+    pub fn mult(&self, a: U64, b: U64) -> U128 {
+        U128(u128::from(a.0) * u128::from(b.0))
+    }
+}
+```
+
+### Byte arrays
+
+A `Vec<u8>` normally serializes to an array of JSON integers. Use `Base64VecU8` to expose those bytes as a compact Base64 string:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
+pub struct Contract {
+    pub data: Vec<u8>,
+}
+
+#[near]
+impl Contract {
+    #[init]
+    pub fn new(data: Base64VecU8) -> Self {
+        Self { data: data.into() }
+    }
+
+    pub fn get_data(self) -> Base64VecU8 {
+        self.data.into()
+    }
+}
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

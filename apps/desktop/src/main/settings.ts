@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ConnectedEnvironment, EnvironmentStatus } from '../shared/environments'
+import type { NearAccount, NearNetwork } from '../shared/near'
 import type { Project } from '../shared/projects'
 
 export type Settings = {
@@ -9,6 +10,13 @@ export type Settings = {
   projects: Project[]
   // Where the last new project was created, offered again next time
   lastProjectLocation?: string
+  // When the user finished or skipped the first-run setup guide
+  setupCompletedAt?: string
+  // NEAR accounts; their keys are in near-keys.json, encrypted
+  nearAccounts?: NearAccount[]
+  nearPrimary?: Partial<Record<NearNetwork, string>>
+  // Agents' testnet transactions go through without asking
+  nearAutoApproveTestnet?: boolean
 }
 
 const DEFAULT_SETTINGS: Settings = { connectedEnvironments: [], projects: [] }

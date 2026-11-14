@@ -1,0 +1,184 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# LibreChat
+
+> Configure LibreChat to use NEAR AI Cloud as an OpenAI-compatible custom endpoint.
+
+LibreChat can use NEAR AI Cloud through a custom OpenAI-compatible endpoint in `librechat.yaml`. Keep the endpoint name unique, store the API key in `.env`, and mount the config file when running LibreChat with Docker.
+
+## Prerequisites
+
+* A running LibreChat installation.
+* A NEAR AI Cloud API key from the [NEAR AI Cloud Dashboard](https://cloud.near.ai/dashboard/organizations).
+* Access to the LibreChat project directory that contains `.env` and `docker-compose.yml`.
+
+Do not put a real API key in `librechat.yaml`. Reference an environment variable from `.env` instead.
+
+## Base URL
+
+Use the NEAR AI Cloud gateway base URL:
+
+```text theme={"dark"}
+https://cloud-api.near.ai/v1
+```
+
+Do not append `/chat/completions` to `baseURL`. LibreChat appends the chat-completions path when it calls the OpenAI-compatible API.
+
+## Model ID
+
+Use the NEAR AI Cloud gateway model ID:
+
+```text theme={"dark"}
+z-ai/glm-5.3-flash
+```
+
+Check [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md) before adding newer model IDs.
+
+> [!NOTE]
+>
+> Retired NEAR AI model IDs are kept as aliases onto their successor, so an older ID such as `z-ai/glm-5.2` still resolves today. Prefer the canonical ID from `/v1/models`; an alias can be repointed without notice.
+
+## Configure
+
+Create or edit `librechat.yaml` in the LibreChat project root:
+
+```yaml librechat.yaml theme={"dark"}
+version: 1.3.16
+cache: true
+
+endpoints:
+  custom:
+    - name: 'nearai'
+      apiKey: '${NEARAI_API_KEY}'
+      baseURL: 'https://cloud-api.near.ai/v1'
+      models:
+        default:
+          - 'z-ai/glm-5.3-flash'
+      titleConvo: true
+      titleModel: 'z-ai/glm-5.3-flash'
+      modelDisplayLabel: 'NEAR AI Cloud'
+      customParams:
+        reasoningFormat: reasoning_object
+        reasoningKey: reasoning_content
+```
+
+The custom endpoint name `nearai` is intentionally not a built-in LibreChat endpoint name. Omit the `provider` field to get LibreChat's OpenAI-compatible custom endpoint path, which is what this guide configures.
+
+### Reasoning models
+
+GLM 5.3 Flash is a reasoning model. It returns its thinking in a `reasoning_content` field, both in complete responses and as streamed deltas. The `customParams` block above tells LibreChat where to find that field so the thinking renders as a reasoning block instead of being discarded. Omit it and you lose the reasoning trace.
+
+### Title generation
+
+`titleModel` is called once per conversation. Because GLM 5.3 Flash is a reasoning model, each title costs a short reasoning pass. Set `titleModel: 'current_model'` to follow whichever model the conversation uses, or point it at a cheaper non-reasoning model from `/v1/models` if title cost matters at your volume.
+
+Add the key to `.env` in the same project root:
+
+```bash .env theme={"dark"}
+NEARAI_API_KEY=your-near-ai-api-key
+```
+
+For Docker deployments, mount `librechat.yaml` into the API container. If you do not already have an override file, copy LibreChat's example:
+
+```bash theme={"dark"}
+cp docker-compose.override.yml.example docker-compose.override.yml
+```
+
+Then make sure the override includes this mount:
+
+```yaml docker-compose.override.yml theme={"dark"}
+services:
+  api:
+    volumes:
+      - type: bind
+        source: ./librechat.yaml
+        target: /app/librechat.yaml
+```
+
+Restart LibreChat after changing `librechat.yaml`, `.env`, or the Docker mount:
+
+```bash theme={"dark"}
+docker compose down
+docker compose up -d
+```
+
+For non-Docker local installs, place `librechat.yaml` in the project root next to `.env`, then restart the LibreChat backend process.
+
+## Refresh models
+
+The primary refresh path is manual because this guide keeps a short, explicit model list:
+
+1. Run `curl https://cloud-api.near.ai/v1/models`.
+2. Copy the new model's exact `id`.
+3. Add it under `models.default` in `librechat.yaml`.
+4. Restart LibreChat so the endpoint selector reads the updated config.
+
+LibreChat's custom endpoint reference also documents `models.fetch: true` for OpenAI-compatible custom endpoints. NEAR AI Cloud serves `GET /v1/models` without authentication, so fetching works:
+
+```yaml theme={"dark"}
+models:
+  default:
+    - 'z-ai/glm-5.3-flash'
+  fetch: true
+```
+
+Fetching returns every model on the gateway, 50+ of them, including embedding and reranker models that are not chat models, so stay with the manual list if you want a short endpoint selector. Either way, keep `models.default` populated: LibreChat falls back to it when fetching is slow or fails.
+
+## Quick test
+
+Before debugging LibreChat, verify the same key, base URL, and model with curl:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/chat/completions \
+  -H "Authorization: Bearer $NEARAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "z-ai/glm-5.3-flash",
+    "messages": [
+      {"role": "user", "content": "Reply with only: near-ai-ok"}
+    ],
+    "max_tokens": 256
+  }'
+```
+
+Keep `max_tokens` generous on reasoning models. GLM 5.3 Flash spends its first tokens on `reasoning_content`, so a tight limit returns `"content": null` with `"finish_reason": "length"` and looks like a failure when the request actually succeeded.
+
+If curl fails, fix the NEAR AI Cloud key, model ID, or network path before changing LibreChat settings.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| - | - | - |
+| model not listed | `librechat.yaml` was not mounted, LibreChat was not restarted, or `z-ai/glm-5.3-flash` is missing from `models.default`. | Confirm the Docker mount points to `/app/librechat.yaml`, run `docker compose logs api` for config errors, add the exact model ID under `models.default`, and restart LibreChat. |
+| `401` | `NEARAI_API_KEY` is missing from `.env`, the API container did not reload the environment, or the key is invalid. | Add `NEARAI_API_KEY=...` to `.env`, restart LibreChat, and rerun the curl smoke test without logging the key. |
+| Wrong base URL includes `/chat/completions` | The full curl request URL was pasted into `baseURL`. | Set `baseURL: 'https://cloud-api.near.ai/v1'`. Use `/chat/completions` only in full request URLs such as the curl smoke test. |
+| Endpoint not visible | The custom endpoint name conflicts with a built-in endpoint, YAML parsing failed, or the config file is in the wrong directory. | Keep `name: 'nearai'`, validate the YAML, make sure the file is in the LibreChat project root, and check `docker compose logs api`. |
+| Replies are empty or cut off mid-thought | A reasoning model consumed the output budget on `reasoning_content`. | Raise the model's max output in LibreChat, and confirm with the curl test at a higher `max_tokens`. |
+| The model thinks but the reasoning is never shown | `customParams.reasoningKey` is not set, so LibreChat does not know where NEAR AI puts the trace. | Add `reasoningFormat: reasoning_object` and `reasoningKey: reasoning_content` under `customParams`, then restart LibreChat. |
+| New NEAR AI model does not appear after release | LibreChat is reading the old manual list or cached endpoint config. | Recheck `/v1/models`, add the model ID under `models.default`, and restart LibreChat. If using `fetch: true`, keep the default fallback list and restart after changing fetch settings. |
+
+## Related guides
+
+* [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md)
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md)
+* [Available Models](https://docs.near.ai/cloud/models.md)
+* [Open WebUI](https://docs.near.ai/cloud/guides/integrations/open-webui.md)
+* [Dify](https://docs.near.ai/cloud/guides/integrations/dify.md)
+* [LiteLLM Proxy](https://docs.near.ai/cloud/guides/integrations/litellm.md)
+
+## Sources Checked
+
+Sources checked on 2026-09-22:
+
+* [LibreChat Custom Endpoints](https://www.librechat.ai/docs/quick_start/custom_endpoints)
+* [LibreChat Custom Config](https://www.librechat.ai/docs/configuration/librechat_yaml)
+* [LibreChat Custom Endpoint Object Structure](https://www.librechat.ai/docs/configuration/librechat_yaml/object_structure/custom_endpoint)
+* [`librechat.example.yaml`](https://github.com/danny-avila/LibreChat/blob/main/librechat.example.yaml) — config `version`
+* [`docker-compose.override.yml.example`](https://github.com/danny-avila/LibreChat/blob/main/docker-compose.override.yml.example) — mount target
+* [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md)
+* NEAR AI Cloud `GET /v1/models` and `POST /v1/chat/completions`
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

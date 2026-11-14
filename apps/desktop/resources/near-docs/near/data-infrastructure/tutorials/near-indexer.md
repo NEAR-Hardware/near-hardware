@@ -1,0 +1,556 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Tutorial: Creating an Indexer
+
+> This tutorial will guide you through building an indexer using the NEAR Indexer Framework. The indexer will listen for FunctionCalls on a specific contract and log the details of each call.
+
+In this tutorial, we will build an indexer using the NEAR Indexer Framework. The indexer will listen realtime blocks data from NEAR blockchain.
+
+To get our indexer up and running we will need two steps:
+
+1. To [initialize](#initialization) the indexer
+2. To [start it](#starting-the-indexer)
+
+The full source code for the indexer example is available in the [GitHub repository](https://github.com/near/nearcore/tree/master/tools/indexer/example).
+
+> [!NOTE]
+>
+> Source code link is for `nearcore` repository, as the Indexer Framework is part of the `nearcore` codebase. We provide the link to `master` branch. If you want to use **the latest stable release version** you should check the [releases page](https://github.com/near/nearcore/releases) and checkout the corresponding tag.
+
+> [!CAUTION]
+>
+> NEAR Indexer Framework only works on **`Linux x86`**, it does **not** support Windows or MacOS
+
+***
+
+## Prerequisites
+
+### Install Rust
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### Install developer tools
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+apt update
+apt install -y git binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev cmake gcc g++ python docker.io protobuf-compiler libssl-dev pkg-config clang llvm cargo awscli
+```
+
+> [!CAUTION]
+>
+> NEAR Indexer Framework only works on **`Linux x86`**, it does **not** support Windows or MacOS
+
+### Clone nearcore repository
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+git clone git@github.com:near/nearcore.git
+```
+
+***
+
+## Initialization
+
+In order for our indexer to process blocks it needs to join the NEAR network as a node. To do that, we need first to initialize it, which will download the blockchain `genesis` config, and create a `key` for our node to communicate with other nodes.
+
+Go to the `nearcore/tools/indexer/example` folder and build the indexer:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cd nearcore/tools/indexer/example && cargo build --release
+```
+
+Then, run the following command to initialize the network configuration:
+
+> [tab] Localnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/localnet init
+> ```
+
+> [tab] Testnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/testnet init --chain-id testnet --download-config rpc --download-genesis
+> ```
+
+> [tab] Mainnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/mainnet init --chain-id mainnet --download-config rpc --download-genesis
+> ```
+
+Depending on the network we want to connect, the keys will be created in different folders (`~/.near/<network>`).
+
+#### Config File
+
+A configuration file (`~/.near/<network>/config.json`) is created automatically, whoever, it is recommended to replace with one of the following ones, intended for RPC nodes:
+
+* [testnet config.json](https://s3-us-west-1.amazonaws.com/build.nearprotocol.com/nearcore-deploy/testnet/rpc/config.json)
+* [mainnet config.json](https://s3-us-west-1.amazonaws.com/build.nearprotocol.com/nearcore-deploy/mainnet/rpc/config.json)
+
+> [!NOTE]
+>
+> **Configuration Options**
+>
+> See the [Custom Configuration](#custom-configuration) section below to learn more about further configuration options.
+
+***
+
+## Starting the Indexer
+
+After we finish initializing the indexer, and configuring it, we can start it by running the following command:
+
+> [tab] Localnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/localnet run
+> ```
+
+> [tab] Testnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/testnet run
+> ```
+
+> [tab] Mainnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>   cargo run --release -- --home-dir ~/.near/mainnet run
+> ```
+
+> [accordion] How it works
+>
+> * The command initializes the indexer's configuration: home directory, sync mode, streaming mode, finality, etc.
+> * Creates a Tokio runtime on a dedicated thread.
+> * Creates an instance of the Indexer using the provided configuration, starts it, and streams blocks to our handler. Within the handler (`listen_blocks` method), there is an infinite loop that parses block data for each new block received.
+>
+> ```rust title="main.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+>     let indexer_config = near_indexer::IndexerConfig {
+>         home_dir,
+>         sync_mode: near_indexer::SyncModeEnum::FromInterruption,
+>         await_for_node_synced: near_indexer::AwaitForNodeSyncedEnum::WaitForFullSync,
+>         finality: near_primitives::types::Finality::Final,
+>         validate_genesis: true,
+>         skip_broken_blocks: false,
+>     };
+>     let tokio_runtime = tokio::runtime::Builder::new_current_thread()
+>         .enable_all()
+>         .build()
+>         .expect("Failed to create Tokio runtime");
+>     tokio_runtime.block_on(async move {
+>         let indexer =
+>             near_indexer::Indexer::new(indexer_config).await.expect("Indexer::new()");
+>         let stream = indexer.streamer();
+>         listen_blocks(stream).await;
+>     });
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near/nearcore/blob/6ac40f1a7806598f26e8e8593b51b3214b9e3f5f/tools/indexer/example/src/main.rs#L271-L289)
+
+#### Run into an Error?
+
+* If your indexer cannot find `boot nodes`, check the [boot nodes](#boot-nodes) section
+
+***
+
+## Parsing the Block Data
+
+Within the `listen_blocks` method, we can parse the block data as it flows from the stream. From the block data, we can access the transactions, their receipts, and actions. See the code below for an example of how to parse the block data:
+
+```rust title="main.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+    while let Some(streamer_message) = stream.recv().await {
+        // TODO: handle data as you need
+        // Example of `StreamerMessage` with all the data (the data is synthetic)
+        //
+        // Note that `outcomes` for a given transaction won't be included into the same block.
+        // Execution outcomes are included into the blocks after the transaction or receipt
+        // are recorded on a chain; in most cases, it is the next block after the one that has
+        // the transaction or receipt.
+        //
+        // StreamerMessage {
+        //     block: BlockView {
+        //         author: "test.near",
+        //         header: BlockHeaderView {
+        //             height: 63596,
+        //             epoch_id: `Bk7pvZWUTfHRRZtfgTDjnQ6y5cV8yG2h3orCqJvUbiym`,
+        //             next_epoch_id: `3JuBZ4Gz5Eauf7PzQegfqSEDyvws3eKJYPbfGHAYmeR5`,
+        //             hash: `5X37niQWWcihDGQjsvDMHYKLCurNJyQLxCeLgneDb8mk`,
+        //             prev_hash: `2vJNJca72pBiq2eETq2xvuoc6caKDaUkdRgtdefyutbA`,
+        //             prev_state_root: `GkdxSBf4Kfq8V16N4Kqn3YdcThG1f5KG1KLBmXpMzP1k`,
+        //             chunk_receipts_root: `9ETNjrt6MkwTgSVMMbpukfxRshSD1avBUUa4R4NuqwHv`,
+        //             chunk_headers_root: `C7dVr9KdXYKt31yF2BkeAu115fpo79zYTqeU3FzqbFak`,
+        //             chunk_tx_root: `7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t`,
+        //             outcome_root: `7tkzFg8RHBmMw1ncRJZCCZAizgq4rwCftTKYLce8RU8t`,
+        //             chunks_included: 1,
+        //             challenges_root: `11111111111111111111111111111111`,
+        //             timestamp: 1618558205803345000,
+        //             timestamp_nanosec: 1618558205803345000,
+        //             random_value: `3cAa93XmoLaKAJQgWz3K7SiKwnA3uaxi8MGgLM78HTNS`,
+        //             validator_proposals: [],
+        //             chunk_mask: [
+        //                 true,
+        //             ],
+        //             gas_price: 1000000000,
+        //             rent_paid: 0,
+        //             validator_reward: 0,
+        //             total_supply: 2050206401403887985811862247311434,
+        //             challenges_result: [],
+        //             last_final_block: `DCkMmXYHqibzcMjgFjRXJP7eckAMLrA4ijggSApMNwKu`,
+        //             last_ds_final_block: `2vJNJca72pBiq2eETq2xvuoc6caKDaUkdRgtdefyutbA`,
+        //             next_bp_hash: `4DJWnxRbUhRrsXK6EBkx4nFeXHKgJWqteDnJ7Hv4MZ6M`,
+        //             block_merkle_root: `Bvn5K89fJ3uPNsj3324Ls9TXAGUVteHPpfKwKqL1La6W`,
+        //             approvals: [
+        //                 Some(
+        //                     ed25519:F816hgJod7nPfD2qQz5yhaKDMn1JXmvzj2iXegsJpsmPNnYYZpKYJXgyuVTVJ4TKQbcJ2Q3USCGZF6fX2TcwBBv,
+        //                 ),
+        //             ],
+        //             signature: ed25519:239NbE4BuJaxneQA3AEsPrsGY7v3wBgaezbgg56HER69zPrBoc3a4fbyVWPXeoKE3LvgGma1g6pSHk9QHkmETCZY,
+        //             latest_protocol_version: 43,
+        //         },
+        //         chunks: [
+        //             ChunkHeaderView {
+        //                 chunk_hash: `2M2oeNFBbUUnHfkU1UuBr8EKBCLMH9xr2vfsGRpyiBmA`,
+        //                 prev_block_hash: `2vJNJca72pBiq2eETq2xvuoc6caKDaUkdRgtdefyutbA`,
+        //                 outcome_root: `11111111111111111111111111111111`,
+        //                 prev_state_root: `3gZPPijaumgMRCvMuuZZM1Ab2LoHTSfYigMKwLqZ67m6`,
+        //                 encoded_merkle_root: `79Bt7ivt9Qhp3c6dJYnueaTyPVweYxZRpQHASRRAiyuy`,
+        //                 encoded_length: 8,
+        //                 height_created: 63596,
+        //                 height_included: 63596,
+        //                 shard_id: 0,
+        //                 gas_used: 0,
+        //                 gas_limit: 1000000000000000,
+        //                 rent_paid: 0,
+        //                 validator_reward: 0,
+        //                 balance_burnt: 0,
+        //                 outgoing_receipts_root: `H4Rd6SGeEBTbxkitsCdzfu9xL9HtZ2eHoPCQXUeZ6bW4`,
+        //                 tx_root: `11111111111111111111111111111111`,
+        //                 validator_proposals: [],
+        //                 signature: ed25519:2vWNayBzEoW5DRc7gTdhxdLbkKuK6ACQ78p3JGpKSAZZCarnLroeoALPAFwpr9ZNPxBqdVYh9QLBe7WHZebsS17Z,
+        //             },
+        //         ],
+        //     },
+        //     shards: [
+        //         IndexerShard {
+        //             shard_id: 0,
+        //             chunk: Some(
+        //                 IndexerChunkView {
+        //                     author: "test.near",
+        //                     header: ChunkHeaderView {
+        //                         chunk_hash: `2M2oeNFBbUUnHfkU1UuBr8EKBCLMH9xr2vfsGRpyiBmA`,
+        //                         prev_block_hash: `2vJNJca72pBiq2eETq2xvuoc6caKDaUkdRgtdefyutbA`,
+        //                         outcome_root: `11111111111111111111111111111111`,
+        //                         prev_state_root: `3gZPPijaumgMRCvMuuZZM1Ab2LoHTSfYigMKwLqZ67m6`,
+        //                         encoded_merkle_root: `79Bt7ivt9Qhp3c6dJYnueaTyPVweYxZRpQHASRRAiyuy`,
+        //                         encoded_length: 8,
+        //                         height_created: 63596,
+        //                         height_included: 0,
+        //                         shard_id: 0,
+        //                         gas_used: 0,
+        //                         gas_limit: 1000000000000000,
+        //                         rent_paid: 0,
+        //                         validator_reward: 0,
+        //                         balance_burnt: 0,
+        //                         outgoing_receipts_root: `H4Rd6SGeEBTbxkitsCdzfu9xL9HtZ2eHoPCQXUeZ6bW4`,
+        //                         tx_root: `11111111111111111111111111111111`,
+        //                         validator_proposals: [],
+        //                         signature: ed25519:2vWNayBzEoW5DRc7gTdhxdLbkKuK6ACQ78p3JGpKSAZZCarnLroeoALPAFwpr9ZNPxBqdVYh9QLBe7WHZebsS17Z,
+        //                     },
+        //                     transactions: [
+        //                         IndexerTransactionWithOutcome {
+        //                             transaction: SignedTransactionView {
+        //                                 signer_id: "test.near",
+        //                                 public_key: ed25519:8NA7mh6TAWzy2qz68bHp62QHTEQ6nJLfiYeKDRwEbU3X,
+        //                                 nonce: 1,
+        //                                 receiver_id: "some.test.near",
+        //                                 actions: [
+        //                                     CreateAccount,
+        //                                     Transfer {
+        //                                         deposit: 40000000000000000000000000,
+        //                                     },
+        //                                     AddKey {
+        //                                         public_key: ed25519:2syGhqwJ8ba2nUGmP9tkZn9m1DYZPYYobpufiERVnug8,
+        //                                         access_key: AccessKeyView {
+        //                                             nonce: 0,
+        //                                             permission: FullAccess,
+        //                                         },
+        //                                     },
+        //                                 ],
+        //                                 signature: ed25519:Qniuu7exnr6xbe6gKafV5vDhuwM1jt9Bn7sCTF6cHfPpYWVJ4Q6kq8RAxKSeLoxbCreVp1XzMMJmXt8YcUqmMYw,
+        //                                 hash: `8dNv9S8rAFwso9fLwfDQXmw5yv5zscDjQpta96pMF6Bi`,
+        //                             },
+        //                             outcome: IndexerExecutionOutcomeWithReceipt {
+        //                                 execution_outcome: ExecutionOutcomeWithIdView {
+        //                                     proof: [],
+        //                                     block_hash: `G9v6Fsv94xaa7BRY2N5PFF5PJwT7ec6DPzQK73Yf3CZ6`,
+        //                                     id: `8dNv9S8rAFwso9fLwfDQXmw5yv5zscDjQpta96pMF6Bi`,
+        //                                     outcome: ExecutionOutcomeView {
+        //                                         logs: [],
+        //                                         receipt_ids: [
+        //                                         `CbWu7WYYbYbn3kThs5gcxANrxy7AKLcMcBLxLw8Zq1Fz`,
+        //                                         ],
+        //                                         gas_burnt: 424555062500,
+        //                                         tokens_burnt: 424555062500000000000,
+        //                                         executor_id: "test.near",
+        //                                         status: SuccessReceiptId(CbWu7WYYbYbn3kThs5gcxANrxy7AKLcMcBLxLw8Zq1Fz),
+        //                                     },
+        //                                 },
+        //                                 receipt: None,
+        //                             },
+        //                         },
+        //                     ],
+        //                     receipts: [
+        //                         ReceiptView {
+        //                             predecessor_id: "test.near",
+        //                             receiver_id: "some.test.near",
+        //                             receipt_id: `CbWu7WYYbYbn3kThs5gcxANrxy7AKLcMcBLxLw8Zq1Fz`,
+        //                             receipt: Action {
+        //                                 signer_id: "test.near",
+        //                                 signer_public_key: ed25519:8NA7mh6TAWzy2qz68bHp62QHTEQ6nJLfiYeKDRwEbU3X,
+        //                                 gas_price: 1030000000,
+        //                                 output_data_receivers: [],
+        //                                 input_data_ids: [],
+        //                                 actions: [
+        //                                     CreateAccount,
+        //                                     Transfer {
+        //                                         deposit: 40000000000000000000000000,
+        //                                     },
+        //                                     AddKey {
+        //                                         public_key: ed25519:2syGhqwJ8ba2nUGmP9tkZn9m1DYZPYYobpufiERVnug8,
+        //                                         access_key: AccessKeyView {
+        //                                             nonce: 0,
+        //                                             permission: FullAccess,
+        //                                         },
+        //                                     },
+        //                                 ],
+        //                             },
+        //                         },
+        //                     ],
+        //                 },
+        //             ),
+        //             receipt_execution_outcomes: [
+        //                 IndexerExecutionOutcomeWithReceipt {
+        //                     execution_outcome: ExecutionOutcomeWithIdView {
+        //                         proof: [],
+        //                         block_hash: `BXPB6DQGmBrjARvcgYwS8qKLkyto6dk9NfawGSmfjE9Q`,
+        //                         id: `CbWu7WYYbYbn3kThs5gcxANrxy7AKLcMcBLxLw8Zq1Fz`,
+        //                         outcome: ExecutionOutcomeView {
+        //                             logs: [],
+        //                             receipt_ids: [
+        //                             `8vJ1QWM4pffRDnW3c5CxFFV5cMx8wiqxsAqmZTitHvfh`,
+        //                             ],
+        //                             gas_burnt: 424555062500,
+        //                             tokens_burnt: 424555062500000000000,
+        //                             executor_id: "some.test.near",
+        //                             status: SuccessValue(``),
+        //                         },
+        //                     },
+        //                     receipt: ReceiptView {
+        //                         predecessor_id: "test.near",
+        //                         receiver_id: "some.test.near",
+        //                         receipt_id: `CbWu7WYYbYbn3kThs5gcxANrxy7AKLcMcBLxLw8Zq1Fz`,
+        //                         receipt: Action {
+        //                             signer_id: "test.near",
+        //                             signer_public_key: ed25519:8NA7mh6TAWzy2qz68bHp62QHTEQ6nJLfiYeKDRwEbU3X,
+        //                             gas_price: 1030000000,
+        //                             output_data_receivers: [],
+        //                             input_data_ids: [],
+        //                             actions: [
+        //                                 CreateAccount,
+        //                                 Transfer {
+        //                                     deposit: 40000000000000000000000000,
+        //                                 },
+        //                                 AddKey {
+        //                                     public_key: ed25519:2syGhqwJ8ba2nUGmP9tkZn9m1DYZPYYobpufiERVnug8,
+        //                                     access_key: AccessKeyView {
+        //                                         nonce: 0,
+        //                                         permission: FullAccess,
+        //                                     },
+        //                                 },
+        //                             ],
+        //                         },
+        //                     },
+        //                 },
+        //             ],
+        //         },
+        //     ],
+        //     state_changes: [
+        //         StateChangeWithCauseView {
+        //             cause: ValidatorAccountsUpdate,
+        //             value: AccountUpdate {
+        //                 account_id: "test.near",
+        //                 account: AccountView {
+        //                     amount: 1000000000000000000000000000000000,
+        //                     locked: 50000000000000000000000000000000,
+        //                     code_hash: `11111111111111111111111111111111`,
+        //                     storage_usage: 182,
+        //                     storage_paid_at: 0,
+        //                 },
+        //             },
+        //         },
+        //     ],
+        // }
+        tracing::info!(
+            target: "indexer_example",
+            height = %streamer_message.block.header.height,
+            hash = ?streamer_message.block.header.hash,
+            num_shards = %streamer_message.shards.len(),
+            num_transactions = %streamer_message.shards.iter().map(|shard| if let Some(chunk) = &shard.chunk { chunk.transactions.len() } else { 0usize }).sum::<usize>(),
+            num_receipts = %streamer_message.shards.iter().map(|shard| if let Some(chunk) = &shard.chunk { chunk.receipts.len() } else { 0usize }).sum::<usize>(),
+            num_execution_outcomes = %streamer_message.shards.iter().map(|shard| shard.receipt_execution_outcomes.len()).sum::<usize>(),
+            "block processed"
+        );
+    }
+}
+
+```
+
+[See code on GitHub](https://github.com/near/nearcore/blob/6ac40f1a7806598f26e8e8593b51b3214b9e3f5f/tools/indexer/example/src/main.rs#L10-L254)
+
+***
+
+## Custom Configuration
+
+By default, nearcore is configured to do as little work as possible while still operating on an up-to-date state. Indexers may have different requirements, so you might need to tweak the configuration based on yours.
+
+### Shards/Accounts to Track
+
+We need to ensure that NEAR Indexer follows all the necessary shards, so by default the `"tracked_shards_config"` is set to `"AllShards"`. If you only need the data of specific accounts, list those accounts in the `"tracked_shards_config"` section (`~/.near/<network>/config.json` file). The node then tracks the shards that hold these accounts:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+...
+"tracked_shards_config": {
+       "Accounts": [
+              "account_a",
+              "account_b"
+       ]
+},
+...
+```
+
+The indexer supports only these two settings: `"AllShards"`, or `"Accounts"` with at least one account. With any other value, including a `"Shards"` list of shard UIDs, the indexer stops at startup.
+
+### Sync Mode
+
+You can choose the starting point for syncing by setting the Indexer Framework sync mode:
+
+* LatestSynced - Real-time syncing, always taking the latest finalized block to stream
+* FromInterruption - Starts syncing from the block NEAR Indexer was interrupted last time
+* BlockHeight(u64) - Specific block height to start syncing from.
+
+```rust title="main.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+sync_mode: near_indexer::SyncModeEnum::FromInterruption,
+```
+
+[See code on GitHub](https://github.com/near/nearcore/blob/6ac40f1a7806598f26e8e8593b51b3214b9e3f5f/tools/indexer/example/src/main.rs#L273-L273)
+
+### Streaming Mode
+
+You can choose Indexer Framework streaming mode by setting what to stream:
+
+* StreamWhileSyncing - Stream while node is syncing
+* WaitForFullSync - Don't stream until the node is fully synced
+
+```rust title="main.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+await_for_node_synced: near_indexer::AwaitForNodeSyncedEnum::WaitForFullSync,
+```
+
+[See code on GitHub](https://github.com/near/nearcore/blob/6ac40f1a7806598f26e8e8593b51b3214b9e3f5f/tools/indexer/example/src/main.rs#L274-L274)
+
+### Finality
+
+You can choose finality level at which blocks are streamed:
+
+* None - `optimistic`, a block that (though unlikely) might be skipped
+* DoomSlug - `near-final`, a block that is irreversible, unless at least one block producer signs two conflicting blocks or approvals
+* Final - `final`, the block is final and irreversible.
+
+```rust title="main.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+finality: near_primitives::types::Finality::Final,
+```
+
+[See code on GitHub](https://github.com/near/nearcore/blob/6ac40f1a7806598f26e8e8593b51b3214b9e3f5f/tools/indexer/example/src/main.rs#L275-L275)
+
+### Boot Nodes
+
+If your node can't find any peers to connect to, you can manually specify some boot nodes in the `config.json` file. You can get a list of active peers for your network by running the following command:
+
+> [tab] Testnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> curl -X POST https://rpc.testnet.near.org \
+>   -H "Content-Type: application/json" \
+>   -d '{
+>         "jsonrpc": "2.0",
+>         "method": "network_info",
+>         "params": [],
+>         "id": "dontcare"
+>       }' | \
+> jq '.result.active_peers as $list1 | .result.known_producers as $list2 |
+> $list1[] as $active_peer | $list2[] |
+> select(.peer_id == $active_peer.id) |
+> "\(.peer_id)@\($active_peer.addr)"' |\
+> awk 'NR>2 {print ","} length($0) {print p} {p=$0}' ORS="" | sed 's/"//g'
+> ```
+
+> [tab] Mainnet
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> curl -X POST https://rpc.mainnet.near.org \
+>   -H "Content-Type: application/json" \
+>   -d '{
+>         "jsonrpc": "2.0",
+>         "method": "network_info",
+>         "params": [],
+>         "id": "dontcare"
+>       }' | \
+> jq '.result.active_peers as $list1 | .result.known_producers as $list2 |
+> $list1[] as $active_peer | $list2[] |
+> select(.peer_id == $active_peer.id) |
+> "\(.peer_id)@\($active_peer.addr)"' |\
+> awk 'NR>2 {print ","} length($0) {print p} {p=$0}' ORS="" | sed 's/"//g'
+> ```
+
+And then add the output to the `boot_nodes` section of your `config.json` file as a string:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+...
+"network": {
+    "addr": "0.0.0.0:24567",
+    "boot_nodes": "ed25519:8oVENgBp6zJfnwXFe...",
+    ...
+},
+...
+```
+
+### Historical Data
+
+Indexer Framework also exposes access to the internal APIs (see Indexer::client\_actors method), so you can fetch data about any block, transaction, etc, yet by default, nearcore is configured to remove old data (garbage collection), so querying the data that was observed a few epochs before may return an error saying that the data is not found. If you only need blocks streaming, you don't need this tweak, but if you need access to the historical data right from your Indexer, consider updating "archive" setting in config.json to true:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+...
+"archive": true,
+...
+```
+
+***
+
+## Using NEAR Indexer in your Project
+
+You can also use NEAR Indexer Framework as a dependency in your own Rust project. To do that, add the following to your `Cargo.toml` file (replace `2.8.0` with the latest stable release version):
+
+```toml theme={"theme":{"light":"github-light","dark":"github-dark"}}
+[dependencies]
+near-indexer = { git = "https://github.com/near/nearcore", tag = "2.9.1" }
+near-indexer-primitives = { git = "https://github.com/near/nearcore", tag = "2.9.1" }
+near-config-utils = { git = "https://github.com/near/nearcore", tag = "2.9.1" }
+near-o11y = { git = "https://github.com/near/nearcore", tag = "2.9.1" }
+near-primitives = { git = "https://github.com/near/nearcore", tag = "2.9.1" }
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

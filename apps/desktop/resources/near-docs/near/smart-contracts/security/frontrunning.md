@@ -1,0 +1,62 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Front-running
+
+> Prevent transaction observers from profiting by copying or reordering pending actions.
+
+A transaction can reveal information before it executes. Validators can inspect transactions available for inclusion and control their ordering within the blocks they produce. A validator—or another observer able to submit a competing transaction—may use that information for profit.
+
+## Example: a public puzzle answer
+
+A contract pays the first account to submit the correct answer:
+
+1. A user broadcasts a transaction containing the answer.
+2. The block producer sees the answer before executing the transaction.
+3. The block producer creates a transaction with the same answer and orders it first.
+4. The copied transaction claims the reward; the original solver receives nothing.
+
+The contract cannot distinguish the solver from the copier because it only sees which valid transaction executed first.
+
+This pattern also appears in auctions, first-come mints, trades with predictable price impact, and claims based on public secrets.
+
+## Use commit-reveal
+
+Commit-reveal hides the answer until every participant has committed:
+
+```mermaid theme={"theme":{"light":"github-light","dark":"github-dark"}}
+sequenceDiagram
+    participant U as User
+    participant C as Contract
+
+    U->>C: Commit hash(answer, secret, round)
+    Note over C: Commit period closes; answer remains hidden
+    U->>C: Reveal answer and secret
+    C->>C: Recompute hash and verify commitment
+    C->>C: Apply the rules fixed for this round
+```
+
+The commitment binds the answer to a secret value that only the user knows. A copied commitment is useless because the observer cannot reveal the secret. Bind the commitment to the account and round, set deadlines for both phases, and define what happens when a user does not reveal.
+
+## Other mitigations
+
+* Use batch auctions or fixed clearing rules instead of ordering by arrival.
+* Set slippage limits and deadlines for price-sensitive operations.
+* Randomize allocation only with an appropriate [randomness design](https://docs.near.org/smart-contracts/security/random.md).
+* Add deposits when failing to reveal creates costs for other participants.
+* Use private submission infrastructure only if its trust assumptions fit your application.
+
+Delays alone do not hide transaction contents, and higher gas bids are not a protocol-level defense against a block producer that controls ordering.
+
+## Review before deployment
+
+* Search for rewards based on being first.
+* Assume pending arguments and expected state changes may be observed.
+* Test copied, reordered, delayed, and replayed transactions.
+* Make ordering, tie-breaking, deadlines, and cancellation behavior explicit.
+
+For a broader description of transactions as publicly visible opportunities, read [Ethereum is a Dark Forest](https://www.paradigm.xyz/2020/08/ethereum-is-a-dark-forest). The examples use Ethereum, but the information-leak problem applies to any design that exposes a profitable secret before execution.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

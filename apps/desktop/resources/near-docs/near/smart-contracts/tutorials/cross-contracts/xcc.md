@@ -1,0 +1,522 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Cross Contract Call
+
+> Learn how to perform a basic cross-contract call on NEAR to set and retrieve greetings.
+
+This example performs the simplest cross-contract call possible: it calls our [Hello NEAR](https://github.com/near-examples/hello-near-examples) example to set and retrieve a greeting.
+It is one of the simplest examples on making a cross-contract call, and the perfect gateway to the world of interoperative contracts.
+
+> [!NOTE]
+>
+> **Advanced Cross-Contract Calls**
+> The final part of this tutorial shows how to perform cross-contract calls [in batches and in parallel](#advanced-cross-contract-calls).
+
+***
+
+## Clone the Example
+
+You have two options to start the project:
+
+1. You can use the app through `Github Codespaces`, which will open a web-based interactive environment.
+2. Clone the repository locally and use it from your computer.
+
+| Codespaces | Clone locally |
+| - | - |
+| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/near-examples/cross-contract-calls?quickstart=1) | 🌐 `https://github.com/near-examples/cross-contract-calls` |
+
+***
+
+## Structure of the Example
+
+The smart contract is written in Rust and has the following structure:
+
+```text theme={"theme":{"light":"github-light","dark":"github-dark"}}
+├── contract-simple-rs
+│   ├── src
+│   │   ├── external_contract.rs
+│   │   ├── high_level.rs
+│   │   ├── lib.rs
+│   │   └── low_level.rs
+│   ├── tests
+│   │   ├── hello-near # Rust source for the test contract
+│   │   └── tests.rs
+│   ├── Cargo.toml
+│   └── rust-toolchain.toml
+├── contract-advanced-rs
+└── test-utils
+    └── mod.rs # shared Sandbox and near-api helpers
+```
+
+***
+
+## Smart Contract
+
+The contract exposes methods to query the greeting and change it. These methods do nothing but calling `get_greeting` and `set_greeting` in the `hello-near` example.
+
+### Querying for the Greeting
+
+The contract performs a cross-contract call to `hello.near-example.testnet` to get the greeting message, and then handles the response in a **callback function**.
+
+> [tab] 🦀 Rust (low level)
+>
+> ```rust title="low_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Public - query external greeting
+> pub fn ll_query_greeting(&self) -> Promise {
+>     // Create a promise to call HelloNEAR.get_greeting()
+>     let hello_promise = Promise::new(self.hello_account.clone()).function_call(
+>         "get_greeting".to_owned(),
+>         NO_ARGS,
+>         NO_DEPOSIT,
+>         TEN_TGAS,
+>     );
+>
+>     hello_promise.then(
+>         // Create a promise to callback query_greeting_callback
+>         Self::ext(env::current_account_id())
+>             .with_static_gas(TEN_TGAS)
+>             .ll_query_greeting_callback(),
+>     )
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/low_level.rs#L7-L23)
+
+> [tab] 🦀 Rust (high level)
+>
+> ```rust title="high_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> pub fn hl_query_greeting(&self) -> Promise {
+>     // Create a promise to call HelloNEAR.get_greeting()
+>     let promise = hello_near::ext(self.hello_account.clone())
+>         .with_static_gas(FIVE_TGAS)
+>         .get_greeting();
+>
+>     promise.then(
+>         // Create a promise to callback query_greeting_callback
+>         Self::ext(env::current_account_id())
+>             .with_static_gas(FIVE_TGAS)
+>             .hl_query_greeting_callback(),
+>     )
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/high_level.rs#L9-L21)
+>
+> Which requires you to define the external contract interface:
+>
+> ```rust title="external_contract.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[ext_contract(hello_near)]
+> trait HelloNear {
+>     fn get_greeting(&self) -> String;
+>     fn set_greeting(&self, greeting: String);
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/external_contract.rs#L4-L8)
+
+### Callback Function
+
+The callback function processes the result of the cross-contract call. In this case, it simply returns the greeting message obtained from the `hello-near` contract.
+
+Notice that the callback function is marked as **private**, meaning it can only be called by the contract itself.
+
+```rust title="low_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[private] // Public - but only callable by env::current_account_id()
+pub fn ll_query_greeting_callback(
+    &self,
+    #[callback_result] call_result: Result<String, PromiseError>,
+) -> String {
+    // Check if the promise succeeded by calling the method outlined in external.rs
+    if call_result.is_err() {
+        log!("There was an error contacting Hello NEAR");
+        return "".to_string();
+    }
+
+    // Return the greeting
+    let greeting: String = call_result.unwrap();
+    greeting
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/low_level.rs#L25-L39)
+
+***
+
+## Testing the Contract
+
+The contract readily includes a set of unit and sandbox testing to validate its functionality. To execute the tests, run the following commands:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo install cargo-near --version 0.21.1 --locked --no-default-features
+cd contract-simple-rs
+cargo test --locked
+```
+
+> [!TIP]
+>
+> The sandbox tests use `near-sandbox` to run a local NEAR node and `near-api` to create accounts, deploy contracts, and send transactions.
+
+The tests build both contracts from source before starting Sandbox, then deploy `hello-near` and the cross-contract example. They check the results of both high-level and low-level calls. The `TestSandbox` helper lives in [`test-utils/mod.rs`](https://github.com/near-examples/cross-contract-calls/blob/main/test-utils/mod.rs).
+
+```rust title="tests.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[path = "../../test-utils/mod.rs"]
+mod common;
+
+use common::{build_contract, TestResult, TestSandbox};
+use serde_json::json;
+
+#[tokio::test]
+async fn high_and_low_level_cross_contract_calls() -> TestResult {
+    let hello_wasm = build_contract("tests/hello-near/Cargo.toml")?;
+    let contract_wasm = build_contract("Cargo.toml")?;
+    let sandbox = TestSandbox::start().await?;
+    let hello = sandbox.deploy("hello.sandbox", hello_wasm).await?;
+    let contract = sandbox
+        .deploy("cross-contract.sandbox", contract_wasm)
+        .await?;
+    let alice = sandbox.create_account("alice.sandbox").await?;
+    sandbox
+        .call(
+            &contract,
+            &contract,
+            "init",
+            json!({ "hello_account": hello }),
+        )
+        .await?;
+
+    let greeting = sandbox
+        .call(&alice, &contract, "hl_query_greeting", json!({}))
+        .await?;
+    assert_eq!(greeting, json!("Hello"));
+
+    let changed = sandbox
+        .call(
+            &alice,
+            &contract,
+            "hl_change_greeting",
+            json!({ "new_greeting": "Howdy" }),
+        )
+        .await?;
+    assert_eq!(changed, json!(true));
+    let greeting = sandbox
+        .call(&alice, &contract, "hl_query_greeting", json!({}))
+        .await?;
+    assert_eq!(greeting, json!("Howdy"));
+
+    let changed = sandbox
+        .call(
+            &alice,
+            &contract,
+            "ll_change_greeting",
+            json!({ "new_greeting": "Hello" }),
+        )
+        .await?;
+    assert_eq!(changed, json!(true));
+    let greeting = sandbox
+        .call(&alice, &contract, "ll_query_greeting", json!({}))
+        .await?;
+    assert_eq!(greeting, json!("Hello"));
+    Ok(())
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/tests/tests.rs#L1-L59)
+
+### Deploying the Contract to the NEAR network
+
+In order to deploy the contract you will need to create a NEAR account.
+
+> [tab] Short
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> # Create a new account pre-funded by a faucet
+> near create-account <accountId> --useFaucet
+> ```
+
+> [tab] Full
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> # Create a new account pre-funded by a faucet
+> near account create-account sponsor-by-faucet-service <my-new-dev-account>.testnet autogenerate-new-keypair save-to-keychain network-config testnet create
+> ```
+
+Go into the directory containing the smart contract (`cd contract-simple-rs`), build and deploy it:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near deploy build-non-reproducible-wasm <accountId> with-init-call new json-args '{"hello_account":"hello.near-example.testnet"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
+
+```
+
+### CLI: Interacting with the Contract
+
+To interact with the contract through the console, you can use the following commands:
+
+> [tab] Short
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> # Get message from the hello-near contract
+> # Replace <accountId> with your account ID
+> near call <accountId> query_greeting --useAccount <accountId>
+>
+> # Set a new message for the hello-near contract
+> # Replace <accountId> with your account ID
+> near call <accountId> change_greeting '{"new_greeting":"XCC Hi"}' --useAccount <accountId>
+> ```
+
+> [tab] Full
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> # Get message from the hello-near contract
+> # Replace <accountId> with your account ID
+> near contract call-function as-transaction <accountId> query_greeting json-args '{}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as <accountId> network-config testnet sign-with-keychain send
+>
+> # Set a new message for the hello-near contract
+> # Replace <accountId> with your account ID
+> near contract call-function as-transaction <accountId> change_greeting json-args '{"new_greeting":"XCC Hi"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as <accountId> network-config testnet sign-with-keychain send
+> ```
+
+***
+
+## Moving Forward
+
+A nice way to learn is by trying to expand a contract. Modify the cross contract example to use the [guest-book](https://github.com/near-examples/guest-book-examples)
+contract!. In this way, you can try to make a cross-contract call that attaches money. Remember to correctly [handle the callback](https://docs.near.org/smart-contracts/anatomy/crosscontract.md#callback-function),
+and to return the money to the user in case of error.
+
+## Advanced cross-contract calls
+
+Your contract can combine promises to execute several actions sequentially or call several contracts in parallel. The advanced examples live in the same [cross-contract-calls repository](https://github.com/near-examples/cross-contract-calls), under `contract-advanced-rs`.
+
+### Batch actions
+
+You can combine several actions for the same contract into a batch. The actions execute sequentially, and if one fails, they are all reverted.
+
+```rust title="batch_actions.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn batch_actions(&mut self) -> Promise {
+    let hi = json!({ "greeting": "hi" }).to_string().into_bytes();
+    let bye = json!({ "greeting": "bye" }).to_string().into_bytes();
+
+    // You can create one transaction calling multiple methods
+    // on a same contract
+    Promise::new(self.hello_account.clone())
+        .function_call("set_greeting".to_owned(), hi, NO_DEPOSIT, XCC_GAS)
+        .function_call("get_greeting".to_owned(), NO_ARGS, NO_DEPOSIT, XCC_GAS)
+        .function_call("set_greeting".to_owned(), bye, NO_DEPOSIT, XCC_GAS)
+        .function_call("get_greeting".to_owned(), NO_ARGS, NO_DEPOSIT, XCC_GAS)
+        .then(Self::ext(env::current_account_id()).batch_actions_callback())
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/batch_actions.rs#L8-L20)
+
+The callback receives the value returned by the final action in the chain:
+
+```rust title="batch_actions.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[private]
+pub fn batch_actions_callback(
+    &self,
+    #[callback_result] last_result: Result<String, PromiseError>,
+) -> String {
+    // The callback only has access to the last action's result
+    if let Ok(result) = last_result {
+        log!("The last result is {result}");
+        result
+    } else {
+        log!("The batch call failed and all calls got reverted");
+        "".to_string()
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/batch_actions.rs#L22-L35)
+
+### Call multiple contracts in parallel
+
+A contract can call several contracts in parallel. If one call fails, the other calls are **not** reverted.
+
+```rust title="multiple_contracts.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+/// A method which calls different contracts via cross contract function calls.
+pub fn multiple_contracts(&mut self) -> Promise {
+    // We create a promise that calls the `get_greeting` function on the HELLO_CONTRACT
+    let hello_promise = Promise::new(self.hello_account.clone()).function_call(
+        "get_greeting".to_owned(),
+        NO_ARGS,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We create a promise that calls the `get_num` function on the COUNTER_CONTRACT
+    let counter_promise = Promise::new(self.counter_account.clone()).function_call(
+        "get_num".to_owned(),
+        NO_ARGS,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We create a promise that calls the `get_messages` function on the GUESTBOOK_CONTRACT
+    let args = json!({ "from_index": "0", "limit": 2 })
+        .to_string()
+        .into_bytes();
+
+    let guestbook_promise = Promise::new(self.guestbook_account.clone()).function_call(
+        "get_messages".to_owned(),
+        args,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We join all promises and chain a callback to collect their results.
+    hello_promise
+        .and(counter_promise)
+        .and(guestbook_promise)
+        .then(
+            Self::ext(env::current_account_id())
+                .with_static_gas(XCC_GAS)
+                .multiple_contracts_callback(),
+        )
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/multiple_contracts.rs#L16-L55)
+
+The callback receives one result for each promise and must handle successes and failures independently:
+
+```rust title="multiple_contracts.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[private]
+pub fn multiple_contracts_callback(
+    &self,
+    #[callback_result] hello_result: Result<String, PromiseError>,
+    #[callback_result] counter_result: Result<i8, PromiseError>,
+    #[callback_result] guestbook_result: Result<Vec<PostedMessage>, PromiseError>,
+) -> (String, i8, Vec<PostedMessage>) {
+    // The callback has access to the result of the 3 calls
+    let greeting = if let Ok(result) = hello_result {
+        log!("HelloNear says {result}");
+        result
+    } else {
+        log!("The call to HelloNear failed");
+        "".to_string()
+    };
+
+    let counter = if let Ok(result) = counter_result {
+        log!("Counter is {result}");
+        result
+    } else {
+        log!("The call to Counter failed");
+        0
+    };
+
+    let messages = if let Ok(result) = guestbook_result {
+        log!("The messages are {result:?}");
+        result
+    } else {
+        log!("The call to GuestBook failed");
+        vec![]
+    };
+
+    (greeting, counter, messages)
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/multiple_contracts.rs#L57-L90)
+
+If every call returns the same type, you can iterate over the promise results directly:
+
+```rust title="similar_contracts.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+fn promise_set_get(&self, message: &str) -> Promise {
+    // Aux method to create a batch transaction calling
+    // set_message and get_message in the HELLO CONTRACT
+    let args = json!({ "greeting": message }).to_string().into_bytes();
+
+    Promise::new(self.hello_account.clone())
+        .function_call("set_greeting".to_owned(), args, NO_DEPOSIT, XCC_GAS)
+        .function_call("get_greeting".to_owned(), NO_ARGS, NO_DEPOSIT, XCC_GAS)
+}
+
+pub fn similar_contracts(&mut self) -> Promise {
+    // Create promises to call 3 contracts that return the same type
+    // For simplicity here we call the same contract
+    let hello_one = self.promise_set_get("hi");
+    let hello_two = self.promise_set_get("howdy");
+    let hello_three = self.promise_set_get("bye");
+
+    // Join all promises and chain a callback to collect their results.
+    hello_one.and(hello_two).and(hello_three).then(
+        Self::ext(env::current_account_id())
+            .with_static_gas(XCC_GAS)
+            .similar_contracts_callback(3),
+    )
+}
+
+#[private]
+pub fn similar_contracts_callback(&self, number_promises: u64) -> Vec<String> {
+    (0..number_promises)
+        .filter_map(|index| {
+            // env::promise_result(i) has the result of the i-th call
+            let result = env::promise_result(index);
+
+            match result {
+                PromiseResult::Failed => {
+                    log!("Promise number {index} failed.");
+                    None
+                }
+                PromiseResult::Successful(value) => {
+                    if let Ok(message) = near_sdk::serde_json::from_slice::<String>(&value) {
+                        log!("Call {index} returned: {message}");
+                        Some(message)
+                    } else {
+                        log!("Error deserializing call {index} result.");
+                        None
+                    }
+                }
+            }
+        })
+        .collect()
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/similar_contracts.rs#L8-L57)
+
+### Test and deploy the advanced contract
+
+Run its unit and Sandbox tests locally:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cd contract-advanced-rs
+cargo test --locked
+```
+
+Build, deploy, and initialize the contract with the accounts it will call:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near deploy build-non-reproducible-wasm <account-id> with-init-call new json-args '{"hello_account":"hello.near-example.testnet","guestbook_account":"guestbook_account.near-example.testnet","counter_account":"counter_account.near-example.testnet"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
+```
+
+Call the examples with enough prepaid gas for their child calls and callbacks:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction <account-id> batch_actions json-args '{}' prepaid-gas '300.0 Tgas' attached-deposit '0 NEAR' sign-as <account-id> network-config testnet sign-with-keychain send
+
+near contract call-function as-transaction <account-id> multiple_contracts json-args '{}' prepaid-gas '300.0 Tgas' attached-deposit '0 NEAR' sign-as <account-id> network-config testnet sign-with-keychain send
+
+near contract call-function as-transaction <account-id> similar_contracts json-args '{}' prepaid-gas '300.0 Tgas' attached-deposit '0 NEAR' sign-as <account-id> network-config testnet sign-with-keychain send
+```
+
+> [!NOTE]
+>
+> If a call reports `Exceeded the prepaid gas`, review the gas attached to the child calls and callbacks before increasing the gas on the initiating transaction.
+
+> [!NOTE]
+>
+> **Versioning for this article**
+>
+> At the time of this writing, this example works with the following versions:
+>
+> * near-cli: `4.0.13`
+> * node: `18.19.1`
+> * rustc: `1.77.0`
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

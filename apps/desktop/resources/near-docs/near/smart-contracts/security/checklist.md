@@ -1,0 +1,97 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Smart contract security checklist
+
+> Learn the main security risks in NEAR smart contracts and review them before deployment.
+
+Smart contracts handle assets and shared state in an adversarial environment. A secure contract must protect its state and funds when callers provide unexpected inputs, external calls fail, or operations execute in an unexpected order.
+
+Run this checklist before deploying to mainnet and after any security-sensitive change.
+
+> [!TIP]
+>
+> ## Report a vulnerability
+>
+> Report vulnerabilities in the protocol, core contracts, or web applications through the [NEAR bug bounty program](https://hackenproof.com/company/near/programs).
+>
+> For a broader introduction, watch [Timur Güvenkaya's smart contract security series](https://www.youtube.com/watch?v=DrRr6nru0no).
+
+> [!WARNING]
+>
+> A checklist does not replace threat modeling, tests, code review, or an independent audit for contracts that hold significant value.
+
+***
+
+## Access control
+
+* [ ] Every public method is intentionally public.
+* [ ] Internal methods and callbacks use `#[private]` or an equivalent caller check.
+* [ ] Initialization, ownership transfer, and other administrative changes follow an explicit access-control policy.
+* [ ] Each authorization check deliberately uses `predecessor_account_id` or `signer_account_id`.
+* [ ] Sensitive methods that should require a deposit-capable key use [one yoctoNEAR](https://docs.near.org/smart-contracts/security/one_yocto.md).
+* [ ] Inputs, account IDs, amounts, collection sizes, and string lengths have explicit bounds.
+* [ ] Lists whose items must be distinct reject duplicates before applying payments or state changes. See [duplicate inputs](https://docs.near.org/smart-contracts/security/duplicate-inputs.md).
+
+`predecessor_account_id` is the account that called the current receipt; use it when authorizing a direct caller or a private callback. `signer_account_id` is the account that signed the original transaction; use it only when the intended rule is about that original signer. Do not substitute one for the other without deciding which rule the method enforces.
+
+## State and storage
+
+* [ ] Users cover the state growth they cause, as described in [storage cost attacks](https://docs.near.org/smart-contracts/security/storage.md).
+* [ ] Every persistent collection has a unique storage prefix.
+* [ ] Deleting user data releases storage and follows a documented refund policy.
+* [ ] Release builds enable overflow checks, or financial arithmetic uses checked operations.
+* [ ] State invariants hold at the end of every receipt, including while another receipt is pending.
+
+```toml Cargo.toml highlight={2} theme={"theme":{"light":"github-light","dark":"github-dark"}}
+[profile.release]
+overflow-checks = true
+```
+
+## Funds
+
+* [ ] Internal balances are debited or locked before scheduling a transfer.
+* [ ] The contract keeps enough liquid balance to cover storage and promised refunds.
+* [ ] Deposits, fees, rounding, refunds, and failed transfers have explicit behavior.
+* [ ] No method can spend funds that are already assigned to a pending operation.
+
+## Cross-contract calls
+
+* [ ] A callback exists when the contract must inspect a result, settle state, or refund a user.
+* [ ] Every callback is marked `#[private]`, handles success and failure, and has gas sized from its measured worst case, plus a margin.
+* [ ] The contract stays safe if a callback itself fails. Outcome-dependent state is committed in the callback, and callbacks have bounded inputs, loops, and logs. See [callbacks can fail](https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-failures.md).
+* [ ] A pending operation records the original account, amount, and state needed to settle it once.
+* [ ] Expected callback failures clean up and settle the operation without panicking.
+* [ ] When a failed call returns attached NEAR tokens to the contract, the callback refunds the original user when appropriate.
+* [ ] Withdrawals deduct or lock the user's balance before the call, and restore it only if the callback reports failure.
+* [ ] Deposits that depend on a cross-contract call credit the user's balance only after the callback reports success.
+* [ ] The contract stays safe if another public method runs before the callback. See [cross-contract calls](https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks.md) and [reentrancy](https://docs.near.org/smart-contracts/security/cross-contract-calls/reentrancy.md).
+* [ ] The initiating method returns its `Promise` when callers need the final result.
+
+For each call, trace the success and failure paths on paper. Account for where attached NEAR is held, which state has already changed, and which methods remain callable before the callback.
+
+### Fungible-token transfer calls
+
+* [ ] `ft_on_transfer` accepts only expected FT contracts by checking its predecessor, and returns the unused amount.
+* [ ] `ft_resolve_transfer` is private and refunds no more than the original transfer or the receiver's current balance.
+
+## Economic design
+
+* [ ] Rewards do not rely on first-come-first-served secrets that can be [front-run](https://docs.near.org/smart-contracts/security/frontrunning.md).
+* [ ] Per-account limits do not assume one account equals one person; review [Sybil resistance](https://docs.near.org/smart-contracts/security/sybil.md).
+* [ ] Randomness is appropriate for the value at risk and accounts for block-producer influence.
+* [ ] Attackers cannot profit by repeating, aborting, splitting, or reordering actions.
+
+## Testing and operations
+
+* [ ] Unit tests cover authorization, boundaries, arithmetic, and state invariants.
+* [ ] sandbox or testnet tests cover failed promises, insufficient gas, failed callbacks, refunds, repeated calls, and concurrent pending operations.
+* [ ] Upgrade and migration paths preserve state and remain access-controlled.
+* [ ] Deployment artifacts are reproducible and the deployed code hash is verified.
+* [ ] Logs and monitoring can detect unusual withdrawals, storage growth, and repeated failures.
+* [ ] Monitoring alerts on every failed callback receipt.
+* [ ] A response plan identifies who can pause, upgrade, or communicate about an incident.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

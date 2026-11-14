@@ -1,0 +1,110 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.ironclaw.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Run as a Service
+
+> Keep IronClaw running in the background
+
+IronClaw can install itself as an OS-native background service so the agent keeps running
+after you close your terminal and starts again when you log in. The installed unit runs
+`ironclaw serve`.
+
+* **macOS** — a launchd user agent labelled `com.ironclaw.reborn` in `~/Library/LaunchAgents`
+* **Linux** — a systemd user unit in `~/.config/systemd/user`
+
+> [!WARNING]
+>
+> This page does not apply to a **NEAR AI hosted instance**. `ironclaw service` talks to a
+> user service manager (`systemctl --user`), which a hosted instance doesn't provide, so
+> every `service` subcommand fails there — including `restart`.
+>
+> On a hosted instance the agent is already running and is managed for you. Start, stop, and
+> restart it from the [Agent Dashboard](https://agent.near.ai/). SSH is for running
+> `ironclaw config` and other read-only commands, not for lifecycle control.
+
+[Onboarding](https://docs.ironclaw.com/onboard.md) offers to do this for you in an interactive session. You can also
+manage it directly.
+
+***
+
+## Managing the Service
+
+```bash theme={null}
+ironclaw service install
+ironclaw service start
+ironclaw service status
+```
+
+| Command | What it does |
+| - | - |
+| `install` | Write the unit file and register it with the OS |
+| `start` | Start the installed service |
+| `stop` | Stop the running service |
+| `restart` | Stop then start, or just start if it isn't running |
+| `status` | Report whether the service is installed and running |
+| `uninstall` | Stop the service and remove its unit file |
+
+`restart` errors if the service isn't installed, rather than silently installing it.
+
+***
+
+## Logs
+
+The service writes its output to your IronClaw home:
+
+```bash theme={null}
+tail -f ~/.ironclaw/reborn/logs/serve.stdout.log
+tail -f ~/.ironclaw/reborn/logs/serve.stderr.log
+```
+
+Raise the log level with `IRONCLAW_REBORN_LOG` before starting the service:
+
+```bash theme={null}
+IRONCLAW_REBORN_LOG=debug ironclaw service restart
+```
+
+***
+
+## Reaching the Agent
+
+The service runs `serve` with your configured host and port, so the web interface is at
+`http://127.0.0.1:3000` unless you changed it. Set the port in your configuration file
+rather than on the command line, since the unit doesn't take flags:
+
+```toml theme={null}
+[webui]
+listen_port = 3100
+```
+
+```bash theme={null}
+ironclaw service restart
+```
+
+> [!NOTE]
+>
+> The service runs as your user, not as root, so it has access to the same OS keychain
+> entry that holds your master key. On a headless host without a keychain, supply
+> `IRONCLAW_REBORN_SECRET_MASTER_KEY` in the service environment instead.
+
+***
+
+## Troubleshooting
+
+If the service starts and immediately stops, run the same command in the foreground to
+see the error:
+
+```bash theme={null}
+ironclaw doctor
+ironclaw serve
+```
+
+The most common cause is a foreground `ironclaw serve` still holding the port — the
+service runs `serve` itself, so only one of them can bind at a time. Stop the foreground
+process and start the service again.
+
+Other causes are a missing inference provider credential, or a master key that can't be
+read because the keychain is locked.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

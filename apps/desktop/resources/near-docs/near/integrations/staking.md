@@ -1,0 +1,56 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Staking & Delegation
+
+> Validator selection, delegation, withdrawal availability, and staking-pool custody.
+
+NEAR delegation uses staking-pool contracts to manage delegated funds and distribute rewards. For an exchange, this requires tracking balances held in each pool and when unstaked funds become available for withdrawal.
+
+***
+
+## Balances and Withdrawals
+
+Query the staking-pool contract for the account's delegated balance. In the reference pool, the following read-only methods take `{"account_id":"<delegator_account_id>"}` and return balances in yoctoNEAR:
+
+| Method | Result |
+| - | - |
+| `get_account_staked_balance` | Staked balance |
+| `get_account_unstaked_balance` | Unstaked balance, which may still be waiting for withdrawal |
+| `get_account_total_balance` | Sum of staked and unstaked balances |
+| `is_account_unstaked_balance_available` | Whether the unstaked balance can be withdrawn in the current epoch |
+
+Unstaking and withdrawing are separate operations. The [reference staking pool](https://github.com/near/core-contracts/blob/master/staking-pool/src/lib.rs) waits four epochs before withdrawal becomes available; query the selected pool’s withdrawal availability.
+
+Use `unstake` or `unstake_all` to unstake, then `withdraw` or `withdraw_all` to return available funds to the delegator's account. See [Staking NEAR Tokens](https://docs.near.org/protocol/tutorials/staking-tokens.md) for commands and [Balances & Reconciliation](https://docs.near.org/integrations/balance-changes.md) for account balance queries.
+
+***
+
+## Validator Participation
+
+Anyone can become a validator by meeting the network’s stake requirements and following the protocol’s validator selection process.
+
+Submit a staking proposal and inspect the current and upcoming validator sets through the [network RPC](https://docs.near.org/api/rpc/introduction.md). Selection changes take effect at epoch boundaries. See [validators](https://docs.near.org/protocol/network/validators.md) for current requirements.
+
+***
+
+## Frequently Asked Questions
+
+> [accordion] How long does a validator remain a validator?
+>
+> A validator will stop being a validator for the following reasons:
+>
+> * Not producing enough blocks or chunks.
+> * Not getting elected in the auction for next epoch because their stake is not large enough.
+>
+> A validator can continue while meeting the election and performance requirements. Slashing is not enabled in nearcore 2.13.4.
+>
+> Validator election happens in [epochs](https://docs.near.org/protocol/network/epoch.md). Validator assignments are determined ahead of the epoch in which they apply. Query upcoming validator sets to determine when a staking proposal takes effect.
+
+> [accordion] What is the penalty for misbehaving validators?
+>
+> Validators are not slashed for being offline but they do miss out on the rewards of validating. Validators who miss too many blocks or chunks will be removed from the validation set in the next auction and not get any reward (but, again, without slashing).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,158 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Lifecycle of a Transaction
+
+> Learn how NEAR transactions are executed and finalized
+
+`Transactions` are constructed by users to express the intent of performing actions in the network. Once in the network, transactions are converted into `Receipts`, which are messages exchanged between network nodes.
+
+On this page, we will explore the lifecycle of a transaction, from its creation to its final status.
+
+> [!TIP]
+>
+> **Recommended Reading**
+>
+> To dig deeper into transaction routing, we recommend reading the [nearcore documentation](https://near.github.io/nearcore/architecture/how/tx_routing.html)
+
+***
+
+## Receipts & Finality
+
+Let's walk through the lifecycle of a complex transaction using blocks as **time units**. The block numbers below illustrate execution stages; transaction-pool delays, receipt dependencies, and congestion can spread them over additional blocks. Execution and consensus finality progress independently.
+
+#### Block #1: The Transaction Arrives
+
+Once a validated transaction is included in a chunk, processing it creates a single action `Receipt` containing all the [actions](https://docs.near.org/protocol/transactions/transaction-anatomy.md) to be executed.
+
+While creating the `Receipt`, the `signer` gets `$NEAR` deducted from its balance to **pay for the gas** and **any attached NEAR**.
+
+If the `signer` and `receiver` coincide - e.g. the `signer` is adding a Key - the local `Receipt` can execute in the same chunk. This completes those actions, but consensus finality and any remaining receipts must still be checked.
+
+#### Block #2: The Receipt is Processed
+
+If the `signer` and `receiver` differ - e.g. the `signer` transfers NEAR to the `receiver` - the `Receipt` is routed to the receiver’s shard for execution, which can occur in a subsequent block.
+
+During this process a `FunctionCall` could span a **cross-contract call**, creating one or multiple new `Receipts`.
+
+#### Block #3...: Function Calls
+
+Receipts created by a function call can execute in later blocks. Function-call receipts can spawn additional receipts; callbacks wait for their dependencies before executing.
+
+#### Final Block: Gas is Refunded
+
+A final `Receipt` is processed in a new block, refunding any extra gas paid by the user. Almost every transaction ends with one of these, since the [buy price](https://docs.near.org/protocol/transactions/gas.md#buying-vs-burning-gas) is usually higher than the burn price.
+
+### Waiting for a Transaction
+
+When using our libraries (or directly contacting the RPC), you can specify how long you want to wait for a transaction to be processed using a `wait_until` parameter.
+
+After a transaction is submitted, it first gets validated by the RPC node. If the transaction fails structural checks it will be immediately rejected. Otherwise, two things progress independently:
+
+* **Execution**: the receipts spawned by the transaction are executed across shards
+* **Finality**: the blocks containing the transaction and its receipts are finalized by consensus
+
+These two axes combine to give you the following `wait_until` levels:
+
+| `wait_until` | Receipts executed? | Tx block final? | Receipt outcomes in response? |
+| - | - | - | - |
+| `None` | — | — | No |
+| `Included` | — | — | No |
+| `ExecutedOptimistic` | Yes (non-refund) | No | Yes |
+| `IncludedFinal` | Not necessarily | Yes | Partial |
+| `Executed` | Yes (non-refund) | Yes | Yes |
+| `Final` | Yes (all, including refunds) | Yes (all blocks) | Yes |
+
+Notice that `ExecutedOptimistic` and `IncludedFinal` are not ordered relative to each other — they represent progress on different axes. `ExecutedOptimistic` guarantees all non-refund receipt outcomes are available but the blocks aren’t final yet. `IncludedFinal` guarantees the transaction’s block is final but some receipts may still be pending, so you may only get a partial set of receipt outcomes.
+
+#### Refund receipts
+
+When a receipt executes, NEAR can generate refund receipts for unused gas and the difference between the gas buy and burn prices, subject to the protocol’s refund rules. Failed actions can also generate refunds of attached NEAR. `ExecutedOptimistic` and `Executed` don’t wait for refund receipts; `Final` does. If a system refund’s receiving account has been deleted, the undeliverable amount is burned; see [refunding deleted accounts](https://docs.near.org/integrations/errors/introduction.md#refunding-deleted-accounts).
+
+> [!TIP]
+>
+> Simple transactions can execute their action and refund receipts in a few blocks. These examples illustrate receipt execution rather than a guaranteed time to consensus finality:
+>
+> * [One block](https://testnet.nearblocks.io/txns/8MAvH96aMfDxPb3kVDrgj8nvJS7CAXP1GgtiivKAMGkF#execution) if the `signer` and `receiver` coincide - e.g. when adding a key
+> * [Three blocks](https://testnet.nearblocks.io/txns/B7gxJNxav1A9WhWvaNWYLrSTub1Mkfj3tAudoASVM5tG#) if the `signer` and `receiver` differ, since the first block creates the `Receipt`, and the last reimburses gas
+>
+> Function calls might take longer, as they can spawn multiple receipts. Network congestion can also increase the time to process a receipt and, thus, a transaction.
+
+***
+
+## Transaction Status
+
+As the `Receipts` of a `Transaction` are processed, they get a status:
+
+* `Success`: the actions on the receipt were executed successfully
+* `Failed`: an action on the receipt failed
+* `Unknown`: the receipt is not known by the network
+
+If an action in a `Receipt` fails, all the actions in that `Receipt` are rolled back. Notice that we are talking about the `Receipt` status, and not the `Transaction` status.
+
+The status of a transaction starts at its first receipt, which contains all its actions. If any of the actions in the first receipt fail, the transaction is marked as failed.
+
+Each successful action in a receipt replaces the receipt's result, so the last action decides it. If the last action is a function call that returns a promise, the transaction takes the status of the receipt that the promise resolves to, and so on down the chain. Other receipts do not change the transaction status. This includes a promise that a function call creates but does not return, and a returned promise that a later action in the same receipt replaces. So a transaction can be marked as successful even though one of its receipts fails.
+
+See the examples below for more details.
+
+> [accordion] Status Examples
+>
+> #### Example: Transaction with Transfer
+>
+> 1. `bob.near` creates a transaction to transfer 10 NEAR to `alice.near`
+> 2. The transaction is converted into a receipt
+> 3. The conversion fails because `bob.near` does not have enough balance
+> 4. The transaction is marked as failed ⛔
+>
+> #### Example: Deploying a Contract
+>
+> 1. `bob.near` creates a transaction to:
+>    * create the account `contract.bob.near`
+>    * transfer 5 NEAR to `contract.bob.near`
+>    * deploy a contract in `contract.bob.near`
+> 2. The transaction is transformed into one receipt
+> 3. The account is created, the money transfer and the contract deployed
+> 4. The transaction is marked as successful ✅
+>
+> #### Example: Deploying a Contract Fails
+>
+> 1. `bob.near` creates a transaction to:
+>    * create the account `contract.bob.near`
+>    * transfer 5 NEAR to `contract.bob.near`
+>    * deploy a contract in `contract.bob.near`
+> 2. The transaction is transformed into one receipt
+> 3. The account is created, but the transfer fails because `bob.near` does not have enough balance
+> 4. The whole process is reverted (i.e. no account is created)
+> 5. The transaction is marked as failed ⛔
+>
+> #### Example: Calling a Function
+>
+> 1. `bob.near` creates a transaction to call the function `cross-call` in `contract.near`
+> 2. The transaction is transformed into one receipt
+> 3. The function `cross-call` creates a promise to call the function `external-call` in `external.near`
+> 4. The function finishes correctly and the transaction is marked as successful ✅
+> 5. A new receipt is created to call the function `external-call` in `external.near`
+> 6. The function `external-call` fails
+> 7. The original transaction is still marked as successful ✅, because `cross-call` did not return the promise. If `cross-call` returned the promise, the transaction would be marked as failed ⛔
+
+> [!TIP]
+>
+> You can check the status of a transaction using the [NearBlocks explorer](https://nearblocks.io/)
+
+***
+
+## Nonce values
+
+The `nonce` is a number that is incremented for each transaction sent by the transaction's `Signer`.
+On a valid transaction, the `nonce` value should follow these rules:
+
+* When adding a key, the `nonce` is automatically assigned - particularly, it is given the value `block height * 10^6` - so the value in the `ADD_KEY` action is ignored
+* A transaction is accepted only if the `nonce` value is in the range of:
+  * `[(current_nonce_of_access_key + 1) .. (block_height * 10^6)]`
+* Once a transaction is accepted, the access key's `nonce` is set to the `nonce` value of the included transaction
+* [Gas keys](https://docs.near.org/protocol/accounts-contracts/gas-keys.md) hold one nonce per lane (up to 1,024 lanes); a transaction signed with a gas key selects a lane with its `nonce_index`, and the rules above apply to that lane's nonce independently of all other lanes
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

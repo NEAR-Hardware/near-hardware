@@ -1,0 +1,147 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Access Keys
+
+> NEAR has a rich access key system, allowing fine-grained control over accounts
+
+In NEAR, accounts can **hold multiple keys**, each key has its own **set of permissions** and specific **signature schemes** to sign transactions. Keys can be **added** or **removed** as needed, allowing flexible and secure account management.
+
+![Access keys](https://mintcdn.com/neardocs/qO2GD-gji1aakHqN/assets/docs/welcome-pages/access-keys.png?fit=max\&auto=format\&n=qO2GD-gji1aakHqN\&q=85\&s=2ca49b124b0181cfb180d23fe6946abd)
+
+NEAR distinguishes two types of permissions for access keys: **Function Call keys** can only sign transactions calling a specific contract, while **Full Access keys** have unrestricted control over the account.
+
+Meanwhile, the protocol supports **multiple types of signature schemes**, allowing it to be compatible with a variety of other ecosystems and cryptographic standards.
+
+> [!TIP]
+>
+> Applications that need to send many transactions in parallel would benefit from using [gas keys](https://docs.near.org/protocol/accounts-contracts/gas-keys.md) as they provide a prepaid gas balance and independent nonce lanes.
+
+***
+
+## Function-Call Keys
+
+`Function-Call` keys can only sign transactions calling a **specific contract**, and do **not allow** to **attach NEAR tokens** to the call.
+
+They are defined by three attributes:
+
+1. `receiver_id`: The **only contract** which the key allows to call, no other contract can be called with this key
+2. `method_names` (Optional): The contract's **methods** the key allows to call. If omitted, all contract's methods can be called
+3. `allowance` (Optional): The **amount of NEAR** allowed to be spent on [gas](https://docs.near.org/protocol/transactions/gas.md). If omitted, the key can consume **unlimited** gas
+
+`Function Call Keys` are meant to be shared with applications, so third-parties can make contract calls in your name. This is useful in multiple scenarios as we will see below.
+
+> [!TIP]
+>
+> `Function-Call` keys are secure to share, as they only permit calls to a specific contract and prohibit NEAR token transfers
+
+***
+
+## Full-Access Keys
+
+As the name suggests, `Full-Access` keys have full control of an account, meaning they can be used to sign [transactions](https://docs.near.org/protocol/transactions.md) doing any action in your account's behalf:
+
+1. Transfer NEAR Ⓝ
+2. Delete your account or create sub-accounts of it
+3. Add or remove Access Keys
+4. Deploy a smart contract in the account
+5. Call methods on any contract
+
+You should never share your `Full-Access`, otherwise you are giving **total control over the account**.
+
+> [!TIP]
+>
+> [Implicit accounts](https://docs.near.org/protocol/accounts-contracts/account-id.md#implicit-address) already have a `Full-Access Key` by default, while for [`named accounts`](./account-id#named-address) their first `Full-Access Key` is added on creation
+
+***
+
+## Signature Schemes
+
+Independently of its permission level, every access key is a cryptographic key pair belonging to one of NEAR's supported **signature schemes**. A public key is written as `<scheme>:<base58-data>`, where the prefix identifies the scheme — for example `ed25519:CQLP1o1F3Jbdttek3GoRJYhzfT...`.
+
+| Scheme | Public key prefix | Public key size | Quantum-resistant |
+| - | - | - | - |
+| Ed25519 | `ed25519:` | 32 bytes | No |
+| secp256k1 | `secp256k1:` | 64 bytes | No |
+| ML-DSA-65 | `ml-dsa-65:` | 1952 bytes | Yes |
+
+`ed25519` is the most used scheme in NEAR wallets and tooling, since it can be used to derive [implicit accounts](https://docs.near.org/protocol/accounts-contracts/account-id.md#implicit-address).
+
+`secp256k1` is used mainly for [chain signatures](https://docs.near.org/chain-abstraction/chain-signatures.md) and Ethereum-compatible flows.
+
+`ml-dsa-65` is a **post-quantum** signature scheme, standardized by NIST as [FIPS 204](https://csrc.nist.gov/pubs/fips/204/final). It is designed to resist attacks from quantum computers, which - if sufficiently powerful - could derive private keys from `ed25519` or `secp256k1` public keys.
+
+> [!TIP]
+>
+> All NEAR accounts can hold multiple keys from different schemes at the same time, allowing for a mix of classical and post-quantum keys if desired.
+
+> [accordion] 🧑‍💻 Technical: How post-quantum keys are stored
+>
+> An `ml-dsa-65` public key is large — **1952 bytes**, versus 32 for `ed25519` — and its signatures are **3309 bytes**. To keep accounts cheap to store, NEAR does **not** keep the full public key on-chain; instead it stores a 32-byte [SHA3-256](https://en.wikipedia.org/wiki/SHA-3) hash of it — the same size as an `ed25519` public key — which keeps the per-key [storage cost](https://docs.near.org/protocol/storage/storage-staking.md) close to that of a classical key.
+>
+> Because only the hash is stored, listing an account's keys returns the **hash**, not the full key, for `ml-dsa-65` entries. When you query an account's keys (for example with [`view_access_key_list`](https://docs.near.org/api/rpc/contracts#view-access-key-list)), `ml-dsa-65` keys appear with an `ml-dsa-65-hash:` prefix instead of `ml-dsa-65:`:
+>
+> ```text theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> ml-dsa-65-hash:7Xx2X...   # base58-encoded 32-byte SHA3-256 digest
+> ```
+>
+> To recognize one of your own post-quantum keys in such a list, derive the same handle from your public key: it is the [SHA3-256](https://en.wikipedia.org/wiki/SHA-3) hash of the domain-separation tag `near:ml-dsa-65-pubkey-hash:v1` **followed by** the raw 1952-byte public key. Hashing the key without that prefix will not match the returned value. To look up a specific key directly with [`view_access_key`](https://docs.near.org/api/rpc/contracts#view-access-key), pass the **full** `ml-dsa-65:` public key and the network hashes it for you.
+
+***
+
+## Limited Access Key Caveats
+
+Function-call keys restrict what applications can do, but relying on them alone can leave an account unable to manage its keys or assets.
+
+### Using Only Function-Call Keys
+
+If an account has **no full-access keys** and only function-call keys, it becomes effectively restricted:
+
+* It **cannot** transfer NEAR, delete itself, or manage its own keys
+* It can **only** perform the specific contract calls defined by the key's `receiver_id` and `method_names`
+
+This is useful for creating restricted sub-accounts (e.g. for [chain signatures](https://docs.near.org/chain-abstraction/chain-signatures.md)), but be aware the account cannot be recovered or reconfigured through standard transactions.
+
+> [!WARNING]
+>
+> Creating a sub-account with only a single function-call key means that account will **never** be able to remove itself, transfer NEAR out, or add new keys — unless the target contract provides a method to do so.
+
+### Allowance Exhaustion
+
+The `allowance` field defines how much NEAR the key can spend on gas fees:
+
+* If set to a specific amount and fully consumed → the key becomes **unusable** and no new transactions can be signed
+* If omitted (`null`) → **unlimited** allowance (the key has no gas budget restriction)
+* If set to `0` in an `AddKey` action → a zero budget, so every transaction signed with the key fails with `NotEnoughAllowance`
+
+> [!WARNING]
+>
+> There is one exception. When a contract adds a key with the `promise_batch_action_add_key_with_function_call` host function, an allowance of `0` means unlimited.
+
+The allowance is charged at the [buy price](https://docs.near.org/protocol/transactions/gas.md#buying-vs-burning-gas) and credited back when the gas refund arrives, so a key needs more allowance than the final transaction cost.
+
+> [!WARNING]
+>
+> If an account has only function-call keys and their allowance runs out, the account cannot sign any more transactions. Adding NEAR to the account does not help, because the allowance belongs to the key, not to the account balance. To avoid this, leave the allowance unset so it is unlimited. The allowance of an existing key cannot be changed. To get a new allowance, add a new key. To add a key, you need a full access key, or a method in the account's own contract that adds keys.
+
+***
+
+## Locked Accounts
+
+If you remove all keys from an account, then the account will become **locked**, meaning that no external actor can perform transactions in the account's name.
+
+In practice, this means that only the account's smart contract can transfer assets, create sub-accounts, or update its code.
+
+Locking an account is very useful when one wants to deploy a contract, and let the community be assured that only the contract is in control of the account.
+
+> [!TIP]
+>
+> To lock an implicit account, remove all its keys, including the `ed25519` key from which its address is derived.
+
+> [!WARNING]
+>
+> A locked account can still add keys to itself if its contract provides a method to do so. This is only possible if the contract was deployed before the account was locked.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

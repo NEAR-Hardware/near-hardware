@@ -6,12 +6,24 @@ import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import mcpScript from '../../../resources/near-hardware-mcp.mjs?asset'
+import { readFile } from 'node:fs/promises'
+import nearAccountsSkill from '../../../resources/skills/near-accounts/SKILL.md?asset'
+import nearAgentMarketSkill from '../../../resources/skills/near-agent-market/SKILL.md?asset'
+import nearAiSkill from '../../../resources/skills/near-ai/SKILL.md?asset'
+import nearChainSignaturesSkill from '../../../resources/skills/near-chain-signatures/SKILL.md?asset'
+import nearContractsSkill from '../../../resources/skills/near-contracts/SKILL.md?asset'
+import nearDevicesSkill from '../../../resources/skills/near-devices/SKILL.md?asset'
+import nearIntentsSkill from '../../../resources/skills/near-intents/SKILL.md?asset'
+import nearIronclawSkill from '../../../resources/skills/near-ironclaw/SKILL.md?asset'
+import nearSubaccountsSkill from '../../../resources/skills/near-subaccounts/SKILL.md?asset'
+import nearWebAppsSkill from '../../../resources/skills/near-web-apps/SKILL.md?asset'
 import { broadcast } from '../broadcast'
+import { NEAR_TOOLS } from '../near/agentTools'
 import { getProject, updateChat, updateProjectBoard } from '../projects'
 import { closePort, listDevices, readPort, writePort } from './serial'
 
-type ToolContext = { projectId: string; chatId: string }
-type ToolDefinition = {
+export type ToolContext = { projectId: string; chatId: string }
+export type ToolDefinition = {
   name: string
   description: string
   inputSchema: object
@@ -24,7 +36,74 @@ const LINE_ENDINGS: Record<string, string> = { none: '', lf: '\n', crlf: '\r\n',
 const capped = (text: string, max = 8000): string =>
   text.length > max ? `${text.slice(-max)}\n(showing the last ${max} characters)` : text
 
+// NEAR Hardware's skills: playbooks agents read with read_skill before the work
+const SKILLS: Record<string, { file: string; about: string }> = {
+  'near-accounts': {
+    file: nearAccountsSkill,
+    about: 'use the user’s NEAR accounts: balances, transfers, contract calls, approvals'
+  },
+  'near-subaccounts': {
+    file: nearSubaccountsSkill,
+    about: 'create sub.alice.near accounts with full access or limited to one contract'
+  },
+  'near-contracts': {
+    file: nearContractsSkill,
+    about: 'write, build and deploy a Rust contract, then test it'
+  },
+  'near-web-apps': {
+    file: nearWebAppsSkill,
+    about: 'a website for a contract: NEAR Connect wallet login, view and change calls, publishing'
+  },
+  'near-chain-signatures': {
+    file: nearChainSignaturesSkill,
+    about:
+      'control Bitcoin, Ethereum and other chains’ addresses from a NEAR account with the MPC signer'
+  },
+  'near-intents': {
+    file: nearIntentsSkill,
+    about: 'cross-chain swaps and payments with NEAR Intents and the 1Click API (mainnet only)'
+  },
+  'near-ai': {
+    file: nearAiSkill,
+    about:
+      'NEAR AI Cloud: private, verifiable AI inference (OpenAI-compatible API) for projects and boards'
+  },
+  'near-ironclaw': {
+    file: nearIronclawSkill,
+    about:
+      'IronClaw: run an always-on agent in a secure enclave that keeps credentials from the model'
+  },
+  'near-agent-market': {
+    file: nearAgentMarketSkill,
+    about:
+      'Agent Market: agents and boards sell work or data and get paid in USDC, or hire other agents'
+  },
+  'near-devices': {
+    file: nearDevicesSkill,
+    about: 'NEAR on a board: read the chain, on-chip keys, limited board accounts, avatars'
+  }
+}
+
 const TOOLS: ToolDefinition[] = [
+  {
+    name: 'read_skill',
+    description: `Read one of NEAR Hardware’s skills: step-by-step playbooks for NEAR work. Read the matching skill before doing that kind of task. ${Object.entries(
+      SKILLS
+    )
+      .map(([name, { about }]) => `${name}: ${about}.`)
+      .join(' ')}`,
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string', enum: Object.keys(SKILLS) } },
+      required: ['name']
+    },
+    run: async ({ name }) => {
+      const skill = SKILLS[String(name)]
+      if (!skill)
+        throw new Error(`No skill named ${String(name)}. Skills: ${Object.keys(SKILLS).join(', ')}`)
+      return readFile(skill.file.replace('app.asar', 'app.asar.unpacked'), 'utf8')
+    }
+  },
   {
     name: 'set_chat_title',
     description:
@@ -163,7 +242,8 @@ const TOOLS: ToolDefinition[] = [
       closePort(port)
       return `Closed ${port}.`
     }
-  }
+  },
+  ...NEAR_TOOLS
 ]
 
 export function startBridge(): Promise<void> {

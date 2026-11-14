@@ -9,11 +9,25 @@ import {
   Plus,
   Search
 } from 'lucide-react'
+import {
+  NETWORK_LABEL,
+  NEAR_NETWORKS,
+  accountKey,
+  formatNear,
+  shortAccountId,
+  type NearAccount
+} from '../../../shared/near'
 import type { Chat, Project } from '../../../shared/projects'
 import { formatRelativeTime } from '../format'
+import { useNearAccounts } from '../hooks/useNearAccounts'
 import type { View } from '../view'
 import AgentIcon from './AgentIcon'
+import AccountAvatar from './near/AccountAvatar'
+import { showAccountMenu } from './near/accountMenu'
+import type { AccountsIntent } from './near/AccountsView'
+import NearMark from './near/NearMark'
 import './Sidebar.css'
+import './near/Near.css'
 
 const ICON_SIZE = 16
 const ICON_STROKE = 1.5
@@ -21,13 +35,24 @@ const ICON_STROKE = 1.5
 type SidebarHeaderProps = {
   open: boolean
   onToggle: () => void
+  canGoBack: boolean
+  canGoForward: boolean
+  onBack: () => void
+  onForward: () => void
 }
 
 // Separate from the sidebar so the controls stay put when it collapses.
 // Render it after every other drag region: Electron resolves overlapping
 // app-regions by DOM order, not z-index, so a later drag strip would swallow
 // clicks on these buttons.
-export function SidebarHeader({ open, onToggle }: SidebarHeaderProps): React.JSX.Element {
+export function SidebarHeader({
+  open,
+  onToggle,
+  canGoBack,
+  canGoForward,
+  onBack,
+  onForward
+}: SidebarHeaderProps): React.JSX.Element {
   return (
     <div className="sidebar-header">
       <button
@@ -43,10 +68,22 @@ export function SidebarHeader({ open, onToggle }: SidebarHeaderProps): React.JSX
         <Search size={ICON_SIZE} strokeWidth={ICON_STROKE} />
       </button>
       <div className="sidebar-header-spacer" />
-      <button className="icon-button" aria-label="Back" title="Back" disabled>
+      <button
+        className="icon-button"
+        aria-label="Back"
+        title="Back (⌘[)"
+        disabled={!canGoBack}
+        onClick={onBack}
+      >
         <ArrowLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} />
       </button>
-      <button className="icon-button" aria-label="Forward" title="Forward" disabled>
+      <button
+        className="icon-button"
+        aria-label="Forward"
+        title="Forward (⌘])"
+        disabled={!canGoForward}
+        onClick={onForward}
+      >
         <ArrowRight size={ICON_SIZE} strokeWidth={ICON_STROKE} />
       </button>
     </div>
@@ -59,6 +96,7 @@ type SidebarProps = {
   projects: Project[]
   now: number
   onNavigate: (view: View) => void
+  onOpenAccounts: (intent?: Omit<AccountsIntent, 'key'>) => void
   onNewProject: () => void
   onProjectMenu: (project: Project) => void
   onChatMenu: (project: Project, chat: Chat) => void
@@ -70,6 +108,7 @@ function Sidebar({
   projects,
   now,
   onNavigate,
+  onOpenAccounts,
   onNewProject,
   onProjectMenu,
   onChatMenu
@@ -119,8 +158,126 @@ function Sidebar({
             </div>
           </section>
         </div>
+        <NearAccountsSection onOpenAccounts={onOpenAccounts} />
       </div>
     </aside>
+  )
+}
+
+// Each network's primary account, pinned at the bottom. Clicking one shows it
+// on the accounts page; ⋯ (or a right-click) has its actions; + adds an account
+function NearAccountsSection({
+  onOpenAccounts
+}: {
+  onOpenAccounts: (intent?: Omit<AccountsIntent, 'key'>) => void
+}): React.JSX.Element {
+  const { data, balances, primary } = useNearAccounts()
+  const others = data ? data.accounts.length - NEAR_NETWORKS.filter((n) => primary(n)).length : 0
+
+  const showAddMenu = async (): Promise<void> => {
+    const choice = await window.api.showMenu([
+      { id: 'create', label: 'Create Testnet Account' },
+      { id: 'import-mainnet', label: 'Import Mainnet Account…' },
+      { id: 'import-testnet', label: 'Import Testnet Account…' },
+      { type: 'separator' },
+      { id: 'all', label: 'All NEAR Accounts' }
+    ])
+    if (choice === 'create') onOpenAccounts({ add: { network: 'testnet', mode: 'create' } })
+    if (choice === 'import-mainnet') onOpenAccounts({ add: { network: 'mainnet', mode: 'import' } })
+    if (choice === 'import-testnet') onOpenAccounts({ add: { network: 'testnet', mode: 'import' } })
+    if (choice === 'all') onOpenAccounts()
+  }
+
+  const showMenu = async (account: NearAccount): Promise<void> => {
+    const choice = await showAccountMenu(account, true, [
+      { id: 'open', label: 'Show in NEAR Accounts' }
+    ])
+    if (choice === 'open') onOpenAccounts({ focus: accountKey(account.network, account.accountId) })
+  }
+
+  return (
+    <section className="sidebar-near" aria-label="NEAR accounts">
+      <div className="sidebar-section-header">
+        <button className="sidebar-section-link" onClick={() => onOpenAccounts()}>
+          NEAR accounts
+        </button>
+        <button
+          className="icon-button small"
+          aria-label="Add a NEAR account"
+          title="Add a NEAR account"
+          onClick={showAddMenu}
+        >
+          <Plus size={14} strokeWidth={ICON_STROKE} />
+        </button>
+      </div>
+      <div className="sidebar-near-list">
+        {data &&
+          NEAR_NETWORKS.map((network) => {
+            const account = primary(network)
+            if (!account) {
+              return (
+                <button
+                  key={network}
+                  className="nav-item empty"
+                  onClick={() =>
+                    onOpenAccounts({
+                      add: { network, mode: network === 'testnet' ? 'create' : 'import' }
+                    })
+                  }
+                >
+                  <NearMark size={ICON_SIZE} />
+                  <span className="nav-item-label">
+                    {network === 'testnet' ? 'Create account' : 'Add account'}
+                  </span>
+                  <span className={`near-network-tag ${network}`}>{NETWORK_LABEL[network]}</span>
+                </button>
+              )
+            }
+            const balance = balances[accountKey(network, account.accountId)]
+            return (
+              <div
+                key={network}
+                className="nav-row"
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  showMenu(account)
+                }}
+              >
+                <button
+                  className="nav-item"
+                  title={`${account.accountId}${balance ? ` · ${formatNear(balance.total)} NEAR` : ''}`}
+                  onClick={() => onOpenAccounts({ focus: accountKey(network, account.accountId) })}
+                >
+                  <AccountAvatar
+                    accountId={account.accountId}
+                    variant={account.avatarVariant}
+                    size={18}
+                  />
+                  <span className="nav-item-label">{shortAccountId(account.accountId)}</span>
+                  <span className={`near-network-tag ${network}`}>{NETWORK_LABEL[network]}</span>
+                </button>
+                <div className="nav-row-actions">
+                  <button
+                    className="icon-button small"
+                    aria-label={`More actions for ${account.accountId}`}
+                    title="More actions"
+                    onClick={() => showMenu(account)}
+                  >
+                    <Ellipsis size={14} strokeWidth={ICON_STROKE} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        {others > 0 && (
+          <button className="nav-item near-more" onClick={() => onOpenAccounts()}>
+            <span className="nav-item-label">
+              {others} more account{others === 1 ? '' : 's'}
+            </span>
+          </button>
+        )}
+      </div>
+    </section>
   )
 }
 

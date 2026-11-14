@@ -1,0 +1,205 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.ironclaw.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# WASM Tools
+
+> Sandboxed tool execution via WebAssembly (wasmtime)
+
+WASM tools run inside a WebAssembly sandbox powered by [wasmtime](https://wasmtime.dev/). They have access to IronClaw's host functions (logging, time, workspace), but all other capabilities — network, filesystem, credentials — must be explicitly declared in a `capabilities.json` file.
+
+This is IronClaw's recommended approach for custom integrations that need stronger isolation than a built-in Rust tool provides.
+
+***
+
+## How It Works
+
+```
+LLM selects tool
+    ↓
+IronClaw loads WASM module (from cache or disk)
+    ↓
+Tool executes inside wasmtime sandbox
+    ↓
+Network requests route through the network proxy
+    ↓
+Proxy validates domain against allowlist
+    ↓
+Proxy injects credentials from encrypted store
+    ↓
+Response returns to WASM module
+    ↓
+Tool output passes through Safety Layer
+    ↓
+LLM receives sanitized result
+```
+
+***
+
+## Sandbox Architecture
+
+### Fuel Metering
+
+Every WASM instruction consumes "fuel." When a module runs out of fuel, it is terminated immediately. This prevents infinite loops and runaway computation.
+
+```bash theme={null}
+# Configure fuel limit (default: 100,000,000 instructions)
+export WASM_FUEL_LIMIT=100000000
+```
+
+### Memory Limits
+
+WASM modules are allocated a fixed linear memory. Attempting to allocate beyond the limit traps and terminates the module.
+
+```bash theme={null}
+# Configure memory limit (default: 16 MB)
+export WASM_MEMORY_LIMIT=16777216
+```
+
+### Rate Limiting
+
+Each WASM tool has a per-tool rate limiter to prevent a misbehaving or compromised tool from making excessive API calls.
+
+Rate limits are declared in `capabilities.json`:
+
+```json theme={null}
+{
+  "rate_limit": {
+    "requests_per_minute": 60,
+    "requests_per_day": 1000
+  }
+}
+```
+
+***
+
+## capabilities.json
+
+Every WASM tool must include a `capabilities.json` alongside its `.wasm` binary. This file is the single source of truth for what the tool is allowed to do.
+
+```json theme={null}
+{
+  "name": "my-tool",
+  "version": "0.1.0",
+  "description": "Fetches data from example.com API",
+
+  "network": {
+    "allowed_hosts": [
+      "api.example.com",
+      "auth.example.com"
+    ]
+  },
+
+  "filesystem": {
+    "read": ["/workspace/data/*"],
+    "write": ["/workspace/output/*"]
+  },
+
+  "credentials": [
+    {
+      "name": "example_api_key",
+      "inject_as": "Authorization",
+      "format": "Bearer {value}"
+    }
+  ],
+
+  "rate_limit": {
+    "requests_per_minute": 30,
+    "requests_per_day": 500
+  }
+}
+```
+
+### Network allowlist
+
+The `network.allowed_hosts` list controls which domains the tool can reach. Requests to any domain not in this list are rejected by the network proxy before the TCP connection is established.
+
+HTTPS traffic uses the `CONNECT` tunnel method. The proxy validates the target hostname against the allowlist before establishing the tunnel.
+
+### Filesystem access
+
+WASM tools cannot access the host filesystem by default. Paths declared under `filesystem.read` and `filesystem.write` are mounted into the WASM module's sandbox at the declared paths.
+
+### Credential injection
+
+Credentials listed in `capabilities.json` are never passed into the WASM module's memory. Instead, when the module makes an outbound HTTP request, the proxy intercepts the request and injects the specified header before forwarding it.
+
+The WASM module never sees the raw credential value — it only makes an unauthenticated HTTP request, and the proxy adds the auth header transparently.
+
+***
+
+## Host Functions
+
+WASM modules can call the following host functions provided by IronClaw:
+
+| Function | Description |
+| - | - |
+| `log(level, message)` | Write to the IronClaw log at the given severity level |
+| `now_unix_secs()` | Return the current Unix timestamp |
+| `workspace_read(path)` | Read a document from the workspace |
+| `workspace_write(path, content)` | Write a document to the workspace |
+
+These are the only host capabilities available. A WASM tool cannot call arbitrary OS functions, fork processes, or access the network directly — all network access goes through the proxy.
+
+***
+
+## Tool Discovery
+
+Tools reach the agent as **extension packages**. Each package is a directory under the
+runtime's `/system/extensions/<extension-id>/` root containing a `manifest.toml` that
+declares the tools it provides, alongside the compiled `.wasm` module.
+
+`ironclaw extension search` lists the packages the runtime can see.
+
+***
+
+## Installing WASM Tools
+
+```bash theme={null}
+# Find an available package
+ironclaw extension search my-tool
+
+# List every package the install knows about
+ironclaw extension search
+
+# Install one by id
+ironclaw extension install my-tool
+```
+
+`extension install` takes an **extension id** from `extension search` — never a file path
+or a URL. Passing `./my-tool.wasm` or an `https://` URL fails.
+
+To add a package you built yourself, import the packaged archive from **Extensions** in
+the [web interface](https://docs.ironclaw.com/using/webui.md). That is the supported path for getting a new package
+into the runtime; once it's there, `extension search` lists it and you install it by id.
+
+***
+
+## Module Compilation and Caching
+
+WASM modules are compiled by wasmtime on first load and cached. Subsequent loads use the compiled artifact, so only the first invocation of a new tool incurs compilation overhead.
+
+The cache is stored at `~/.ironclaw/wasm-cache/`.
+
+***
+
+## Security Notes
+
+> [!WARNING]
+>
+> Review `capabilities.json` before installing any WASM tool from an untrusted source. The capability file determines exactly what the tool can access — network hosts, filesystem paths, and which credentials are injected.
+
+> [accordion] Credential injection is one-way
+>
+> The proxy injects credentials into outgoing requests. There is no mechanism for a WASM module to read stored secrets directly. Even if a WASM module is compromised, it cannot access the secrets store.
+
+> [accordion] No process spawning
+>
+> WASM modules cannot spawn child processes, execute shell commands, or load dynamic libraries. The WASI interface exposed to modules is minimal.
+
+> [accordion] Fuel prevents denial-of-service
+>
+> A buggy or malicious WASM tool that enters an infinite loop will be terminated when it exhausts its fuel allocation. This prevents a single tool from blocking the agent indefinitely.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

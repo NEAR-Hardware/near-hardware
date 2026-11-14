@@ -1,0 +1,125 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.ironclaw.com/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# GitHub
+
+> Let your agent access GitHub
+
+The GitHub extension allows your agent to interact with GitHub repositories, issues, pull requests, and more, making it ideal for automating code-related tasks, managing projects, or gathering information from GitHub.
+
+***
+
+## Setup
+
+**1. Install the GitHub Extension**
+
+To install the GitHub extension, run:
+
+```bash theme={null}
+ironclaw extension install github
+```
+
+**2. Configure Browser OAuth (Preferred)**
+
+Create a GitHub OAuth app at [github.com/settings/apps](https://github.com/settings/apps)
+and set its callback URL to the IronClaw OAuth callback URL your gateway uses.
+
+Then supply the app credentials through the GitHub extension's setup flow under
+**Extensions** in the [web interface](https://docs.ironclaw.com/using/webui.md). They are stored in the encrypted
+secret store.
+
+Now authenticate:
+
+```bash theme={null}
+ironclaw extension activate github
+```
+
+Complete the GitHub OAuth flow from **Extensions** in the [web interface](https://docs.ironclaw.com/using/webui.md). The resulting token is stored encrypted.
+
+**3. Configure a PAT (Fallback)**
+
+If you do not want to run a GitHub OAuth app, you can still use a Personal Access Token.
+Supply it in the GitHub extension's setup flow under **Extensions** in the
+[web interface](https://docs.ironclaw.com/using/webui.md) instead of the OAuth sign-in. It is stored in the encrypted
+secret store.
+
+> [!WARNING]
+>
+> Be sure to create a fine-grained personal access token with only the necessary permissions for your use case. When in doubt, choose the least permissive options, you can always create new tokens with different permissions later on
+
+***
+
+## Available Actions:
+
+Here are some of the actions your agent can perform with the GitHub extension:
+
+* `get_repo`: Retrieve repository information
+* `list_issues`: List all issues in a repository
+* `create_issue`: Create a new issue
+* `get_issue`: Get details of a specific issue
+* `update_issue`: Update issue fields, labels, and assignees
+* `list_issue_comments`: List comments on an issue
+* `create_issue_comment`: Add a comment to an issue
+* `add_issue_labels` / `remove_issue_label`: Add or remove issue labels
+* `add_issue_assignees` / `remove_issue_assignees`: Add or remove issue assignees
+* `list_pull_requests`: List pull requests
+* `create_pull_request`: Create a new pull request
+* `get_pull_request`: Get details of a specific pull request
+* `get_pull_request_files`: Get the list of files in a pull request
+* `create_pr_review`: Submit a pull request review
+* `list_pull_request_comments`: List review comments on a pull request
+* `list_pull_request_review_threads`: List inline review threads on a pull request
+* `reply_pull_request_comment`: Reply to a pull request review comment
+* `get_pull_request_reviews`: Get reviews for a pull request
+* `update_pull_request`: Update pull request metadata
+* `resolve_review_thread` / `unresolve_review_thread`: Change inline review thread state
+* `get_combined_status`: Get the combined status for a ref
+* `merge_pull_request`: Merge a pull request
+* `get_authenticated_user`: Get the authenticated GitHub user
+* `list_repos`: List authenticated repositories
+* `get_file_content`: Retrieve the content of a file in the repo
+* `trigger_workflow`: Manually trigger a GitHub Actions workflow
+* `get_workflow_runs`: List recent workflow runs
+* `get_workflow_run_jobs`: List jobs for a workflow run
+* `get_workflow_run_artifacts`: List artifacts for a workflow run
+* `rerun_failed_workflow_run_jobs` / `rerun_workflow_job`: Rerun GitHub Actions jobs
+* `handle_webhook`: Handle a GitHub webhook payload
+
+Several list actions accept richer filters, including pull request branch/sort filters, issue search filters, review-thread pagination, and workflow run filters.
+
+***
+
+## Working on Public Repositories
+
+Lets configure our agent to have its own github account, which it can use to create issues and comment on PRs in **public repositories**.
+
+**1. Create a new GitHub account**
+
+Go to [https://github.com](https://github.com) and create a new account for your agent. If you are already logged in with your personal account you will need to briefly log out to create the new account, but you can log back in right after
+
+**2. Generate a Personal Access Token**
+
+On the agent's GitHub account, go to [Settings -> Developer settings -> Personal access tokens -> Tokens (classic)](https://github.com/settings/tokens) and generate a new token (classic) with the following permissions: `repo` -> `public_repo`
+
+**3. Authenticate the GitHub Extension**
+
+Now that you have either OAuth app credentials or a PAT, authenticate the GitHub extension:
+
+```bash theme={null}
+ironclaw extension activate github
+```
+
+If you configured OAuth app credentials in the extension's setup flow, IronClaw uses
+browser OAuth. Otherwise it falls back to a Personal Access Token.
+
+**4. Test it out!**
+
+Ask your agent to create a test issue in one of your public repositories, and check if the issue was created successfully.
+
+> [!TIP]
+>
+> Ask your agent to read the [GitHub Markdown Guidelines](https://github.com/adam-p/markdown-here/wiki/markdown-cheatsheet) and remember them when creating issues and comments, it can make the formatting much nicer!
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

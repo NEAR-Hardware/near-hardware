@@ -1,0 +1,32 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Data Services
+
+> Indexers are constantly listening for transactions and storing them so they can be easily queried.
+
+Data Services are constantly listening to the blockchain, processing the transactions and storing them in a database that can be easily queried. You can use them to access blockchain data efficiently:
+
+* [Neardata](https://docs.fastnear.com/neardata): block data delivered over HTTP for your custom indexer.
+
+* [BigQuery](https://docs.near.org/data-infrastructure/big-query.md): Blockchain data indexing in NEAR Public Lakehouse is for anyone wanting to understand blockchain data.
+
+* [Indexer.xyz Multichain Indexer](https://indexer.xyz/): Indexer.xyz is an application layer that you can build your NFT or DeFi applications entirely on top of. In addition to raw transaction indexing, Indexer.xyz provides you with a standardized GraphQL API layer to easily tap into transactions across contracts and chains.
+
+* [The Graph](https://thegraph.com/docs/en/cookbook/near/): development tools to process blockchain events and make the resulting data easily available via a GraphQL API, known individually as a subgraph. [Graph Node](https://github.com/graphprotocol/graph-node) is able to process NEAR events, which means that NEAR developers can build subgraphs to index their smart contracts.
+
+* [GetBlock](https://getblock.io/explorers/near/blocks/): developer tools offering a simple and reliable API access for historical data streams and other services for NEAR.
+
+* [Community APIs](https://docs.near.org/data-infrastructure/data-api.md): build precise & reliable dApps with our community's APIs.
+
+* [Covalent](https://goldrush.dev/docs/networks/): for [Aurora EVM](https://aurora.dev/) indexing, Covalent provides a unified API bringing visibility to billions of Web3 data points.
+
+* [NEAR Indexer Framework](https://github.com/near/nearcore/tree/master/chain/indexer): a micro-framework providing you with a "live" stream of blocks. Useful to handle on-chain real-time `events`.
+
+* [SubQuery](https://academy.subquery.network/quickstart/quickstart_chains/near.html): is an end to end multi-blockchain indexing solution that provides NEAR developers with fast, flexible, universal, open source and decentralized APIs for web3 projects. The [NEAR starter project](https://github.com/subquery/near-subql-starter/tree/main/Near/near-starter) provides a template for developers to get up and running within minutes.
+
+* [GoldSky](https://docs.goldsky.com/chains/near): a hosted data platform that supports NEAR mainnet via **Mirror** (real-time data replication into your own infrastructure) and **Turbo** (high-performance streaming pipelines with sub-second latency). No infrastructure to manage — connect your data destination and start streaming on-chain data immediately.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,160 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Storage
+
+> Learn about NEAR Protocol's storage staking mechanism, including costs, storage pricing, attack prevention, and strategies for managing on-chain data storage.
+
+NEAR's storage staking is a mechanism that ensures the network remains efficient and secure by requiring smart contract owners to stake tokens based on the amount of data their contracts store. This helps maintain the integrity of the network while providing a predictable cost structure for developers.
+
+> When you deploy a smart contract to NEAR, you pay for the storage that this contract requires using a mechanism called storage staking.
+>
+> In storage staking (sometimes called *state* staking), the account that owns a smart contract must stake (or lock) tokens according to the amount of data stored in that smart contract, effectively reducing the balance of the contract's account.
+
+***
+
+## How does NEAR's design align incentives?
+
+Storage-staked tokens are unavailable for other uses, such as validation staking. This increases the yield that validators will receive. Learn more in [the economics whitepaper](https://pages.near.org/papers/economics-in-sharded-blockchain/).
+
+***
+
+## When do tokens get staked?
+
+On each incoming transaction that adds data.
+
+Let's walk through an example:
+
+1. You launch [a guest book app](https://github.com/near-examples/guest-book-examples), deploying your app's smart contract to the account `example.near`
+2. Visitors to your app can add messages to the guest book. This means your users will, [by default](https://docs.near.org/protocol/transactions/gas.md#understanding-gas-fees), pay a small gas fee to send their message to your contract.
+3. When such a call comes in, NEAR will check that `example.near` has a large enough balance that it can stake an amount to cover the new storage needs. If it does not, the transaction will fail.
+
+***
+
+## The "million cheap data additions" attack
+
+Note that this can create an attack surface. To continue the example above, if sending data to your guest book costs users close to nothing while costing the contract owner significantly more, then a malicious user can exploit the imbalance to make maintaining the contract prohibitively expensive.
+
+Take care, then, when designing your smart contracts to ensure that such attacks cost potential attackers more than it would be worth.
+
+***
+
+## btw, you can remove data to unstake some tokens
+
+People familiar with the "immutable data" narrative about blockchains find this surprising. While it's true that an *indexing node* will keep all data forever, *validating nodes* (that is, the nodes run by most validators in the network) do not. Smart contracts can provide ways to delete data, and this data will be purged from most nodes in the network within a few [epochs](https://docs.near.org/protocol/network/epoch.md).
+
+Note that a call to your smart contract to remove data has an associated gas fee. Given NEAR's gas limit, this creates an upper limit on how much data can be deleted in a single transaction.
+
+***
+
+## How much does it cost?
+
+Storage staking is priced in an amount set by the network, which is set to **1E19 yoctoNEAR per byte**, or **100kb per NEAR token (Ⓝ)**. <sup>[\[1\]](https://gov.near.org/t/storage-staking-price/399) [\[2\]](https://github.com/near/nearcore/pull/3881)</sup>
+
+NEAR's JSON RPC API provides [a way to query this initial setting](https://docs.near.org/api/rpc/protocol.md#genesis-config) as well as a [a way to query the live config / recent blocks](https://docs.near.org/api/rpc/protocol.md#protocol-config).
+
+> [!NOTE]
+>
+> An account can occupy up to `770` bytes without staking anything. That allowance is paid for once, with the fixed `0.007Ⓝ` charged when [creating the account](https://docs.near.org/protocol/transactions/gas.md#creating-an-account).
+
+***
+
+## Example cost breakdown
+
+Let's walk through an example.
+
+A [non-fungible token](https://github.com/near/NEPs/pull/4) is unique, which means each token has its own ID. The contract must store a mapping from token IDs to owners' account ID.
+
+If such an NFT is used to track **1 million** tokens, how much storage will be required for the token-ID-to-owner mapping? And how many tokens will need to be staked for that storage?
+
+Let's calculate the storage needs when using a `PersistentMap` that stores data as UTF-8 strings.
+
+Here's our `PersistentMap`:
+
+```ts theme={"theme":{"light":"github-light","dark":"github-dark"}}
+type AccountId = string;
+type TokenId = u64;
+const tokenToOwner = new PersistentMap<TokenId, AccountId>("t2o");
+```
+
+Behind the scenes, all data stored on the NEAR blockchain is saved in a key-value database. That `'t2o'` variable that's passed to `PersistentMap` helps it keep track of all its values. If your account `example.near` owns token with ID `0`, then at the time of writing, here's the data that would get saved to the key-value database:
+
+* key: `t2o::0`
+* value: `example.near`
+
+So for 1 million tokens, here are all the things we need to add up and multiply by 1 million:
+
+1. The prefix, `t2o`, will be serialized as three bytes in UTF-8, and the two colons will add another two. That's 5 bytes.
+2. For an implementation where `TokenId` auto-increments, the values will be between `0` and `999999`, which makes the average length 5 bytes.
+3. Let's assume well-formed NEAR `AccountId`s, and let's guess that NEAR Account IDs follow the approximate pattern of domain names, which [average about 10 characters](https://www.gaebler.com/Domain-Length-Research.htm), plus a top-level name like `.near`. So a reasonable average to expect might be about 15 characters; let's keep our estimate pessimistic and say 25. This will equal 25 bytes, since NEAR account IDs must use characters from the ASCII set.
+4. The protocol adds a fixed 40 bytes for every key-value record (the `storage_num_extra_bytes_record` parameter), on top of the key and value bytes.
+
+So:
+
+1\_000\_000 \* (5 + 5 + 25 + 40)
+
+That is 75 million bytes. At 1e19 yoctoNEAR per byte (1 NEAR per 100,000 bytes), the `tokenToOwner` mapping needs 7.5e26 yoctoNEAR, or Ⓝ750, kept on the account balance.
+
+Note that you can get this down to Ⓝ730 just by changing the prefix from `t2o` to a single character. Or get rid of it entirely! One collection in your contract can have a zero-length prefix. If this map had one, its keys would keep only the two colons, and you could get it down to Ⓝ720. The 40 bytes per record cannot be avoided, so fewer, larger records cost less than many small ones.
+
+***
+
+## Calculate costs for your own contract
+
+Doing manual byte math as shown above is difficult and error-prone. Good news: you don't have to!
+
+You can test the storage used using the [SDK environment](https://docs.near.org/smart-contracts/anatomy/environment.md) and checking `env.storage_usage()`
+
+***
+
+## Other ways to keep costs down
+
+Storing data on-chain isn't cheap for the people running the network, and NEAR passes on this cost to developers. So, how do you, as a developer, keep your costs down? There are three popular approaches:
+
+1. Don't store what you can index or derive
+2. Use a binary serialization format, rather than JSON
+3. Store data off-chain
+
+### Don't store what you can index or derive
+
+The cheapest data is the data you never store. Transactions already record every call to your contract, including its arguments and attached tokens, so data that your app only displays can be read back with an [indexer or data service](https://docs.near.org/data-infrastructure/what-is.md). Likewise, never store values you can compute from other stored values. See [A contract is not a backend](https://docs.near.org/smart-contracts/what-is.md#a-contract-is-not-a-backend).
+
+### Use a binary serialization format, rather than JSON
+
+The core NEAR team maintains a library called [borsh](https://borsh.io/),
+which is used automatically when you use `near-sdk-rs`.
+
+Imagine that you want to store an array like `[0, 1, 2, 3]`. You could serialize it as a JSON string and store it as UTF-8 bytes. Cutting out spaces, you end up using 9 bytes.
+
+Using borsh, this same array gets saved as 8 bytes:
+
+\u0004\u0000\u0000\u0000\u0000\u0001\u0002\u0003
+
+At first glance, saving 1 byte might not seem significant. But let's look closer.
+
+The first four bytes here, `\u0004\u0000\u0000\u0000`, tell the serializer that this is a `u32` array of length `4` using little-endian encoding. The rest of the bytes are the literal numbers of the array – `\u0000\u0001\u0002\u0003`. As you serialize more elements, each will add one byte to the data structure. With JSON, each new element requires adding two bytes, to represent both another comma and the number.
+
+In general, Borsh is faster, uses less storage, and costs less gas. Use it if you can.
+
+### Store data off-chain
+
+For large files or user-generated content, store the data off-chain and keep only a content identifier or hash in your contract. This keeps on-chain records small and storage costs predictable.
+
+You can use decentralized storage such as [IPFS](https://docs.ipfs.tech/), [Arweave](https://docs.arweave.org/), or [Crust](https://wiki.crust.network/). Follow the provider's documentation for uploading data and keeping it available.
+
+***
+
+## Summary
+
+NEAR's structure incentivizes network operators while giving flexibility and predictability to contract developers. Managing storage is an important aspect of smart contract design, and NEAR's libraries make it easy to figure out how much storage will cost for your application.
+
+***
+
+## Footnotes
+
+1. [Storage staking price](https://gov.near.org/t/storage-staking-price/399)
+2. [Lower storage cost 10x](https://github.com/near/nearcore/pull/3881)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,98 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Anatomy of a Transaction
+
+> Learn about the structure and components of NEAR Protocol transactions, including signers, receivers, actions, and transaction validation fields.
+
+This section explains the anatomy of a transaction in the NEAR Protocol, describing its structure, components, and the actions that can be performed within a transaction.
+
+A transaction is a request from a user to the network to perform a set of actions. To create a transaction, the user must specify the following fields:
+
+* `Signer`: the account that signs the transaction
+* `Actions`: the set of actions to be performed (see below)
+* `Receiver`: the account on which to perform the actions
+
+In addition, a transaction has the following fields to ensure its integrity and validity:
+
+* `PublicKey`: the public key used to sign the transaction (so the network can verify the signature)
+* `Nonce`: a number that is incremented for each transaction sent by the `Signer`
+* `BlockHash`: the hash of a recent block, to limit the time-validity of the transaction
+
+Users create transactions and sign them with their private keys. Then, the **transaction and its signature** are broadcast together to the network, where they are validated and processed.
+
+> [!TIP]
+>
+> Each transaction has exactly one `Signer` and `Receiver`, but can have multiple `Actions`.
+
+> [!NOTE]
+>
+> **About nonce values**
+>
+> * When adding a key, the `nonce` is automatically assigned - particularly, it is given the value `block height * 10^6` - so the value in the `ADD_KEY` action is ignored
+> * A transaction is accepted only if the `nonce` value is in the range of:
+>   * `[(current_nonce_of_access_key + 1) .. (block_height * 10^6)]`
+> * Once a transaction is accepted, the access key's `nonce` is set to the `nonce` value of the included transaction
+> * A transaction signed with a [gas key](https://docs.near.org/protocol/accounts-contracts/gas-keys.md) additionally specifies a `nonce_index` selecting one of the key's parallel nonce lanes; the same rules then apply to that lane's nonce independently
+
+***
+
+## Transaction limits
+
+A signed transaction must fit within both of these limits:
+
+| Limit | Maximum |
+| - | - |
+| Serialized size of the signed transaction | **1.5 MiB (1,572,864 bytes)** |
+| Total gas attached to all function-call actions in the transaction | **1 PGas (1,000 TGas)** |
+
+The size limit includes the entire signed transaction: account IDs, public key, nonce, block hash, actions (including function-call arguments or contract code), and signature. The space available for your payload is therefore smaller than 1.5 MiB. Nodes reject larger transactions with `TransactionSizeExceeded`.
+
+The size and [gas limits](https://docs.near.org/protocol/transactions/gas.md#gas-units) are separate: attaching more gas does not let you upload more bytes. To upload larger data, split it across transactions if your contract supports incremental uploads.
+
+These limits are configured by `max_transaction_size` and `max_total_prepaid_gas` in the [protocol configuration](https://docs.near.org/api/rpc/protocol.md#protocol-config).
+
+***
+
+## Actions
+
+Each transaction can have **one or multiple** [`Actions`](https://nomicon.io/RuntimeSpec/Actions.html), which are the actual operations to be performed on the `Receiver` account. There are different types of actions that can be performed:
+
+1. [`FunctionCall`](https://nomicon.io/RuntimeSpec/Actions.html#functioncallaction): to invoke a function on a contract (optionally attaching NEAR to the call)
+2. [`Transfer`](https://nomicon.io/RuntimeSpec/Actions.html#transferaction): to transfer tokens to another account
+3. [`DeployContract`](https://nomicon.io/RuntimeSpec/Actions.html#deploycontractaction): to deploy a contract in the account
+4. [`DeployGlobalContract`](https://nomicon.io/RuntimeSpec/Actions.html#deployglobalcontractaction): registers a global contract referenced by its contract hash or by its account ID
+5. [`UseGlobalContract`](https://nomicon.io/RuntimeSpec/Actions.html#useglobalcontractaction): uses a registered global contract by contract hash or account ID
+6. [`CreateAccount`](https://nomicon.io/RuntimeSpec/Actions.html#createaccountaction): to create a new sub-account (e.g. `ana.near` can create `sub.ana.near`)
+7. [`DeleteAccount`](https://nomicon.io/RuntimeSpec/Actions.html#deleteaccountaction): to delete the account (transferring the remaining balance to a beneficiary)
+8. [`AddKey`](https://nomicon.io/RuntimeSpec/Actions.html#addkeyaction): to add a new key to the account (either `FullAccess` or `FunctionCall` access, optionally as a [gas key](https://docs.near.org/protocol/accounts-contracts/gas-keys.md))
+9. [`DeleteKey`](https://nomicon.io/RuntimeSpec/Actions.html#deletekeyaction): to delete an existing key from the account
+10. [`TransferToGasKey`](https://docs.near.org/protocol/accounts-contracts/gas-keys): to fund a gas key's prepaid gas balance with NEAR
+11. [`WithdrawFromGasKey`](https://docs.near.org/protocol/accounts-contracts/gas-keys): to move NEAR from a gas key's balance back to the account
+12. [`DelegateActions`](https://nomicon.io/RuntimeSpec/Actions.html#delegate-actions): to create a [meta-transaction](https://docs.near.org/protocol/transactions/meta-tx.md) (`Delegate`). `DelegateV2`, which lets a gas key sign the delegate action, is rejected from protocol version 87
+13. [`Stake`](https://nomicon.io/RuntimeSpec/Actions.html#stakeaction): special action to express interest in becoming a network validator (its own `public_key` field — the validator's block-production key — [must stay `ed25519`](https://docs.near.org/protocol/network/validators#intro-to-validators), regardless of what key signed the transaction)
+14. [`DeterministicStateInit`](https://nomicon.io/RuntimeSpec/Actions.html#deterministicstateinitaction): special action to create a deterministic account (an advanced kind of implicit account)
+15. [`UniversalStateInit`](https://docs.near.org/protocol/tutorials/creating-universal-accounts): special action to create a [universal account](https://docs.near.org/protocol/accounts-contracts/account-id.md#universal-address), installing its code, storage, and access keys in one step
+
+> [!WARNING]
+>
+> Never use `DeleteAccount` as a replacement for `Transfer`. If the beneficiary does not exist, the remaining balance is burned. Transfer first, wait for finalized success and outstanding refunds, then delete the account if needed. See [safe account deletion](https://docs.near.org/protocol/network/token-loss.md#deleting-account-with-non-existent-beneficiary).
+
+For example, `bob.near` can bundle the following actions in a single transaction:
+
+* Create the account `contract.bob.near`
+* Transfer 5 NEAR to `contract.bob.near`
+* Deploy a contract in `contract.bob.near`
+* Call the function `init` in `contract.bob.near`
+
+The `Actions` are executed in the **order they are specified in the transaction**. If any of the **actions fails**, the transaction is discarded and none of the actions take effect.
+
+> [!WARNING]
+>
+> **One Receiver**
+>
+> Notice that all actions are performed on the same account. It is **not possible** to perform actions on multiple accounts in a single transaction, because transactions can have **only one receiver**
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

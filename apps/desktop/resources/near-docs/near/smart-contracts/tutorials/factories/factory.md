@@ -1,0 +1,186 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Factory
+
+> Learn how a factory creates fungible token contracts on sub-accounts using a global contract ID.
+
+A factory is a smart contract that creates sub-accounts and deploys contracts onto them. Our [factory example](https://github.com/near-examples/factory-rust) creates fungible tokens using a shared [global contract](https://docs.near.org/smart-contracts/global-contracts.md).
+
+The factory stores the account ID of the global FT implementation. Each new token account references that implementation and keeps its own owner, balance, and metadata in state.
+
+***
+
+## Overview
+
+The factory exposes two methods for creating tokens:
+
+1. `get_required` quotes the deposit needed for the token's initial storage.
+2. `create_token` creates a sub-account, attaches the global FT implementation, and initializes the token in one atomic batch.
+
+The factory is initialized with the account ID of the global contract it will use:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// Define the contract structure
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
+pub struct Contract {
+    pub global_contract_id: AccountId,
+}
+
+#[near]
+impl Contract {
+    /// Initialize with `ft.globals.primitives.near` on mainnet or
+    /// `ft.globals.primitives.testnet` on testnet.
+    #[init]
+    pub fn new(global_contract_id: AccountId) -> Self {
+        Self { global_contract_id }
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/factory-rust/blob/e1ee01abf93bf5a7e093e682f44d312a4a361e6f/src/lib.rs#L9-L24)
+
+The creation method transfers the attached deposit to the new account, references the global code, and calls the FT contract's `new` method:
+
+```rust title="deploy.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+    Promise::new(token_account_id.parse().unwrap())
+        .create_account()
+        .transfer(attached)
+        .use_global_contract_by_account_id(self.global_contract_id.clone())
+        .function_call(
+            "new".to_owned(),
+            init_args,
+            NO_DEPOSIT,
+            TGAS.saturating_mul(50),
+        )
+        .then(Promise::new(env::current_account_id()).function_call(
+            "create_callback".to_string(),
+            callback_args,
+            NearToken::from_near(0),
+            TGAS.saturating_mul(30),
+        ))
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/factory-rust/blob/e1ee01abf93bf5a7e093e682f44d312a4a361e6f/src/deploy.rs#L83-L99)
+
+***
+
+## Quickstart
+
+1. Make sure you have installed [Rust](https://www.rust-lang.org/).
+2. Install the [NEAR CLI](https://docs.near.org/tools/cli.md#installation).
+3. Install [cargo-near](https://github.com/near/cargo-near#installation).
+4. Clone the example and navigate to its directory:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+git clone https://github.com/near-examples/factory-rust.git
+cd factory-rust
+```
+
+### Build and Deploy the Factory
+
+Compile and deploy the factory to a funded account on testnet:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near build
+cargo near deploy
+```
+
+During deployment, initialize the factory by calling `new` with these arguments:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{"global_contract_id": "ft.globals.primitives.testnet"}
+```
+
+Use `ft.globals.primitives.near` for mainnet. The factory requires initialization before it can create tokens.
+
+### Prepare the Token Arguments
+
+Both `get_required` and `create_token` take an `args` object containing the owner, total supply, and token metadata. Save the following as `token-args.json`, replacing the owner with your account:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "args": {
+    "owner_id": "alice.testnet",
+    "total_supply": "100000000",
+    "metadata": {
+      "spec": "ft-1.0.0",
+      "name": "Example Token",
+      "symbol": "EXAMPLE",
+      "decimals": 6,
+      "icon": null,
+      "reference": null,
+      "reference_hash": null
+    }
+  }
+}
+```
+
+The supply is expressed in the token's smallest units. With six decimal places, `100000000` represents 100 tokens. The symbol determines the sub-account name: `EXAMPLE` creates `example.<factory-account>`. Symbols must contain only ASCII letters and digits, and the resulting account ID must be valid.
+
+### Quote the Deposit and Create the Token
+
+Call `get_required` with the arguments you saved:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-read-only <factory-account> get_required file-args token-args.json network-config testnet now
+```
+
+The result is a deposit in yoctoNEAR, encoded as a JSON string. Attach that amount when calling `create_token` with the same arguments:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction <factory-account> create_token file-args token-args.json prepaid-gas '300 Tgas' attached-deposit '<quoted-deposit> yoctoNEAR' sign-as <your-account> network-config testnet sign-with-keychain send
+```
+
+The new token account is initialized in the same batch that creates it, and the owner receives the full initial supply. The method returns `true` on success. If account creation or initialization fails, the callback returns `false` and refunds the attached deposit to the caller.
+
+You can query the new token's metadata to verify the result:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-read-only example.<factory-account> ft_metadata json-args '{}' network-config testnet now
+```
+
+Users register separately through the FT's [`storage_deposit`](https://docs.near.org/primitives/ft/ft#registering-a-user) method before receiving transfers. Their future storage is not included in the factory's initial deposit quote.
+
+***
+
+## Factories - Concepts & Limitations
+
+### Automatically Creating Accounts
+
+The factory creates direct sub-accounts of itself. For example, `factory.testnet` can create `example.factory.testnet` and initialize a token on it.
+
+The created token account has no access keys. Its `owner_id` identifies the token owner in contract state; it does not give that owner a full access key to the account.
+
+### Storage Costs
+
+The deposit quote includes the global reference and the initial state of the published FT implementation:
+
+```rust title="deploy.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn get_required(&self, args: &TokenArgs) -> NearToken {
+    let storage_bytes = self.global_contract_id.as_bytes().len()
+        + FT_STORAGE_OVERHEAD
+        + borsh::to_vec(args).unwrap().len();
+    // NEAR exempts accounts using at most 770 bytes. Above that limit,
+    // the whole storage footprint must be funded, not just the excess.
+    if storage_bytes <= ZERO_BALANCE_STORAGE_LIMIT {
+        NO_DEPOSIT
+    } else {
+        env::storage_byte_cost().saturating_mul(storage_bytes.try_into().unwrap())
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/factory-rust/blob/e1ee01abf93bf5a7e093e682f44d312a4a361e6f/src/deploy.rs#L39-L50)
+
+For an initial footprint of at most 770 bytes, the quote is zero. Above that limit, it funds the entire initial storage footprint. Gas is paid separately. If you change the global FT implementation, review the storage estimate against that implementation's layout.
+
+### Global Contract Updates
+
+This factory references global code by account ID. When the publisher updates that global implementation, token accounts referencing it use the updated code. Choose a publisher you trust. See [global contract references](https://docs.near.org/smart-contracts/global-contracts.md#reference-by-account) for more details.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

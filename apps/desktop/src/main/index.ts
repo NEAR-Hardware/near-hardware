@@ -10,6 +10,12 @@ import { registerIpcHandlers } from './ipc'
 import { setAppMenu } from './menu'
 import { loadRenderer } from './renderer'
 import { closeFloatingScreens, registerScreenIpc } from './screenWindow'
+import { registerContractToolsIpc } from './contractTools'
+import { registerNearIpc } from './near/accounts'
+import { registerSetupIpc, restoreProfileAfterMove } from './setup'
+
+// Must run before the app is ready, while the profile folder can still change
+restoreProfileAfterMove()
 
 function createWindow(): void {
   // Create the browser window.
@@ -77,6 +83,9 @@ app.whenReady().then(async () => {
   setAppMenu()
   registerIpcHandlers()
   registerScreenIpc()
+  registerSetupIpc()
+  registerNearIpc()
+  registerContractToolsIpc()
   // Agents' MCP servers call into the app through this local bridge
   await startBridge()
 

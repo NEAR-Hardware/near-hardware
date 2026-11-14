@@ -1,0 +1,83 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# RPC Providers
+
+> List of public RPC endpoints for the NEAR Protocol.
+
+NEAR Protocol exposes a JSON-RPC API for interacting with the network. You can use any of the providers below or run your own node.
+
+## RPC Providers
+
+FastNear maintains a [comprehensive dashboard](https://grafana.fastnear.com/public-dashboards/577b37c6cfe84b2bae23af471d27cade) with response times for most of the available endpoints.
+
+### Mainnet
+
+| Provider | Endpoint | Public Endpoint | Archival Node | Free Tier | Free Tier Limit | Paid Plan |
+| - | - | :-: | :-: | :-: | :-: | :-: |
+| [FASTNEAR](https://fastnear.com) | `https://free.rpc.fastnear.com` | ✅ | Paid Only | ✅ | Not published | ✅ |
+| [NEAR](https://near.org) | `https://archival-rpc.mainnet.near.org` | ✅ | ✅ | Severely rate limited | Not published | ❌ |
+| [All That Node](https://www.allthatnode.com/protocol/near.dsrv) | N/A | ❌ | ✅ | ✅ | [500K CU/day](https://www.allthatnode.com/pricing.dsrv) | ✅ |
+| [Ankr](https://www.ankr.com/rpc/near/) | `https://rpc.ankr.com/near` | ❌ | ❌ | ✅ | [\~30 req/s](https://www.ankr.com/docs/rpc-service/service-plans/) | ✅ |
+| [BlockPI Network](https://blockpi.io/chain/near) | `https://near.blockpi.network/v1/rpc/{api-key}` | ❌ | ❌ | ✅ | [20 req/s](https://docs.blockpi.io/pricing/pricing-and-rate-limit) | ✅ |
+| [dRPC](https://drpc.org/chainlist/near-mainnet-rpc) | `https://near.drpc.org` | ✅ | ❌ | ✅ | [\~2,100 CU/s](https://drpc.org/docs/howitworks/ratelimiting) | ✅ |
+| [GetBlock](https://getblock.io/nodes/near/) | `https://go.getblock.io/{api-key}` | ❌ | ❌ | ✅ | [50K CU/day](https://docs.getblock.io/getting-started/plans-and-limits/choosing-your-plan) | ✅ |
+| [Intear RPC](https://intea.rs/) | `https://rpc.intea.rs` | ✅ | ❌ | ✅ | Not published | ❌ |
+| [Lavender.Five Nodes](https://www.lavenderfive.com/tools/near/overview) | N/A | ❌ | ❌ | ✅ | Not published | ✅ |
+| [node101](https://node101.io/en/rpc/near) | N/A | ❌ | Paid Only | ❌ | — | ✅ |
+| [NodeReal](https://nodereal.io/api-marketplace/near-rpc) | `https://near-mainnet.nodereal.io/v1/{api-key}` | ❌ | ❌ | ✅ | [100M CU/month](https://nodereal.io/api-marketplace/near-rpc) | ✅ |
+| [NOWNodes](https://nownodes.io/near) | `https://near.nownodes.io/{api-key}` | ❌ | ❌ | ✅ | [100K req/month](https://nownodes.io/near) | ✅ |
+| [QuickNode](https://www.quicknode.com/chains/near) | N/A | ❌ | ✅ | ✅ | [15 req/s](https://www.quicknode.com/pricing) | ✅ |
+| [Shitzu](https://shitzuapes.xyz/) | `https://rpc.shitzuapes.xyz` | ✅ | ❌ | ✅ | Not published | ❌ |
+| [Tatum](https://tatum.io/chain/near/) | N/A | ❌ | ❌ | ✅ | [3 req/s](https://docs.tatum.io/docs/plans-limits) | ✅ |
+| [ZAN](https://zan.top/service/apikeys) | `https://api.zan.top/near-mainnet` | ✅ | ❌ | ✅ | [\~20 req/s](https://docs.zan.top/docs/resource-pricing) | ✅ |
+| [Zeeve](https://www.zeeve.io/blockchain-protocols/deploy-near-node/) | N/A | ❌ | ✅ | ❌ | — | ✅ |
+
+### Testnet
+
+| Provider | Endpoint | Public Endpoint | Archival Node | Free Tier | Free Tier Limit | Paid Plan |
+| - | - | :-: | :-: | :-: | :-: | :-: |
+| [FASTNEAR](https://fastnear.com) | `https://test.rpc.fastnear.com` | ✅ | Paid Only | ✅ | Not published | ✅ |
+| [NEAR](https://near.org) | `https://archival-rpc.testnet.near.org` | ✅ | ✅ | Severely rate limited | Not published | ❌ |
+| [All That Node](https://www.allthatnode.com/protocol/near.dsrv) | N/A | ❌ | ✅ | ✅ | [500K CU/day](https://www.allthatnode.com/pricing.dsrv) | ✅ |
+| [dRPC](https://drpc.org/chainlist/near-testnet-rpc) | `https://near-testnet.drpc.org` | ✅ | ❌ | ✅ | [\~2,100 CU/s](https://drpc.org/docs/howitworks/ratelimiting) | ✅ |
+| [Intear RPC](https://intea.rs/) | `https://testnet-rpc.intea.rs` | ✅ | ❌ | ✅ | Not published | ❌ |
+| [node101](https://node101.io/en/rpc/near) | N/A | ❌ | Paid Only | ❌ | — | ✅ |
+| [QuickNode](https://www.quicknode.com/chains/near) | N/A | ❌ | ✅ | ✅ | [15 req/s](https://www.quicknode.com/pricing) | ✅ |
+| [Tatum](https://tatum.io/chain/near/) | N/A | ❌ | ❌ | ✅ | [3 req/s](https://docs.tatum.io/docs/plans-limits) | ✅ |
+| [ZAN](https://zan.top/service/apikeys) | `https://api.zan.top/near-testnet` | ✅ | ❌ | ✅ | [\~20 req/s](https://docs.zan.top/docs/resource-pricing) | ✅ |
+| [Zeeve](https://www.zeeve.io/blockchain-protocols/deploy-near-node/) | N/A | ❌ | ❌ | ❌ | — | ✅ |
+
+> [!NOTE]
+>
+> **Free Tier Limit** values link to each provider's own pricing/docs page as the source. Limits are reported in the units each provider publishes (`req` = requests, `CU` = compute units), so they are not directly comparable across providers and may change at any time — always confirm on the linked page. "Not published" means the endpoint is free but has no documented numeric limit.
+
+For live latency benchmarks across these providers, see [OpenChainBench](https://openchainbench.com/benchmarks/near-rpc) — p50/p90/p99 measured every 60 seconds from US-East, EU-West and Singapore.
+
+## Making requests
+
+Send JSON-RPC 2.0 requests with `POST` to the root of the provider endpoint. Put the method and parameters in the JSON request body.
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+curl -X POST https://rpc.mainnet.near.org/ \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":"status","method":"status","params":[]}'
+```
+
+Send one request object per HTTP request. nearcore does not support JSON-RPC batch requests. If the body is a JSON array, a nearcore node rejects the whole request with HTTP `400` and error code `-32700` (`Parse error`), and none of the requests in the array run.
+
+> [!WARNING]
+>
+> Never load test a shared public endpoint. Run performance tests only against a node you operate or an endpoint whose operator has explicitly authorized the test.
+
+## Run your own node
+
+To run a local RPC node, follow the [NEAR node documentation](https://near-nodes.io/rpc/hardware-rpc).
+
+> [!NOTE]
+>
+> Testnet tokens have no real value and can be obtained from the [NEAR Faucet](https://docs.near.org/getting-started/faucet.md).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,88 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Sunsetting a Staking Pool
+
+> Wind down a staking pool, pause staking, and help delegators withdraw their tokens.
+
+If you are a stake pool owner and want to wind down your validator service, follow these steps to ensure delegators can safely recover their funds.
+
+***
+
+## Step 1: Notify Delegators
+
+Before making any changes, inform your delegators that the pool is shutting down. Give them enough time to unstake and withdraw their tokens. They need to:
+
+1. Call `unstake_all` on the pool.
+2. Wait for the **4-epoch unbonding period**.
+3. Call `withdraw_all` to retrieve their tokens.
+
+Share the [unstaking and withdrawal commands](https://docs.near.org/protocol/tutorials/staking-tokens.md#withdrawing-staked-tokens) with your delegators.
+
+***
+
+## Step 2: Pause Staking
+
+Call `pause_staking` from the pool owner account. The pool then sends a stake of 0 to the protocol and stops restaking. It does not change any account's shares in the contract or the reward calculations.
+
+```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near call <my_validator> pause_staking '{}' --useAccount <owner-account.near> --networkId mainnet
+```
+
+Do not attach a deposit. `pause_staking` and `resume_staking` do not accept one, and the call fails if you add it.
+
+> [!NOTE]
+>
+> The pool sends a stake of 0 right away. It stays in the validator set for the rest of the current epoch and for the next epoch. It leaves the set in the epoch after that. Keep the validator node running until the pool is no longer in the validator set. If the node stops earlier, the pool misses blocks and chunks, and it earns less or no rewards for those epochs.
+>
+> The pool's locked balance becomes liquid at the start of the third epoch after the call. Pausing does not unstake anyone's shares in the contract. Delegators still see their shares and can unstake and withdraw normally.
+
+***
+
+## Step 3: Withdraw Owner Balance
+
+Pausing does not unstake your own balance in the pool. This balance includes the shares that the pool pays you as its reward fee. The pool keeps earning rewards, and paying you the fee, until it leaves the validator set. Wait until the pool is no longer in the validator set, from the second epoch after the pause. Then unstake your balance from the owner account:
+
+> [tab] Staking CLI
+>
+> ```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near staking delegation <owner-account.near> unstake-all <my_validator> network-config mainnet sign-with-keychain
+> ```
+
+> [tab] Function Call
+>
+> ```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near call <my_validator> unstake_all '{}' --useAccount <owner-account.near> --networkId mainnet
+> ```
+
+After the 4-epoch unbonding period, withdraw it:
+
+> [tab] Staking CLI
+>
+> ```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near staking delegation <owner-account.near> withdraw-all <my_validator> network-config mainnet sign-with-keychain
+> ```
+
+> [tab] Function Call
+>
+> ```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> near call <my_validator> withdraw_all '{}' --useAccount <owner-account.near> --networkId mainnet
+> ```
+
+> [!NOTE]
+>
+> The balance that the pool held when it was created does not belong to any account. No one can unstake or withdraw it. It stays in the pool account, together with the rewards it earned. Pools created through `poolv1.near` start with at least 30 NEAR.
+
+***
+
+## Step 4: Resume (Optional)
+
+If you decide to keep the pool running again, you can re-enable staking at any time:
+
+```sh theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near call <my_validator> resume_staking '{}' --useAccount <owner-account.near> --networkId mainnet
+```
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -31,7 +31,11 @@ export function setAppMenu(): void {
     },
     { role: 'editMenu' },
     { role: 'viewMenu' },
-    { role: 'windowMenu' }
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [{ label: 'Setup Guide', click: command('setup-guide') }]
+    }
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

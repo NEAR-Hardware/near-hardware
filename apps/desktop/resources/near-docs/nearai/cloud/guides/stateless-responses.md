@@ -1,0 +1,218 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Stateless Responses API
+
+> Use the OpenAI Responses shape without server-side conversation or response storage
+
+The NEAR AI Cloud Responses API is a stateless compatibility layer over Chat Completions. It keeps the OpenAI Responses request, output, and streaming shapes while leaving conversation state and custom-function execution under your application's control. NEAR AI Cloud executes built-in web search during the request.
+
+```text theme={"dark"}
+POST https://cloud-api.near.ai/v1/responses
+```
+
+A request without built-in tools makes one Chat Completions inference. Built-in web search can use additional inference rounds within the request. NEAR AI Cloud does not store the raw request, response, output items, or conversation history for later retrieval.
+
+> [!NOTE]
+>
+> `store` must be `false`. If you omit it, NEAR AI Cloud treats it as `false`.
+
+## Create a Response
+
+> [tab] Python
+>
+> ```python theme={"dark"}
+> from openai import OpenAI
+>
+> client = OpenAI(
+>     base_url="https://cloud-api.near.ai/v1",
+>     api_key="YOUR_NEAR_AI_API_KEY",
+> )
+>
+> response = client.responses.create(
+>     model="Qwen/Qwen3.8-27B",
+>     input="Explain confidential inference in one sentence.",
+>     store=False,
+> )
+>
+> print(response.output_text)
+> ```
+
+> [tab] JavaScript/TypeScript
+>
+> ```javascript theme={"dark"}
+> import OpenAI from 'openai';
+>
+> const client = new OpenAI({
+>   baseURL: 'https://cloud-api.near.ai/v1',
+>   apiKey: 'YOUR_NEAR_AI_API_KEY',
+> });
+>
+> const response = await client.responses.create({
+>   model: 'Qwen/Qwen3.8-27B',
+>   input: 'Explain confidential inference in one sentence.',
+>   store: false,
+> });
+>
+> console.log(response.output_text);
+> ```
+
+> [tab] curl
+>
+> ```bash theme={"dark"}
+> curl https://cloud-api.near.ai/v1/responses \
+>   -H "Authorization: Bearer $NEARAI_API_KEY" \
+>   -H "Content-Type: application/json" \
+>   -d '{
+>     "model": "Qwen/Qwen3.8-27B",
+>     "input": "Explain confidential inference in one sentence.",
+>     "store": false
+>   }'
+> ```
+
+Both streaming and non-streaming requests are supported. Responses include `Cache-Control: no-store`.
+
+## Manage Conversation History
+
+There is no server-side conversation object and no `previous_response_id` continuation. For each new turn, send the relevant messages again:
+
+```json theme={"dark"}
+{
+  "model": "Qwen/Qwen3.8-27B",
+  "store": false,
+  "input": [
+    {
+      "role": "user",
+      "content": "My deployment is called Orion."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Understood. Your deployment is called Orion."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "What is my deployment called?"
+    }
+  ]
+}
+```
+
+Store this history in your application only for as long as your own data-handling policy requires. Repeated, byte-identical history prefixes can still benefit from [prompt caching](https://docs.near.ai/cloud/guides/prompt-caching.md).
+
+## Use Client-Managed Functions
+
+Responses accepts custom tools with `type: "function"`. NEAR AI Cloud can ask for a function call, but it never executes that function or starts a server-side agent loop.
+
+The client-managed flow is:
+
+1. Send a stateless request with your function definitions.
+2. If the model requests a function, the response has `status: "incomplete"`, `incomplete_details.reason: "function_call_required"`, and a `function_call` output item.
+3. Execute the function in your application.
+4. Send a new stateless request containing your message history, the returned `function_call` item, its matching `function_call_output`, and the same function definitions.
+
+```python theme={"dark"}
+import json
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://cloud-api.near.ai/v1",
+    api_key="YOUR_NEAR_AI_API_KEY",
+)
+
+tools = [{
+    "type": "function",
+    "name": "get_weather",
+    "description": "Get the current weather for a city.",
+    "parameters": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+    },
+}]
+
+prompt = "What is the weather in Paris?"
+first = client.responses.create(
+    model="Qwen/Qwen3.8-27B",
+    input=prompt,
+    tools=tools,
+    tool_choice="required",
+    store=False,
+)
+
+function_call = next(item for item in first.output if item.type == "function_call")
+
+# Your application executes the function.
+function_result = {"temperature_c": 22, "condition": "sunny"}
+
+second = client.responses.create(
+    model="Qwen/Qwen3.8-27B",
+    store=False,
+    tools=tools,
+    input=[
+        {"role": "user", "content": prompt},
+        function_call.model_dump(),
+        {
+            "type": "function_call_output",
+            "call_id": function_call.call_id,
+            "output": json.dumps(function_result),
+        },
+    ],
+)
+
+print(second.output_text)
+```
+
+Echo the returned `function_call` item unchanged. This preserves provider-specific fields needed for the next inference. Include exactly one matching `function_call_output` later in the same request for each replayed call.
+
+## Use Built-in Web Search
+
+Built-in `web_search` and `web_context_search` run on NEAR AI Cloud during the request. They do not require your application to execute a function or store response history. Add `web_search` to `tools` to let the model search; its optional `count` sets the maximum results per search. See [Web Search](https://docs.near.ai/cloud/guides/web-search.md) for an example and the supported range.
+
+## Unsupported Features
+
+The following Responses inputs return `400 invalid_request_error`:
+
+* `store: true`
+* `conversation`
+* `previous_response_id`
+* `background: true`
+* `input_file`
+* Built-in `file_search`, `code_interpreter`, and `computer` tools
+* Remote `mcp` tools and MCP approval or tool-list continuation items
+* Image-generation or image-editing output models; use the [Images endpoints](https://docs.near.ai/cloud/guides/specialized-endpoints.md#image-generation) instead
+
+For server-side web search in Responses or Chat Completions, see [Web Search](https://docs.near.ai/cloud/guides/web-search.md). You can also expose search as a custom function and execute it in your application.
+
+## Retired APIs
+
+The following stateful surfaces are no longer available:
+
+* `/v1/conversations` and all subpaths
+* `/v1/files` and all subpaths
+* `GET` and `DELETE /v1/responses/{response_id}`
+* `POST /v1/responses/{response_id}/cancel`
+* `GET /v1/responses/{response_id}/input_items`
+
+Missing or invalid API keys receive `401 Unauthorized`. Authenticated requests to a retired endpoint receive `410 Gone` with migration guidance.
+
+Existing historical records and objects are not deleted by the API retirement. Their retention, export, or deletion is handled separately from the public inference contract.
+
+## Response IDs and Signatures
+
+A stateless response still has a `resp_` ID, but the ID does not refer to retrievable response history. For a completed response, NEAR AI Cloud attempts to store a gateway signature over request and response digests. Signature persistence is best-effort, so `GET /v1/signature/resp_*` is not guaranteed to succeed. Raw request and response content is not stored with that signature.
+
+## Related Guides
+
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md)
+* [Web Search](https://docs.near.ai/cloud/guides/web-search.md)
+* [Prompt Caching](https://docs.near.ai/cloud/guides/prompt-caching.md)
+* [API Reference](https://docs.near.ai/api-reference/introduction.md)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

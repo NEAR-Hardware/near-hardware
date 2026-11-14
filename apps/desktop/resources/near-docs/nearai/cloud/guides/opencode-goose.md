@@ -1,0 +1,163 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Goose
+
+> Configure Goose to use NEAR AI Cloud as an OpenAI-compatible provider.
+
+[Goose](https://block.github.io/goose/) is an open-source AI agent from Block that runs as a desktop app and a CLI. It ships a first-class **NEAR AI Cloud** provider, described in its own docs as "TEE-backed private inference through an OpenAI-compatible API with dynamic model discovery."
+
+Dynamic discovery is the part that matters day to day: Goose asks the gateway for its model list instead of reading a static catalog, so a newly released NEAR AI model shows up in the picker without a config change.
+
+> [!NOTE]
+>
+> Looking for OpenCode? It now has its own page: [OpenCode](https://docs.near.ai/cloud/guides/integrations/opencode.md).
+
+## Prerequisites
+
+* Goose Desktop or the Goose CLI installed.
+* A NEAR AI Cloud API key from the [NEAR AI Cloud Dashboard](https://cloud.near.ai/dashboard/organizations).
+
+Goose reads the key from `NEARAI_API_KEY`. Export it, or let Goose store it when you configure the provider:
+
+```bash theme={"dark"}
+export NEARAI_API_KEY="YOUR_NEAR_AI_API_KEY"
+```
+
+## Base URL
+
+The NEAR AI Cloud provider already targets the gateway:
+
+```text theme={"dark"}
+https://cloud-api.near.ai/v1
+```
+
+You do not set this by hand when using the built-in provider. Do not append `/chat/completions`; Goose adds the path when it calls the API.
+
+## Model ID
+
+Use the gateway model ID exactly as `/v1/models` reports it:
+
+```text theme={"dark"}
+z-ai/glm-5.3-flash
+```
+
+Because Goose discovers models dynamically, the picker should already offer the current list. See [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md) if you need to confirm an ID.
+
+> [!NOTE]
+>
+> Retired NEAR AI model IDs are kept as aliases onto their successor, so an older ID such as `z-ai/glm-5.2` still resolves today. Prefer the canonical ID from `/v1/models`; an alias can be repointed without notice.
+
+## Configure
+
+### Goose Desktop
+
+1. Open Goose.
+2. Open the sidebar, then **Settings**.
+3. Open the **Models** tab.
+4. Click **Configure providers**.
+5. Select **NEAR AI Cloud**.
+6. Enter your NEAR AI Cloud API key and submit.
+7. Click **Switch models**, then pick a NEAR AI Cloud model.
+
+If the model you want is not in the dropdown, choose **Use custom model** and type the model ID.
+
+### Goose CLI
+
+Run:
+
+```bash theme={"dark"}
+goose configure
+```
+
+Then select:
+
+1. **Configure Providers**
+2. **NEAR AI Cloud**
+3. Enter your API key, or skip the prompt if `NEARAI_API_KEY` is already exported.
+4. Select a model.
+
+### Config file
+
+Goose keeps provider settings in `~/.config/goose/config.yaml` on macOS and Linux, or `%APPDATA%\Block\goose\config\config.yaml` on Windows. Current versions use nested `active_provider` and `providers` keys:
+
+```yaml config.yaml theme={"dark"}
+active_provider: nearai
+providers:
+  nearai:
+    enabled: true
+    model: z-ai/glm-5.3-flash
+    configured: true
+```
+
+Prefer `goose configure` or the Desktop settings over editing this file, so Goose writes the shape its current version expects.
+
+> [!WARNING]
+>
+> Older guides show flat `GOOSE_PROVIDER` and `GOOSE_MODEL` keys at the root of `config.yaml`. Goose still reads that legacy form and migrates it when it next updates provider settings, but it is not the current format. The same two names remain valid as environment variables, where they override the config file for that process:
+>
+> ```bash theme={"dark"}
+> GOOSE_PROVIDER=nearai GOOSE_MODEL=z-ai/glm-5.3-flash goose
+> ```
+
+Restart Goose after changing the provider or model.
+
+## Refresh models
+
+Goose queries NEAR AI Cloud for its model list, so new models normally appear on their own. If the picker looks stale:
+
+1. Confirm the model exists: `curl https://cloud-api.near.ai/v1/models`.
+2. Re-save the NEAR AI Cloud provider in Desktop settings, or re-run `goose configure`, so Goose requests the list again.
+3. Restart Goose.
+4. If it still does not appear, use **Use custom model** in Desktop or set the model directly in `config.yaml`.
+
+## Quick test
+
+Verify the key, base URL, and model against the API before debugging Goose:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/chat/completions \
+  -H "Authorization: Bearer $NEARAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "z-ai/glm-5.3-flash",
+    "messages": [
+      {"role": "user", "content": "Reply with only: near-ai-ok"}
+    ],
+    "max_tokens": 256
+  }'
+```
+
+Keep `max_tokens` generous on reasoning models. GLM 5.3 Flash spends its first tokens on `reasoning_content`, so a tight limit returns `"content": null` with `"finish_reason": "length"` and looks like a failure when the request actually succeeded.
+
+## Troubleshooting
+
+| Symptom | Fix |
+| - | - |
+| model not listed: the model is missing from the Goose picker | Re-save the NEAR AI Cloud provider or re-run `goose configure` so Goose refetches the list, then restart Goose. If it is still missing, use **Use custom model** or set `model` in `config.yaml`. |
+| Requests return `401` | Confirm `NEARAI_API_KEY` is set in the environment that launched Goose, or re-enter the key in **Configure providers**. Desktop and a shell-launched CLI do not always share an environment. |
+| wrong base URL includes `/chat/completions` | The built-in provider sets the base URL itself. If you overrode it, use `https://cloud-api.near.ai/v1`; `/chat/completions` belongs only in full request URLs such as the curl test. |
+| NEAR AI Cloud is not in the provider list | Update Goose. The provider is listed in current Goose documentation; older builds predate it. As a fallback, configure NEAR AI Cloud through Goose's OpenAI-compatible provider with the gateway base URL. |
+| Config edits have no effect | Goose may have migrated a legacy `GOOSE_PROVIDER`/`GOOSE_MODEL` block. Check that `active_provider` and `providers` reflect your intent, and restart Goose. |
+| Replies are empty or cut off mid-thought | A reasoning model hit the output limit. Raise `GOOSE_MAX_TOKENS`, and confirm with the curl test at a higher `max_tokens`. |
+
+## Related guides
+
+* [OpenCode](https://docs.near.ai/cloud/guides/integrations/opencode.md)
+* [Model Discovery and Refresh](https://docs.near.ai/cloud/guides/integrations/model-discovery.md)
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md)
+* [Available Models](https://docs.near.ai/cloud/models.md)
+* [Cline, Roo Code, and Kilo Code](https://docs.near.ai/cloud/guides/integrations/cline-roo-kilo.md)
+
+## Sources Checked
+
+Sources checked on 2026-09-22. The Goose steps come from Goose's published documentation and repository; they were not run against a local Goose install.
+
+* [Goose providers](https://goose-docs.ai/docs/getting-started/providers/) — NEAR AI Cloud provider and `NEARAI_API_KEY`
+* [Goose configuration files](https://goose-docs.ai/docs/guides/config-file) — `config.yaml` location, `active_provider`/`providers` shape, legacy key migration
+* [`documentation/docs/getting-started/providers.md`](https://github.com/block/goose/blob/main/documentation/docs/getting-started/providers.md) — provider table entry
+* NEAR AI Cloud `GET /v1/models` and `POST /v1/chat/completions`
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

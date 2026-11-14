@@ -1,0 +1,145 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Embeddings, Images, Audio & More
+
+> Use NEAR AI Cloud for embeddings, reranking, image generation, audio transcription, and PII detection — all inside TEEs
+
+NEAR AI Cloud is not limited to chat completions. The NEAR AI Cloud Gateway (`cloud-api.near.ai`) serves specialized TEE-hosted models for embeddings, reranking, scoring, image generation, audio transcription, and privacy classification.
+
+Gateway responses include an `X-Request-Id` response header. Support may ask you for that opaque value when debugging a request. It is support/debugging metadata, not W3C `traceparent` or distributed trace context. If you send your own `X-Request-Id`, use a non-sensitive UUID value; `X-Request-Id` values must not contain secrets or PII. `X-Org-Id` and `X-Workspace-Id` are internal tenant headers; public clients cannot set or override them.
+
+## Embeddings
+
+Generate vector embeddings with `Qwen/Qwen3-Embedding-0.6B`:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "Qwen/Qwen3-Embedding-0.6B",
+    "input": "NEAR AI Cloud runs models inside TEEs."
+  }'
+```
+
+The response follows the OpenAI embeddings format (`data[0].embedding` is the vector). `input` also accepts an array of strings for batch embedding.
+
+## Reranking
+
+Score documents against a query with `Qwen/Qwen3-Reranker-0.6B`:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/rerank \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "Qwen/Qwen3-Reranker-0.6B",
+    "query": "what is the capital of France",
+    "documents": [
+      "Paris is the capital of France",
+      "Berlin is in Germany"
+    ]
+  }'
+```
+
+```json theme={"dark"}
+{
+  "id": "rerank-b9390698eab7e1c3",
+  "model": "Qwen/Qwen3-Reranker-0.6B",
+  "results": [
+    { "index": 0, "relevance_score": 0.914, "document": { "text": "Paris is the capital of France" } },
+    { "index": 1, "relevance_score": 0.828, "document": { "text": "Berlin is in Germany" } }
+  ]
+}
+```
+
+Results are ordered by `relevance_score`; `index` refers to the position in your input `documents` array.
+
+## Image Generation
+
+Generate images with `black-forest-labs/FLUX.2-klein-4B` (billed per image — see the [Models page](https://docs.near.ai/cloud/models.md)):
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/images/generations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "black-forest-labs/FLUX.2-klein-4B",
+    "prompt": "a red circle on a white background",
+    "n": 1
+  }'
+```
+
+The response returns the generated image as base64 in `data[0].b64_json`. An `/v1/images/edits` endpoint is also available for image-to-image editing.
+
+## Audio Transcription
+
+Transcribe audio with `openai/whisper-large-v3` (multipart form upload, OpenAI-compatible):
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/audio/transcriptions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F file=@recording.wav \
+  -F model=openai/whisper-large-v3
+```
+
+```json theme={"dark"}
+{ "text": "Hello, this is a test recording.", "id": "trans-9a1799eb395047e7ad4aef8b" }
+```
+
+## PII Detection & Redaction
+
+The `openai/privacy-filter` model detects personally identifiable information (names, emails, phone numbers, ...) in text. It is **not a chat model** — it exposes dedicated privacy endpoints:
+
+**Classify** returns labeled character spans with confidence scores:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/privacy/classify \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "openai/privacy-filter",
+    "input": "My name is John Smith and my email is john@example.com"
+  }'
+```
+
+```json theme={"dark"}
+{
+  "id": "pt-9d83003f2d164dde9edcc0f7",
+  "model": "openai/privacy-filter",
+  "data": [{
+    "index": 0,
+    "spans": [
+      { "category": "private_person", "start": 10, "end": 21, "text": " John Smith", "score": 0.999 },
+      { "category": "private_email", "start": 37, "end": 54, "text": " john@example.com", "score": 0.999 }
+    ]
+  }]
+}
+```
+
+**Redact** (gateway only) returns the text with PII replaced:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/privacy/redact \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "model": "openai/privacy-filter",
+    "input": "My name is John Smith and my email is john@example.com"
+  }'
+```
+
+`input` accepts a string or an array of strings for both endpoints.
+
+`/v1/privacy/redact` is gateway-only and is served at `https://cloud-api.near.ai/v1`.
+
+## Vision (Image Input)
+
+`Qwen/Qwen3-VL-30B-A3B-Instruct` accepts images in standard OpenAI chat format (`image_url` content parts) on `/v1/chat/completions`. Check `input_modalities` in [`/v1/models`](https://cloud-api.near.ai/v1/models) to see which models accept images.
+
+***
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

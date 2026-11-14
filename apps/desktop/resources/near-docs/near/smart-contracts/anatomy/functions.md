@@ -1,0 +1,261 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Types and Interface
+
+> Learn how to define your contract's interface and use Rust and SDK types in its inputs, outputs, and state.
+
+Smart contracts expose functions so users can interact with them. There are different types of functions including `read-only`, `private` and `payable`.
+
+## Contract's Interface
+
+All **public** functions in the contract are part of its **interface**. They can be called by anyone, and are the only way to interact with the contract.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn get_highest_bid(&self) -> Bid {
+    self.highest_bid.clone()
+}
+
+pub fn get_auction_end_time(&self) -> U64 {
+    self.auction_end_time
+}
+
+pub fn get_auctioneer(&self) -> AccountId {
+    self.auctioneer.clone()
+}
+
+pub fn get_claimed(&self) -> bool {
+    self.claimed
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L77-L91)
+
+> [accordion] Exposing trait implementations
+>
+> Functions can also be exposed through trait implementations. This can be useful if implementing a shared interface or standard for a contract. This code generation is handled very similarly to basic `pub` functions, but the `#[near]` macro only needs to be attached to the trait implementation, not the trait itself:
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> pub trait MyTrait {
+>     fn trait_method(&mut self);
+> }
+>
+> #[near]
+> impl MyTrait for MyContractStructure {
+>     fn trait_method(&mut self) {
+>         // .. method logic here
+>     }
+> }
+> ```
+
+## Initialization Functions
+
+A contract can opt to have an initialization function. If present, this function must be called before any other to [initialize the contract](https://docs.near.org/smart-contracts/anatomy/storage.md).
+
+The initialization function is marked with the `#[init]` macro.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[init]
+pub fn init(end_time: U64, auctioneer: AccountId) -> Self {
+    Self {
+        highest_bid: Bid {
+            bidder: env::current_account_id(),
+            bid: NearToken::from_yoctonear(1),
+        },
+        auction_end_time: end_time,
+        claimed: false,
+        auctioneer,
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L23-L34)
+
+## State Changing Functions
+
+The functions that modify the [state](https://docs.near.org/smart-contracts/anatomy/storage.md) or perform [actions](https://docs.near.org/smart-contracts/anatomy/actions.md) need to be called by a user with a NEAR account, since a transaction is required to execute them.
+
+State changing functions are those that take a **mutable** reference to `self` in Rust.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn bid(&mut self) -> Promise {
+    // Assert the auction is still ongoing
+    require!(
+        env::block_timestamp() < self.auction_end_time.into(),
+        "Auction has ended"
+    );
+
+    // Current bid
+    let bid = env::attached_deposit();
+    let bidder = env::predecessor_account_id();
+
+    // Last bid
+    let Bid {
+        bidder: last_bidder,
+        bid: last_bid,
+    } = self.highest_bid.clone();
+
+    // Check if the deposit is higher than the current bid
+    require!(bid > last_bid, "You must place a higher bid");
+
+    // Update the highest bid
+    self.highest_bid = Bid { bidder, bid };
+
+    // Transfer tokens back to the last bidder
+    Promise::new(last_bidder).transfer(last_bid)
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L36-L62)
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn claim(&mut self) -> Promise {
+    require!(
+        env::block_timestamp() > self.auction_end_time.into(),
+        "Auction has not ended yet"
+    );
+
+    require!(!self.claimed, "Auction has already been claimed");
+    self.claimed = true;
+
+    // Transfer tokens to the auctioneer
+    Promise::new(self.auctioneer.clone()).transfer(self.highest_bid.bid)
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L64-L75)
+
+> [!TIP]
+>
+> The SDK provides [contextual information](https://docs.near.org/smart-contracts/anatomy/environment.md), such as which account is calling the function, or what time it is.
+
+## Read-Only Functions
+
+Contract's functions can be read-only, meaning they don't modify the state. Calling them is free for everyone, and does not require to have a NEAR account.
+
+Read-only functions are those that take an **immutable** reference to `self` in Rust.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn get_highest_bid(&self) -> Bid {
+    self.highest_bid.clone()
+}
+
+pub fn get_auction_end_time(&self) -> U64 {
+    self.auction_end_time
+}
+
+pub fn get_auctioneer(&self) -> AccountId {
+    self.auctioneer.clone()
+}
+
+pub fn get_claimed(&self) -> bool {
+    self.claimed
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L77-L91)
+
+## Private Functions
+
+Many times you will want to have functions that **are exposed** as part of the contract's interface, but **should not be called directly** by users.
+
+Besides initialization functions, [callbacks from cross-contract calls](https://docs.near.org/smart-contracts/anatomy/crosscontract.md) should always be `private`.
+
+These functions are marked as `private` in the contract's code, and can only be called by the contract itself.
+
+Private functions are marked using the `#[private]` macro in Rust.
+
+## Payable Functions
+
+By default, functions will panic if the user attaches NEAR Tokens to the call. Functions that accept NEAR Tokens must be marked as `payable`.
+
+Within the function, the user will have access to the [attached deposit](https://docs.near.org/smart-contracts/anatomy/environment.md).
+
+Payable functions are marked using the `#[payable]` macro in Rust.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn bid(&mut self) -> Promise {
+    // Assert the auction is still ongoing
+    require!(
+        env::block_timestamp() < self.auction_end_time.into(),
+        "Auction has ended"
+    );
+
+    // Current bid
+    let bid = env::attached_deposit();
+    let bidder = env::predecessor_account_id();
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/contract-rs/01-basic-auction/src/lib.rs#L36-L46)
+
+## Internal Functions
+
+All the functions we covered so far are part of the interface, meaning they can be called by an external actor.
+
+However, contracts can also have private internal functions - such as helper or utility functions - that are **not exposed** to the outside world.
+
+To create internal private methods in a Rust contract, do not declare them as public (`pub fn`).
+
+> [accordion] Separate impl block
+>
+> Another way of not exporting methods is by having a separate `impl Contract` section, that is not marked with `#[near]`.
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[near]
+> impl Contract {
+>     pub fn increment(&mut self) {
+>         self.internal_increment();
+>     }
+> }
+> impl Contract {
+>     /// This methods is still not exported.
+>     pub fn internal_increment(&mut self) {
+>         self.counter += 1;
+>     }
+> }
+> ```
+
+***
+
+## SDK types
+
+Smart contracts can receive, store, and return data using native Rust types such as strings, integers, booleans, maps, and vectors. The SDK also provides types for values that need special handling at the contract boundary.
+
+### Large integers
+
+Contracts can store `u64` and `u128` values directly, but JSON consumers cannot always represent them without losing precision. Use the SDK's `U64` and `U128` wrapper types for public inputs and outputs that need to be serialized as strings.
+
+> [!WARNING]
+>
+> JavaScript numbers cannot represent every integer above `2^53 - 1`. Keep native integer types in internal contract logic, and use the JSON wrapper types at the external interface when necessary.
+
+### Complex objects
+
+Contracts can receive and return complex Rust structures. Objects used as JSON inputs or outputs need JSON serialization, while structures stored in contract state need Borsh serialization.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(serializers = [json])]
+pub struct Bid {
+    pub bidder: AccountId,
+    pub amount: U128,
+}
+```
+
+See [serialization](https://docs.near.org/smart-contracts/anatomy/serialization.md) for the difference between interface and state serialization.
+
+### Tokens and accounts
+
+Use `NearToken` to represent NEAR amounts. It provides constructors and accessors for yoctoNEAR, millinear, and NEAR values.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let deposit = NearToken::from_near(1);
+let amount = deposit.as_yoctonear();
+```
+
+The SDK's `AccountId` type validates NEAR account IDs when values enter the contract. Prefer it to a plain `String` whenever a value represents an account.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

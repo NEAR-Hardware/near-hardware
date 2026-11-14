@@ -1,0 +1,128 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Model Discovery and Refresh
+
+> Discover current NEAR AI Cloud models and refresh stale client model lists.
+
+Use this guide when a client does not show a newly released NEAR AI Cloud model.
+
+Most tools should use:
+
+| Setting | Value |
+| - | - |
+| Base URL | `https://cloud-api.near.ai/v1` |
+| Model ID | `z-ai/glm-5.2` |
+| API key | A NEAR AI Cloud API key |
+
+Do not copy a full static model catalog into your tool config. Check the live APIs, then copy only the model IDs your client needs.
+
+## Discover gateway models
+
+The gateway model list is available from:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/models
+```
+
+To find the GLM 5.2 entry:
+
+```bash theme={"dark"}
+curl -fsSL https://cloud-api.near.ai/v1/models \
+  | jq '.data[] | select(.id == "z-ai/glm-5.2")'
+```
+
+The response uses OpenAI-style model objects plus NEAR AI Cloud metadata. Important field names include:
+
+| Field | Meaning |
+| - | - |
+| `id` | The model ID to use with the gateway. For GLM 5.2, use `z-ai/glm-5.2`. |
+| `name` | Human-readable display name. |
+| `context_length` | Maximum input context length reported for the model. |
+| `max_output_length` | Maximum output length reported by NEAR AI Cloud. |
+| `top_provider.context_length` | Provider context length used by clients that read OpenRouter-style metadata. |
+| `top_provider.max_completion_tokens` | Provider maximum completion tokens used by clients that read OpenRouter-style metadata. |
+| `supported_features` | Feature flags such as `tools`, `structured_outputs`, `reasoning`, and `json_mode`. |
+| `supported_sampling_parameters` | Supported request parameters such as `temperature`, `top_p`, `max_tokens`, and `stop`. |
+| `input_modalities` and `output_modalities` | Supported input and output types. |
+
+As checked on 2026-06-23, the live GLM 5.2 gateway record reports `top_provider.context_length: 500000`, `top_provider.max_completion_tokens: 131072`, and `max_output_length: 131072`.
+
+## Use the Gateway
+
+```text theme={"dark"}
+https://cloud-api.near.ai/v1
+```
+
+The gateway is the best fit for most third-party clients because one base URL can reach the full NEAR AI Cloud model catalog, and clients that auto-fetch models can use `GET /v1/models`.
+
+## Why client model lists go stale
+
+Client model lists can become stale for three common reasons:
+
+1. The client cached `GET /v1/models` and has not refreshed the provider connection.
+2. The client uses a separate catalog, such as models.dev, instead of reading NEAR AI Cloud live.
+3. The client requires a manual model list in a settings file, environment variable, or admin UI.
+
+When NEAR releases a new model, check `https://cloud-api.near.ai/v1/models`, copy the new `id`, and paste that exact value into the client's model field. For GLM 5.2, copy:
+
+```text theme={"dark"}
+z-ai/glm-5.2
+```
+
+## Tool behavior matrix
+
+| Behavior | Tools | Refresh action |
+| - | - | - |
+| Auto-fetch from an OpenAI-compatible model endpoint | Goose, Open WebUI, Kilo when the configured endpoint exposes `/v1/models` | Re-save or reconnect the provider, then refresh the model picker. If the picker still looks stale, test `GET https://cloud-api.near.ai/v1/models` with curl and restart the client. |
+| Catalog-backed | OpenCode via models.dev | Check whether the catalog has the NEAR AI model. If not, add a manual provider model override when the tool supports it, or use the model only after the catalog updates. |
+| Manual config | Cursor, Continue, Cline, Roo, Aider, Zed, LibreChat, LiteLLM, Dify | Copy the model ID from `/v1/models` into the tool's model field, config file, or provider settings. Restart or reload the tool if it caches settings. |
+
+## Curl smoke test
+
+First verify that the model is listed:
+
+```bash theme={"dark"}
+curl -fsSL https://cloud-api.near.ai/v1/models \
+  | jq -e '.data[] | select(.id == "z-ai/glm-5.2")'
+```
+
+Then test a chat completion through the gateway:
+
+```bash theme={"dark"}
+curl https://cloud-api.near.ai/v1/chat/completions \
+  -H "Authorization: Bearer $NEARAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "z-ai/glm-5.2",
+    "messages": [
+      {"role": "user", "content": "Reply with only: near-ai-ok"}
+    ],
+    "max_tokens": 20
+  }'
+```
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| - | - | - |
+| model not listed | The client cached an older model list, uses a catalog that has not updated, or requires manual config. | Run the `/v1/models` curl check, copy `z-ai/glm-5.2`, and paste it into the client's custom model field. Re-save, reconnect, or restart the client. |
+| `401` | Missing, invalid, or expired NEAR AI Cloud API key. | Generate or copy a NEAR AI Cloud API key, store it in the client's secret field or environment variable, and retry without logging the key. |
+| Wrong base URL includes `/chat/completions` | The client expects a base URL, but the full request endpoint was pasted. | Use `https://cloud-api.near.ai/v1`. Do not append `/chat/completions` to a base URL field. |
+
+## Related guides
+
+* [OpenAI Compatibility](https://docs.near.ai/cloud/guides/openai-compatibility.md)
+* [Available Models](https://docs.near.ai/cloud/models.md)
+* [Integrations Overview](https://docs.near.ai/cloud/guides/integrations)
+
+## Sources Checked
+
+Sources checked on 2026-06-23:
+
+* [NEAR AI Cloud models API](https://cloud-api.near.ai/v1/models)
+* [models.dev catalog](https://models.dev/)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

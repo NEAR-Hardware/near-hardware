@@ -1,0 +1,50 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# TLS Connection Binding
+
+> Bind a live NEAR AI Cloud gateway TLS connection to the gateway attestation.
+
+Use this flow to establish that the HTTPS connection to `cloud-api.near.ai` terminates at the endpoint bound to `gateway_attestation`.
+
+> [!WARNING]
+>
+> The peer certificate and attestation report must be obtained on the **same TLS connection**. Two independent connections can reach different instances or observe different certificates, so they cannot establish this connection-specific conclusion.
+
+> [!NOTE]
+>
+> Browser Fetch APIs do not expose the peer certificate or its SPKI. A browser client can verify a gateway quote without TLS binding, but cannot establish this TLS connection-binding property.
+
+## What this checks
+
+When you request `include_tls_fingerprint=true`, `gateway_attestation.tls_cert_fingerprint` is the SHA-256 hash of the gateway certificate's SubjectPublicKeyInfo (SPKI). The verified quote binds that fingerprint, the gateway signing identity, and the nonce.
+
+This is a gateway check. It does not bind the client connection to an upstream model endpoint.
+
+## Verification flow
+
+1. Generate a fresh 32-byte nonce in the client.
+2. Open a TLS connection to `cloud-api.near.ai` using the trust configuration required by your application.
+3. Read the peer certificate from that connection and calculate `SHA-256(SPKI_DER)`.
+4. Reuse the same open connection to request `/v1/attestation/report` with `include_tls_fingerprint=true`, the nonce, and the signing algorithm you require. Do not send an API key: the gateway report needs none, so no credential crosses the connection before you have verified it.
+5. Verify `gateway_attestation.intel_quote`, then check the nonce, gateway signer, and TLS-fingerprint binding in the verified quote.
+6. Compare the calculated peer SPKI hash with `gateway_attestation.tls_cert_fingerprint`.
+
+The optional `tls_certificate` response field is not a substitute for the peer certificate observed on the connection. A command-line report request alone also cannot establish the same-connection property.
+
+This result applies to the connection used for the evidence request. When it must also cover an inference request, send that request over the same open TLS connection. If the client reconnects, repeat the flow.
+
+## Required handling
+
+| Result | Action when TLS endpoint binding is required |
+| - | - |
+| `gateway_attestation.tls_cert_fingerprint` is absent | Treat TLS binding as unavailable. Request a new report with `include_tls_fingerprint=true`. |
+| Peer SPKI hash differs | Reject the connection and repeat the flow with one TLS connection. |
+| Quote, nonce, or signer binding fails | Reject the report and fetch fresh evidence. |
+| Certificate and report came from different connections | Treat the result as inconclusive. |
+
+Do not use a cached fingerprint as evidence for a new connection. Fetch new evidence after a certificate, signer, measurement, or accepted-attestation-age change.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

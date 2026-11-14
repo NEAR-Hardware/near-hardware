@@ -1,0 +1,501 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Cross-Contract Calls
+
+> Contract can interact with other contracts on the network
+
+NEAR contracts can interact with other deployed contracts, querying information and executing functions on them through cross-contract calls.
+
+Since NEAR is a sharded blockchain, its cross-contract calls behave differently than in other chains. In NEAR, cross-contract calls are **asynchronous** and **independent**.
+
+> [!TIP]
+>
+> **Asynchronous**
+> The **calling function** and the **callback** execute in **different blocks** (typically 1-2 blocks apart). During this time, the contract remains active and can receive other calls.
+
+> [!TIP]
+>
+> **Independent**
+>
+> Each function — the one making the call, the external function, and the callback — executes in its own context. If the external call fails, the calling function has already completed successfully; there's no automatic rollback. You must handle failures explicitly in the callback.
+
+***
+
+## Snippet: Querying Information
+
+While making your contract, it is likely that you will want to query information from another contract. Below, you can see a basic example in which we query the greeting message from our [Hello NEAR](https://docs.near.org/smart-contracts/quickstart.md) example.
+
+> [tab] low\_level.rs
+>
+> ```rust title="low_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Public - query external greeting
+> pub fn ll_query_greeting(&self) -> Promise {
+>     // Create a promise to call HelloNEAR.get_greeting()
+>     let hello_promise = Promise::new(self.hello_account.clone()).function_call(
+>         "get_greeting".to_owned(),
+>         NO_ARGS,
+>         NO_DEPOSIT,
+>         TEN_TGAS,
+>     );
+>
+>     hello_promise.then(
+>         // Create a promise to callback query_greeting_callback
+>         Self::ext(env::current_account_id())
+>             .with_static_gas(TEN_TGAS)
+>             .ll_query_greeting_callback(),
+>     )
+> }
+>
+> #[private] // Public - but only callable by env::current_account_id()
+> pub fn ll_query_greeting_callback(
+>     &self,
+>     #[callback_result] call_result: Result<String, PromiseError>,
+> ) -> String {
+>     // Check if the promise succeeded by calling the method outlined in external.rs
+>     if call_result.is_err() {
+>         log!("There was an error contacting Hello NEAR");
+>         return "".to_string();
+>     }
+>
+>     // Return the greeting
+>     let greeting: String = call_result.unwrap();
+>     greeting
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/low_level.rs#L7-L39)
+
+> [tab] high\_level.rs
+>
+> ```rust title="high_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Public - query external greeting
+> pub fn hl_query_greeting(&self) -> Promise {
+>     // Create a promise to call HelloNEAR.get_greeting()
+>     let promise = hello_near::ext(self.hello_account.clone())
+>         .with_static_gas(FIVE_TGAS)
+>         .get_greeting();
+>
+>     promise.then(
+>         // Create a promise to callback query_greeting_callback
+>         Self::ext(env::current_account_id())
+>             .with_static_gas(FIVE_TGAS)
+>             .hl_query_greeting_callback(),
+>     )
+> }
+>
+> #[private] // Public - but only callable by env::current_account_id()
+> pub fn hl_query_greeting_callback(
+>     &self,
+>     #[callback_result] call_result: Result<String, PromiseError>,
+> ) -> String {
+>     // Check if the promise succeeded by calling the method outlined in external.rs
+>     if call_result.is_err() {
+>         log!("There was an error contacting Hello NEAR");
+>         return "".to_string();
+>     }
+>
+>     // Return the greeting
+>     let greeting: String = call_result.unwrap();
+>     greeting
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/high_level.rs#L8-L37)
+>
+> The high level API makes use of the interface defined in the [ext\_contract.rs](https://github.com/near-examples/cross-contract-calls/blob/main/contract-simple-rs/src/external_contract.rs)
+
+***
+
+## Snippet: Sending Information
+
+Calling another contract passing information is also a common scenario. Below you can see a function that interacts with the [Hello NEAR](https://docs.near.org/smart-contracts/quickstart.md) example to change its greeting message.
+
+> [tab] low\_level.rs
+>
+> ```rust title="low_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Public - change external greeting
+> pub fn ll_change_greeting(&mut self, new_greeting: String) -> Promise {
+>     let args = json!({ "greeting": new_greeting }).to_string().into_bytes();
+>     let hello_promise = Promise::new(self.hello_account.clone()).function_call(
+>         "set_greeting".to_owned(),
+>         args,
+>         NO_DEPOSIT,
+>         TEN_TGAS,
+>     );
+>
+>     hello_promise.then(
+>         // Create a promise to callback query_greeting_callback
+>         Self::ext(env::current_account_id())
+>             .with_static_gas(TEN_TGAS)
+>             .ll_change_greeting_callback(),
+>     )
+> }
+>
+> #[private]
+> pub fn ll_change_greeting_callback(
+>     &mut self,
+>     #[callback_result] call_result: Result<(), PromiseError>,
+> ) -> bool {
+>     // Return whether or not the promise succeeded using the method outlined in external.rs
+>     if call_result.is_err() {
+>         env::log_str("set_greeting failed...");
+>         false
+>     } else {
+>         env::log_str("set_greeting was successful!");
+>         true
+>     }
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/low_level.rs#L41-L72)
+
+> [tab] high\_level.rs
+>
+> ```rust title="high_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> // Public - change external greeting
+> pub fn hl_change_greeting(&mut self, new_greeting: String) -> Promise {
+>     // Create a promise to call HelloNEAR.set_greeting(message:string)
+>     hello_near::ext(self.hello_account.clone())
+>         .with_static_gas(FIVE_TGAS)
+>         .set_greeting(new_greeting)
+>         .then(
+>             // Create a callback change_greeting_callback
+>             Self::ext(env::current_account_id())
+>                 .with_static_gas(FIVE_TGAS)
+>                 .hl_change_greeting_callback(),
+>         )
+> }
+>
+> #[private]
+> pub fn hl_change_greeting_callback(
+>     &mut self,
+>     #[callback_result] call_result: Result<(), PromiseError>,
+> ) -> bool {
+>     // Return whether or not the promise succeeded using the method outlined in external.rs
+>     if call_result.is_err() {
+>         env::log_str("set_greeting failed...");
+>         false
+>     } else {
+>         env::log_str("set_greeting was successful!");
+>         true
+>     }
+> }
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/high_level.rs#L39-L66)
+>
+> The high level API makes use of the interface defined in the [ext\_contract.rs](https://github.com/near-examples/cross-contract-calls/blob/main/contract-simple-rs/src/external_contract.rs)
+
+***
+
+## Promises
+
+Cross-contract calls work by creating two promises in the network:
+
+1. A promise to execute code in the external contract - `Promise.create`
+2. **Optional**: A promise to call another function with the result - `Promise.then`
+
+Both promises will contain the following information:
+
+* The **address** of the contract you want to interact with
+* The **function** that you want to execute
+* The arguments to pass to the function
+* The amount of **GAS** to use (deducted from the **attached Gas**)
+* The NEAR **deposit** to attach (deducted from **your contract's balance**)
+
+> [!TIP]
+>
+> The callback can be made to **any** contract. Meaning that the result could potentially be handled by another contract
+
+***
+
+## Creating a Cross Contract Call
+
+To create a cross-contract call with a callback, create two promises and use the `.then` method to link them:
+
+> [tab] High Level API
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> #[ext_contract(external_trait)]
+> trait Contract {
+>     fn function_name(&self, param1: T, param2: T) -> T;
+> }
+>
+> external_trait::ext("external_address")
+> .with_attached_deposit(DEPOSIT)
+> .with_static_gas(GAS)
+> .function_name(arguments)
+> .then(
+> // this is the callback
+> Self::ext(env::current_account_id())
+> .with_attached_deposit(DEPOSIT)
+> .with_static_gas(GAS)
+> .callback_name(arguments)
+> );
+>
+> ```
+
+> [tab] Low Level API
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> let arguments = json!({ "foo": "bar" })
+>     .to_string()
+>     .into_bytes();
+>
+> let promise = Promise::new("external_address").function_call(
+>     "function_name".to_owned(),
+>     arguments,
+>     DEPOSIT,
+>     GAS
+> );
+>
+> promise.then(
+>     // Create a promise to callback query_greeting_callback
+>     Self::ext(env::current_account_id())
+>         .with_static_gas(GAS)
+>         .callback_name(),
+> );
+> ```
+
+> [accordion] Concatenating Promises
+>
+> ✅ You can concatenate promises: `P1.then(P2).then(P3)`: `P1` executes, then `P2` executes with the result of `P1`, then `P3` executes with the result of `P2`
+>
+> ✅ You can join promises: `(P1.and(P2)).then(P3)`: `P1` and `P2` execute in parallel, after they finish `P3` will execute and have access to **both their results**
+>
+> ⛔ You cannot **return** a joint promise without a callback: `return P1.and(P2)` is invalid, you need to add a `.then()`
+>
+> ⛔ You cannot join promises within a `then`: `P1.then(P2.join([P3]))` is invalid
+>
+> ⛔ You cannot use a `then` within a `then`: `P1.then(P2.then(P3))` is invalid
+
+> [!NOTE]
+>
+> If a function returns a promise, then it will delegate the return value and status of transaction execution, but if you return a value or nothing, then the `Promise` result will not influence the transaction status
+
+> [!WARNING]
+>
+> The Promises you are creating will **not execute immediately**. In fact, they will be queued in the network an:
+>
+> * The cross-contract call will execute 1 or 2 blocks after your function finishes **correctly**.
+
+### Attaching gas
+
+Each promise in a cross-contract call needs enough gas to execute. This includes the external call and any callback you attach with `.then`.
+
+> [!TIP]
+>
+> Always reserve gas for the callback. It executes in a separate receipt, so it can fail independently if it does not receive enough gas.
+
+In the high level API, `with_static_gas(gas)` reserves a fixed amount of gas for a promise:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+const CALL_GAS: Gas = Gas::from_tgas(10);
+const CALLBACK_GAS: Gas = Gas::from_tgas(5);
+
+external_trait::ext("external_address")
+    .with_static_gas(CALL_GAS)
+    .function_name(arguments)
+    .then(
+        Self::ext(env::current_account_id())
+            .with_static_gas(CALLBACK_GAS)
+            .callback_name(arguments)
+    );
+```
+
+The high level API also exposes `with_unused_gas_weight(weight)`, which gives a promise a proportional share of the gas left after all static gas has been reserved.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+external_trait::ext("external_address")
+    .with_static_gas(Gas::from_tgas(10))
+    .with_unused_gas_weight(2)
+    .function_name(arguments)
+    .then(
+        Self::ext(env::current_account_id())
+            .with_static_gas(Gas::from_tgas(5))
+            .with_unused_gas_weight(0)
+            .callback_name(arguments)
+    );
+```
+
+The default unused gas weight is `1`. Set the weight to `0` when you want a promise to receive only its static gas reservation.
+
+For example, if `100 Tgas` is left when you create two promises:
+
+| Promise | Static gas | Unused gas weight |
+| - | - | - |
+| A | `20 Tgas` | `1` |
+| B | `10 Tgas` | `3` |
+
+The runtime reserves `30 Tgas` as static gas, then distributes the remaining `70 Tgas` by weight:
+
+* **A** gets `20 + (1/4) * 70 = 37.5 Tgas`
+* **B** gets `10 + (3/4) * 70 = 62.5 Tgas`
+
+> [!WARNING]
+>
+> If you forget that the default weight is `1`, a callback or parallel promise can receive more of the remaining gas than you expected. For gas-sensitive calls, combine `with_static_gas` with `with_unused_gas_weight(0)` on promises that should not draw from the unused gas pool.
+
+The low level API (`Promise::new(...).function_call(...)`) takes a fixed gas value. It behaves like `with_static_gas` and does not use unused gas weights.
+
+***
+
+## Callback Function
+
+If your function finishes correctly, the callback always runs, whether the **external contract fails or not**. If it failed, the callback receives `PromiseResult::Failed`.
+
+In the callback function you will have access to the result, which will contain the status of the external function (if it worked or not), and the values in case of success.
+
+```rust title="high_level.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[private] // Public - but only callable by env::current_account_id()
+pub fn hl_query_greeting_callback(
+    &self,
+    #[callback_result] call_result: Result<String, PromiseError>,
+) -> String {
+    // Check if the promise succeeded by calling the method outlined in external.rs
+    if call_result.is_err() {
+        log!("There was an error contacting Hello NEAR");
+        return "".to_string();
+    }
+
+    // Return the greeting
+    let greeting: String = call_result.unwrap();
+    greeting
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-simple-rs/src/high_level.rs#L23-L37)
+
+> [!WARNING]
+>
+> **The callback always runs, but it can still fail**
+>
+> The callback can run out of gas, panic, or hit a runtime limit. If it fails, only its own state changes are reverted: anything your original function already changed stays. See [callbacks can fail](https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-failures.md).
+
+> [!TIP]
+>
+> Remember to mark your callback function as private using macros/decorators, so it can only be called by the contract itself
+
+### What happens if the function I call fails?
+
+If the external function fails (i.e. it panics), then your callback will be **executed anyway**. Here you need to **manually rollback** any changes made in your
+contract during the original call. Particularly:
+
+1. **Refund the predecessor** if needed: If the contract attached NEAR to the call, the funds are now back in **the contract's account**
+2. **Revert any state changes**: If the original function made any state changes (i.e. changed or stored data), you need to manually roll them back. **They won't revert automatically**
+
+> [!WARNING]
+>
+> If your original function finishes correctly then the callback executes **even if the external function panics**. Your state will **not** rollback automatically,
+> and `$NEAR` will **not** be returned to the signer automatically. Always make sure to check in the callback if the external function failed, and manually rollback any
+> operation if necessary.
+
+***
+
+## Calling Multiple Functions on the Same Contract
+
+You can call multiple functions in the same external contract, which is known as a **batch call**.
+
+An important property of batch calls is that they **act as a unit**: they execute in the same [receipt](https://docs.near.org/protocol/transactions/transaction-execution.md#receipts--finality), and if **any function fails**, then they **all get reverted**.
+
+```rust title="batch_actions.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn batch_actions(&mut self) -> Promise {
+    let hi = json!({ "greeting": "hi" }).to_string().into_bytes();
+    let bye = json!({ "greeting": "bye" }).to_string().into_bytes();
+
+    // You can create one transaction calling multiple methods
+    // on a same contract
+    Promise::new(self.hello_account.clone())
+        .function_call("set_greeting".to_owned(), hi, NO_DEPOSIT, XCC_GAS)
+        .function_call("get_greeting".to_owned(), NO_ARGS, NO_DEPOSIT, XCC_GAS)
+        .function_call("set_greeting".to_owned(), bye, NO_DEPOSIT, XCC_GAS)
+        .function_call("get_greeting".to_owned(), NO_ARGS, NO_DEPOSIT, XCC_GAS)
+        .then(Self::ext(env::current_account_id()).batch_actions_callback())
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/batch_actions.rs#L8-L20)
+
+> [!TIP]
+>
+> Callbacks only have access to the result of the **last function** in a batch call
+
+***
+
+## Calling Multiple Functions on Different Contracts
+
+You can also call multiple functions in **different contracts**. These functions will be executed in parallel, and do not impact each other. This means that, if one fails, the others **will execute, and NOT be reverted**.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub fn multiple_contracts(&mut self) -> Promise {
+    // We create a promise that calls the `get_greeting` function on the HELLO_CONTRACT
+    let hello_promise = Promise::new(self.hello_account.clone()).function_call(
+        "get_greeting".to_owned(),
+        NO_ARGS,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We create a promise that calls the `get_num` function on the COUNTER_CONTRACT
+    let counter_promise = Promise::new(self.counter_account.clone()).function_call(
+        "get_num".to_owned(),
+        NO_ARGS,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We create a promise that calls the `get_messages` function on the GUESTBOOK_CONTRACT
+    let args = json!({ "from_index": "0", "limit": 2 })
+        .to_string()
+        .into_bytes();
+
+    let guestbook_promise = Promise::new(self.guestbook_account.clone()).function_call(
+        "get_messages".to_owned(),
+        args,
+        NO_DEPOSIT,
+        XCC_GAS,
+    );
+
+    // We join all promises and chain a callback to collect their results.
+    hello_promise
+        .and(counter_promise)
+        .and(guestbook_promise)
+        .then(
+            Self::ext(env::current_account_id())
+                .with_static_gas(XCC_GAS)
+                .multiple_contracts_callback(),
+        )
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/cross-contract-calls/blob/f33e6ded02103ed987ffbc381b3ffc6307986a7a/contract-advanced-rs/src/multiple_contracts.rs#L17-L55)
+
+> [!TIP]
+>
+> Callbacks have access to the result of **all functions** in a parallel call
+
+***
+
+## Security Concerns
+
+While writing cross-contract calls there is a significant aspect to keep in mind: all the calls are **independent** and **asynchronous**. In other words:
+
+* The function in which you make the call and function for the callback are **independent**.
+* There is a **delay between the call and the callback**, in which people can still interact with the contract
+
+This has important implications on how you should handle the callbacks. Particularly:
+
+1. Make sure you don't leave the contract in a exploitable state between the call and the callback.
+2. Manually rollback any changes to the state in the callback if the external call failed.
+3. Make sure the contract stays safe if the callback itself fails. See [callbacks can fail](https://docs.near.org/smart-contracts/security/cross-contract-calls/callback-failures.md).
+
+We have a whole [security section](https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks.md) dedicated to these specific errors, so please go and check it.
+
+> [!WARNING]
+>
+> Not following these basic security guidelines could expose your contract to exploits. Please check the [security section](https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks.md), and if still in doubt, [join us in Discord](https://near.chat).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

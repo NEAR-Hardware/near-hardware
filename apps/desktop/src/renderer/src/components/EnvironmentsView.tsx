@@ -17,6 +17,7 @@ import {
   type EnvironmentStatus
 } from '../../../shared/environments'
 import AgentIcon from './AgentIcon'
+import ContractToolsCard from './ContractToolsCard'
 import PlatformioCard from './PlatformioCard'
 import './EnvironmentsView.css'
 
@@ -188,6 +189,7 @@ function EnvironmentsView(): React.JSX.Element | null {
         </div>
       )}
       <PlatformioCard />
+      <ContractToolsCard />
     </div>
   )
 }

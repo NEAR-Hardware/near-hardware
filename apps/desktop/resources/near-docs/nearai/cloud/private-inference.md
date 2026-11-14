@@ -1,0 +1,188 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.ai/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Private Inference
+
+> Learn how NEAR AI Cloud's private inference leverages TEEs to provide cryptographically verifiable AI computations with complete data privacy and security.
+
+When you use traditional AI services, your data passes through systems controlled by cloud providers and AI companies. Your prompts, the AI's responses, and even the processing of your requests are all visible to these third parties. This creates serious security concerns for sensitive applications.
+
+**Private inference solves this problem.** It ensures that AI computations happen in a completely isolated environment where no one—not the cloud provider, not the model provider, not even NEAR AI can access your data. At the same time, you can independently verify that your requests were actually processed in this secure environment through cryptographic attestation.
+
+This guide explains how NEAR AI Cloud implements private inference using Trusted Execution Environments (TEEs), the architecture that protects your data, and the security guarantees you can rely on.
+
+***
+
+## What is Private Inference?
+
+Private inference is a method of running AI models where both your input data and the model's outputs remain completely hidden from everyone except the user and client even while the computation happens on remote servers you don't control.
+
+Traditional cloud AI services require you to trust that providers won't access your data. Private inference eliminates this need for trust by using hardware-based security that makes it technically impossible for anyone to see your data, even with physical access to the servers.
+
+NEAR AI Cloud's private inference provides three core guarantees:
+
+> [card] Complete Privacy
+>
+> Your prompts, model weights, and outputs are encrypted and isolated in hardware-secured environments. Infrastructure providers, model providers, and NEAR cannot access your data at any point in the process.
+
+> [card] Cryptographic Verification
+>
+> Attestation reports provide cryptographic evidence for a specific runtime and request path. When a response signature is available, you can also verify response integrity.
+
+> [card] Production Performance
+>
+> Hardware-accelerated TEEs with [NVIDIA Confidential Computing](https://www.nvidia.com/en-us/data-center/solutions/confidential-computing/) deliver high-throughput inference with minimal latency overhead, making private inference practical for real-world applications.
+
+***
+
+## How Private Inference Works
+
+### Trusted Execution Environment (TEE)
+
+NEAR AI Cloud combines Intel TDX and NVIDIA TEE technologies to create isolated, secure environments for AI computation:
+
+* **[Intel TDX(Trust Domain Extensions)](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html)** :
+  Creates confidential virtual machines (CVMs) that isolate your AI workloads from the host system, preventing unauthorized access to data in memory.
+
+* **[NVIDIA TEE](https://www.nvidia.com/en-us/data-center/solutions/confidential-computing/)** :
+  Provides GPU-level isolation for model inference, ensuring model weights and computations remain completely private during processing.
+
+* **[Cryptographic Attestation](https://docs.near.ai/cloud/verification)** :
+  Each TEE environment generates cryptographic proofs of its integrity and configuration, enabling independent verification of the secure execution environment.
+
+### Client-Side Encryption
+
+If you're using a standard OpenAI SDK or curl, your prompts are automatically protected by TLS encryption—no additional setup required.
+
+For new integrations, use the NEAR AI Cloud Gateway. Its verification flow can establish the evidence required for a particular request path.
+
+**Gateway mode** routes through `cloud-api.near.ai`, which runs in its own TEE before forwarding to the model TEE:
+
+```mermaid theme={"dark"}
+flowchart LR
+    A["Your Machine"] -->|"🔒 HTTPS"| B["NEAR AI Cloud gateway"] -->|"🔒 HTTPS"| C["Model TEE → LLM"]
+
+    style A fill:#1a1a2e,stroke:#4fc3f7,stroke-width:2px,color:#fff
+    style B fill:#1b5e20,stroke:#66bb6a,stroke-width:2px,color:#fff
+    style C fill:#2e7d32,stroke:#81c784,stroke-width:2px,color:#fff
+```
+
+**Key insight:** TLS protects traffic in transit. When the Gateway TLS attestation flow passes for a particular connection, it binds that connection's endpoint to verified attestation evidence.
+
+Here's why this works:
+
+1. **Standard HTTPS = TLS encryption**: When you make API calls using the OpenAI SDK or curl, you're connecting via HTTPS. This means TLS encryption is applied automatically by your client before any data leaves your machine.
+
+2. **TLS endpoint verification**: Use Gateway TLS attestation when your application needs to verify the endpoint for a particular connection. The same TLS connection must supply both the peer certificate and attestation report.
+
+3. **Evidence-driven trust**: Use attestation and the workload policy appropriate for your application to decide which environment properties are required.
+
+This gives you the same OpenAI-compatible development flow while allowing your application to verify the properties it requires.
+
+### Direct Completions
+
+Self-hosted models also have direct completions endpoints at `https://{slug}.completions.near.ai/v1`, which skip the Gateway. They are experimental and have known verification limitations, so we don't recommend them for new integrations or production verification. See [Direct Completions](https://docs.near.ai/cloud/experimental/direct-completions).
+
+### The Inference Process
+
+When you make a request to NEAR AI Cloud through the Gateway, your data flows through a secure pipeline designed to maintain privacy at every step.
+
+**Via Gateway (`cloud-api.near.ai`):**
+
+1. **Request Initiation:**
+   You send chat completion requests via HTTPS to the LLM Gateway. TLS protects data in transit; use [NEAR AI Cloud gateway TLS connection binding](https://docs.near.ai/cloud/verification/cloud-api/tls.md) when your application needs to verify the endpoint for a particular connection.
+
+2. **Secure Request Routing:**
+   The LLM Gateway routes your request to the appropriate Private LLM Node based on the requested model, availability, and load balancing requirements.
+
+3. **Secure Inference:**
+   AI inference computations execute inside the Private LLM Node's TEE, where all data and model weights are protected by hardware-enforced isolation.
+
+4. **Attestation Generation**
+   Attestation reports provide evidence about the environment and its measured configuration.
+
+5. **Response Signing:**
+   Supported flows can make a response signature available for integrity verification.
+
+6. **Verifiable Response:**
+   Use [verification](https://docs.near.ai/cloud/verification) to check the evidence required by your application. A response without an available signature is not response-verified.
+
+***
+
+## Architecture Overview
+
+NEAR AI Cloud operates through a distributed architecture consisting of an LLM Gateway and a network of Private LLM Nodes.
+
+### Private LLM Nodes
+
+Each Private LLM Node provides secure, isolated AI inference capabilities:
+
+* **Standardized Hardware**: 8x NVIDIA H200 GPUs per node, optimized for high-performance inference
+* **Intel TDX-enabled CPUs**: Enable secure virtualization with hardware-enforced isolation
+* **Private-ML-SDK**: Manages secure model execution, attestation generation, and cryptographic signing
+* **Health Monitoring**: Automated liveness checks and monitoring ensure continuous availability
+
+### LLM Gateway
+
+The LLM Gateway serves as the central orchestration layer:
+
+* **Model Management**: Registers and manages available models across the Private LLM Node network
+* **Request Routing**: Intelligently routes requests to appropriate nodes based on model availability and load
+* **Attestation Verification**: Validates and stores TEE attestation reports for audit and verification
+* **Access Control**: Manages API keys, authentication, and usage tracking for billing and monitoring
+
+***
+
+## Security Guarantees
+
+### Defense in Depth
+
+NEAR AI Cloud's private inference implements multiple layers of security to protect your data:
+
+* **Hardware-Level Isolation** :
+  TEEs create isolated execution environments enforced at the hardware level, preventing unauthorized access to memory and computation even from privileged system administrators or cloud providers.
+
+* **Secure Communication** :
+  All communication between your applications and the LLM infrastructure uses TLS encryption. Use the route-specific [verification guide](https://docs.near.ai/cloud/verification) to verify endpoint binding for a particular connection when that property is required.
+
+* **Cryptographic Attestation** :
+  Every TEE environment generates cryptographic proofs that verify the integrity of the execution environment, allowing you to independently confirm your computations occurred in a genuine, unmodified TEE.
+
+* **Result Authentication** :
+  When a response signature is available, it can be verified against the attested signer to check response integrity.
+
+### Threat Protection
+
+NEAR AI Cloud's architecture protects against common attack vectors:
+
+* **Malicious Infrastructure Providers** :
+  Hardware-enforced TEE isolation prevents cloud infrastructure providers from accessing your prompts, model weights, or inference results, even with physical access to servers.
+
+* **Network-Based Attacks** :
+  End-to-end encryption protects your data during transmission, preventing man-in-the-middle attacks and network eavesdropping.
+
+* **Model Extraction Attempts** :
+  Model weights remain encrypted and isolated within the TEE, making extraction computationally infeasible even for attackers with privileged system access.
+
+**Result Tampering** :
+Cryptographic signatures generated inside the TEE ensure that responses cannot be modified in transit without detection, maintaining the integrity of AI outputs.
+
+***
+
+## Next Steps
+
+> [card] [Verification](https://docs.near.ai/cloud/verification)
+>
+> Understand how to verify and validate secure interactions with AI models
+
+> [card] [NEAR AI Cloud Gateway Verification](https://docs.near.ai/cloud/verification/cloud-api)
+>
+> Verify gateway, model, TLS, and response evidence for requests sent through the NEAR AI Cloud gateway
+
+> [card] [E2EE Chat Completions](https://docs.near.ai/cloud/guides/e2ee-chat-completions.md)
+>
+> Add client-side encryption for defense-in-depth protection of your messages
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

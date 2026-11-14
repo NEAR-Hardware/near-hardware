@@ -1,0 +1,213 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Auction factory
+
+> Create new auctions through a factory using a shared global contract.
+
+Since an auction contract hosts a single auction, each time you would like to host a new auction you will need a new contract account. A factory can create that account and initialize the auction for you.
+
+The repository includes an [auction factory](https://github.com/near-examples/auctions-tutorial/tree/main/factory) that creates a locked account for each auction. Each account uses a shared [global contract](https://docs.near.org/smart-contracts/global-contracts.md), so we publish the auction code once and let new auctions reference it.
+
+***
+
+## Publishing the auction contract
+
+First, build the FT/NFT auction contract from `contract-rs/03-bid-with-fts`:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near build non-reproducible-wasm
+```
+
+Publish the resulting WASM as a global contract using an existing funded account:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract deploy-as-global use-file target/near/auction_contract.wasm as-global-account-id <global-auction.testnet>
+```
+
+Choose testnet and the publisher account's signing credentials when prompted. Publishing the code has a one-time cost; each auction then pays for its own state and global contract reference.
+
+> [!WARNING]
+>
+> An account-ID global contract follows code updates published by that account. Updating the code at `<global-auction.testnet>` changes the implementation used by existing auctions too. Use a publisher account you control and trust. Removing an auction account's keys does not prevent updates through this global reference.
+
+***
+
+## Initializing the factory
+
+The factory stores the account ID of the published global contract. Its `new` method takes this account ID as `global_contract_id`.
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
+pub struct Contract {
+    global_contract_id: AccountId,
+}
+
+#[near]
+impl Contract {
+    /// The auction implementation must already be published as a global contract.
+    #[init]
+    pub fn new(global_contract_id: AccountId) -> Self {
+        Self { global_contract_id }
+    }
+
+    pub fn get_global_contract_id(&self) -> AccountId {
+        self.global_contract_id.clone()
+    }
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/factory/src/lib.rs#L6-L22)
+
+Create a funded factory account using `near account create-account`. Then, from the repository's `factory` directory, build, deploy, and initialize the factory:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo near build non-reproducible-wasm
+
+near contract deploy <factory.testnet> use-file target/near/contract.wasm with-init-call new json-args '{"global_contract_id":"<global-auction.testnet>"}'
+```
+
+Choose zero attached deposit for initialization, testnet, and the factory account as signer when prompted.
+
+> [!NOTE]
+>
+> If you deployed the earlier factory that stored auction WASM, use a new factory account for this version. Its state and initialization API have changed.
+
+***
+
+## Creating an auction account
+
+The `deploy_new_auction` method takes a name for the new subaccount and the auction's initialization parameters. It checks that the name is a valid single subaccount label, that the auction ends in the future, and that the attached deposit covers the required funding.
+
+```rust title="deploy.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn deploy_new_auction(
+    &mut self,
+    name: String,
+    end_time: U64,
+    auctioneer: AccountId,
+    ft_contract: AccountId,
+    nft_contract: AccountId,
+    token_id: String,
+    starting_price: U128,
+) -> Promise {
+    // Require a single direct subaccount label; dots would create descendants.
+    require!(
+        !name.is_empty() && !name.contains('.'),
+        "Invalid auction name"
+    );
+    let account: AccountId = format!("{name}.{}", env::current_account_id())
+        .parse()
+        .expect("Invalid auction account ID");
+    require!(
+        end_time.0 > env::block_timestamp(),
+        "Auction must end in the future"
+    );
+
+    let args = AuctionInitArgs {
+        end_time,
+        auctioneer,
+        ft_contract,
+        nft_contract,
+        token_id,
+        starting_price,
+    };
+    let init_args = near_sdk::serde_json::to_vec(&args).unwrap();
+    let required = self.get_required(args);
+    let attached = env::attached_deposit();
+    require!(attached >= required, format!("Attach at least {required}"));
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/factory/src/deploy.rs#L30-L65)
+
+The factory then creates the account, transfers the attached deposit, references the global contract, and calls `init` in one atomic batch. The auction's initialization function is public so the factory can call it. A successfully created auction is already initialized and has no access keys, as discussed [earlier](https://docs.near.org/web3-apps/tutorials/mastering-near/1.3-deploy.md#locking-the-contract).
+
+```rust title="deploy.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+// The entire batch is atomic, including initialization. No access key
+// is installed, so the newly created auction account is locked.
+Promise::new(account.clone())
+    .create_account()
+    .transfer(attached)
+    .use_global_contract_by_account_id(self.global_contract_id.clone())
+    .function_call(
+        "init".to_owned(),
+        init_args,
+        NearToken::from_near(0),
+        Gas::from_tgas(50),
+    )
+    .then(
+        Self::ext(env::current_account_id())
+            .with_static_gas(Gas::from_tgas(30))
+            .deploy_new_auction_callback(account, env::predecessor_account_id(), attached),
+    )
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/factory/src/deploy.rs#L67-L83)
+
+A callback returns `true` on success. If account creation, the global contract reference, or initialization fails, it returns `false` and refunds the attached deposit to the caller.
+
+***
+
+## Using the factory
+
+First, choose an end time in nanoseconds. This command prints a timestamp two minutes from now:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+node -e 'console.log((BigInt(Date.now() + 120000) * 1000000n).toString())'
+```
+
+Use the timestamp and your account IDs to prepare the auction parameters. The `starting_price` is expressed in the FT's smallest units.
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "name": "new-auction",
+  "end_time": "<nanosecond timestamp>",
+  "auctioneer": "<seller.testnet>",
+  "ft_contract": "<ft.testnet>",
+  "nft_contract": "<nft.testnet>",
+  "token_id": "1",
+  "starting_price": "10000"
+}
+```
+
+Before creating the auction, query `get_required` with the same initialization parameters, leaving out `name` and wrapping them in `args`:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-read-only <factory.testnet> get_required json-args '{"args":{"end_time":"<nanosecond timestamp>","auctioneer":"<seller.testnet>","ft_contract":"<ft.testnet>","nft_contract":"<nft.testnet>","token_id":"1","starting_price":"10000"}}' network-config testnet now
+```
+
+The result is the required deposit in yoctoNEAR, returned as a string. It includes a conservative estimate for account, state, and global reference storage, plus 0.1 NEAR for outgoing FT/NFT calls. Long token IDs increase the requirement. The entire attached deposit is transferred to the new auction account.
+
+```rust title="deploy.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+/// Fund state storage and leave 0.1 NEAR for outgoing FT/NFT calls.
+/// This conservative bound includes the account, global reference, STATE
+/// record, and highest bidder (whose ID is at most 64 bytes).
+pub fn get_required(&self, args: AuctionInitArgs) -> NearToken {
+    let bytes = 512
+        + self.global_contract_id.as_str().len()
+        + near_sdk::borsh::to_vec(&args).unwrap().len();
+    env::storage_byte_cost()
+        .saturating_mul(bytes as u128)
+        .saturating_add(NearToken::from_millinear(100))
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/auctions-tutorial/blob/4678765ea7f2a584b1a6569786d497dcf75f5261/factory/src/deploy.rs#L18-L28)
+
+For ordinary short arguments, 0.2 NEAR covers the requirement. Call `deploy_new_auction` with your prepared JSON and at least the required deposit:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+near contract call-function as-transaction <factory.testnet> deploy_new_auction json-args '<JSON above>' prepaid-gas '300 Tgas' attached-deposit '0.2 NEAR'
+```
+
+Choose your signer and testnet when prompted. On success, the auction is ready at `new-auction.<factory.testnet>`. Before accepting bids, transfer the NFT to this account and register the auction, bidders, and auctioneer on the FT contract using `storage_deposit`, as covered in the [FT section](https://docs.near.org/web3-apps/tutorials/mastering-near/3.2-ft.md#registering-users-in-the-ft-contract).
+
+***
+
+## Conclusion
+
+In this part of the tutorial, you have learned how to publish an auction as a global contract and configure a factory to create initialized auction accounts that share its code. If you're feeling adventurous you could create a frontend to interact with the factory contract to make it even easier to deploy new auctions. If you do so feel free to share it in our developer [Telegram](https://t.me/neardev) or [Discord](https://discord.gg/vMGH5QywTH) channels!
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

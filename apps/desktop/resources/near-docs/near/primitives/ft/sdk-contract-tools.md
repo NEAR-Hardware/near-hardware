@@ -1,0 +1,294 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Creating a FT Contract
+
+> Learn how to create a fungible token (FT) using Contract Tools package
+
+In this tutorial, we will create a fungible token (FT) using the [NEAR SDK Contract Tools](https://github.com/near/near-sdk-contract-tools) package. This package is a collection of common tools and patterns to simplify smart contract development, including:
+
+* Storage fee management
+* Escrow pattern and derive macro
+* Owner pattern and derive macro
+* Pause pattern and derive macro
+* Role-based access control
+* Derive macros for [NEP standards](https://docs.near.org/primitives/ft/standard.md)
+  * NEP-141 (fungible token), extension NEP-148
+  * NEP-145 (storage management), and integrations for the fungible token and non-fungible token standards
+  * NEP-171 (non-fungible token), extensions NEP-177, NEP-178, NEP-181
+  * NEP-297 (events)
+
+***
+
+## Introduction
+
+Use the [existing global FT contract](https://docs.near.org/primitives/ft/ft.md#global-contracts) by default. Use this guide only if your application truly requires behavior the global contract does not provide. Use `near-contract-standards` or `near-sdk-contract-tools` for the token implementation; do not implement the FT standard by hand.
+
+`near-sdk-contract-tools` provides derive macros for FT standards and access control, allowing us to focus on custom logic such as minting and burning.
+
+In this example, the contract starts with zero supply and wraps deposited NEAR into tokens. Only the current owner can mint tokens by depositing NEAR or burn tokens from their own balance to redeem NEAR. Other accounts can hold and transfer tokens using the standard FT methods.
+
+***
+
+## Basic FT Methods
+
+To derive basic FT methods to our contract, we need to derive `FungibleToken` macro to our contract struct:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[derive(Default, Owner, FungibleToken)]
+#[fungible_token(transfer_hook = "TransferHook")]
+#[near(contract_state)]
+pub struct MyFtContract {}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/lib.rs#L9-L12)
+
+This adds the FT interface, metadata, and storage management methods to our contract:
+
+* `ft_balance_of`
+* `ft_metadata`
+* `ft_total_supply`
+* `storage_balance_bounds`
+* `storage_balance_of`
+* `ft_resolve_transfer`
+* `ft_transfer`
+* `ft_transfer_call`
+* `storage_deposit`
+* `storage_unregister`
+* `storage_withdraw`
+
+To bring basic owner methods to our contract, we can also derive the `Owner` macro which adds the following methods:
+
+* `own_get_owner`
+* `own_get_proposed_owner`
+* `own_accept_owner`
+* `own_propose_owner`
+* `own_renounce_owner`
+
+***
+
+## Initialization
+
+To initialize the basic FT contract with a custom owner, metadata, and storage bounds, we implement the `new` method. The `owner_id` account can be different from the account where the contract is deployed. Calling `Owner::init` records that account as the current owner:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[near]
+impl MyFtContract {
+    #[init]
+    pub fn new(
+        owner_id: AccountId,
+        /* total_supply: U128, */
+        metadata: ContractMetadata,
+    ) -> Self {
+        let mut contract = Self {};
+
+        // Set metadata
+        contract.set_metadata(&metadata);
+
+        // Initialize owner
+        Owner::init(&mut contract, &owner_id);
+
+        contract.set_storage_balance_bounds(&StorageBalanceBounds {
+            min: NearToken::from_yoctonear(2500000000000000000000),
+            max: Some(NearToken::from_yoctonear(2500000000000000000000)),
+        });
+
+        /*
+          This contract wraps the deposited NEAR tokens, so it should have an initial supply of 0.
+          However, if you want your contract to start with an initial FT supply,
+          you can uncomment the following line and pass total_supply to the new method.
+
+          let _ = contract.deposit_unchecked(&owner_id, total_supply.0);
+        */
+
+        contract
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/lib.rs#L14-L45)
+
+***
+
+## Transfer Hook
+
+Use a transfer hook to run application logic before or after the library-provided transfer. Keep the standard `ft_transfer` implementation in the library:
+
+```rust title="transfer_hook.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+pub struct TransferHook;
+
+impl Hook<MyFtContract, Nep141Transfer<'_>> for TransferHook {
+    fn hook<R>(
+        contract: &mut MyFtContract,
+        transfer: &Nep141Transfer<'_>,
+        f: impl FnOnce(&mut MyFtContract) -> R,
+    ) -> R {
+        // Log, check preconditions, save state, etc.
+        log!(
+            "NEP-141 transfer from {} to {} of {} tokens",
+            transfer.sender_id,
+            transfer.receiver_id,
+            transfer.amount
+        );
+
+        let storage_usage_before = env::storage_usage();
+
+        let r = f(contract); // execute wrapped function
+
+        let storage_usage_after = env::storage_usage();
+        log!(
+            "Storage delta: {}",
+            storage_usage_after - storage_usage_before
+        );
+
+        r
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/transfer_hook.rs#L5-L33)
+
+Then derive it to our contract struct:
+
+```rust title="lib.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[derive(Default, Owner, FungibleToken)]
+#[fungible_token(transfer_hook = "TransferHook")]
+#[near(contract_state)]
+pub struct MyFtContract {}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/lib.rs#L9-L12)
+
+***
+
+## Minting
+
+The FT standards do not define a minting method, so we implement our own `mint` method. It takes no arguments and mints tokens for the owner based on the attached NEAR deposit.
+
+We import the `Owner` trait and call `self.assert_owner()` before making any changes. This checks that the account calling the method is the current owner recorded by the contract:
+
+```rust title="mint.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use crate::{MyFtContract, MyFtContractExt};
+use near_sdk::{env, near};
+use near_sdk_contract_tools::{ft::*, owner::Owner};
+
+#[near]
+impl MyFtContract {
+    #[payable]
+    pub fn mint(&mut self) {
+        self.assert_owner();
+
+        let mut amount_to_mint = env::attached_deposit();
+
+        // Check account's storage balance and deposit if necessary
+        let storage_balance_bounds = self.get_storage_balance_bounds();
+        let storage_balance = self
+            .get_storage_balance(&env::predecessor_account_id())
+            .unwrap_or_else(|_| StorageBalance::default());
+        if storage_balance.total < storage_balance_bounds.min {
+            // Deposit storage if necessary
+            self.storage_deposit(Some(env::predecessor_account_id()), None);
+            amount_to_mint = amount_to_mint.saturating_sub(storage_balance_bounds.min);
+        }
+
+        // Mint tokens
+        Nep141Controller::mint(
+            self,
+            &Nep141Mint {
+                amount: amount_to_mint.as_yoctonear(),
+                receiver_id: env::predecessor_account_id().into(),
+                memo: None,
+            },
+        )
+        .unwrap_or_else(|e| env::panic_str(&e.to_string()));
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/mint.rs#L1-L35)
+
+If the owner is not registered to hold tokens, the method reserves the minimum storage deposit of 0.0025 NEAR from the attached deposit and mints from the remainder. To mint a positive amount on this first call, we attach more than the storage minimum. If the owner is already registered, the full attached deposit is used for minting.
+
+Each token unit represents one yoctoNEAR. For example, an unregistered owner attaching 1 NEAR receives `997500000000000000000000` token units, while a registered owner receives `1000000000000000000000000` token units.
+
+> [!TIP]
+>
+> You can add further restrictions to this method, for example, to allow minting only when the contract is not paused using [`Pausable`](https://github.com/near/near-sdk-contract-tools/tree/develop?tab=readme-ov-file#macro-combinations), or to limit the amount the owner can mint.
+
+***
+
+## Burning
+
+The FT standards do not define a burning method either. We implement a `burn` method that removes `amount` token units from the owner's balance and refunds the corresponding NEAR.
+
+As with minting, `self.assert_owner()` restricts the call to the current owner. The caller must attach [exactly 1 yoctoNEAR](https://docs.near.org/smart-contracts/security/one_yocto.md), and `amount` is passed as a base-10 string in the smallest token units:
+
+```rust title="burn.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use crate::{MyFtContract, MyFtContractExt};
+use near_sdk::{NearToken, Promise, assert_one_yocto, env, json_types::U128, near};
+use near_sdk_contract_tools::{
+    ft::{Nep141Burn, Nep141Controller},
+    owner::Owner,
+};
+
+#[near]
+impl MyFtContract {
+    #[payable]
+    pub fn burn(&mut self, amount: U128) {
+        self.assert_owner();
+
+        // Assert that the attached deposit is exactly 1 yocto NEAR
+        assert_one_yocto();
+        // Burn tokens
+        Nep141Controller::burn(
+            self,
+            &Nep141Burn {
+                amount: amount.0,
+                owner_id: env::predecessor_account_id().into(),
+                memo: None,
+            },
+        )
+        .unwrap_or_else(|e| env::panic_str(&e.to_string()));
+
+        let amount_to_refund = NearToken::from_yoctonear(amount.0);
+        Promise::new(env::predecessor_account_id()).transfer(amount_to_refund);
+    }
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/ft-contract-tools/blob/5093d505fa56fb8c4feb62aab4bc119014881660/src/burn.rs#L1-L30)
+
+Burning reduces both the owner's balance and the total supply by `amount`, then schedules a transfer of `amount` yoctoNEAR to the owner. For example, `{"amount": "1000000000000000000000000"}` burns token units representing 1 NEAR and refunds 1 NEAR. The owner must have enough tokens in their balance to burn the requested amount.
+
+The owner checks in both methods follow ownership transfers through `own_propose_owner` and `own_accept_owner`. Once the new owner accepts, only that account can mint or burn. Token holders who are not the current owner can still transfer tokens, but cannot mint or redeem them through these methods.
+
+***
+
+## Testing the Contract
+
+From the [example repository](https://github.com/near-examples/ft-contract-tools), run:
+
+```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+cargo install cargo-near --version 0.21.1 --locked --no-default-features
+cargo test --locked -- --test-threads=2
+```
+
+The tests build the FT contract and DeFi receiver from source, then use `near-sandbox` and `near-api` to check minting, burning, ownership transfers, storage refunds, and cross-contract transfers.
+
+***
+
+## Conclusion
+
+Using `near-sdk-contract-tools` is a very simple and flexible way to create FT contract with minimal boilerplate which allows us to focus on the business logic.
+
+You can further extend this contract with more features like pausing, role-based access control, escrow pattern, and more by deriving corresponding macros from the package.
+
+> [!TIP]
+>
+> **Need help?**
+>
+> Visit our [community channels](https://docs.near.org/communities.md) if you have questions or need support.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

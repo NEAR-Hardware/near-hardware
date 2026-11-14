@@ -1,0 +1,78 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Epoch
+
+> Learn about epochs in NEAR Protocol, including their duration, role in validator selection, and how they affect network operations and data retention.
+
+This section explains the concept of an **epoch** in the NEAR Protocol, which is a unit of time when validators of the network remain constant. It describes how epochs are measured, their duration, and their significance in the network's operation.
+
+An **epoch** is a unit of time when validators of the network remain constant. It is measured in blocks:
+
+* Both `testnet` and `mainnet` have an epoch duration of 43,200 blocks. Ideally epochs last 7.2 hours, since blocks are created every 0.6 seconds (in reality, they can take slightly shorter or longer to be created).
+* You can view this setting by querying the **[`protocol_config`](https://docs.near.org/api/rpc/protocol#protocol-config)** RPC endpoint and searching for `epoch_length`.
+
+**Note:** Nodes garbage collect blocks after 5 epochs (\~1.5 days) unless they are [archival nodes](https://near-nodes.io/intro/node-types#archival-node).
+
+**Example:**
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "EXPERIMENTAL_protocol_config",
+>   "params": {
+>     "finality": "final"
+>   }
+> }
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http post https://rpc.testnet.near.org jsonrpc=2.0 id=dontcare method=EXPERIMENTAL_protocol_config \
+>   params:='{
+>     "finality": "final"
+>   }'
+> ```
+
+**Example Response:**
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "protocol_version": 44,
+        "genesis_time": "2020-07-21T16:55:51.591948Z",
+        "chain_id": "mainnet",
+        "genesis_height": 9820210,
+        "num_block_producer_seats": 100,
+        "num_block_producer_seats_per_shard": [
+            100
+        ],
+        "avg_hidden_validator_seats_per_shard": [
+            0
+        ],
+        "dynamic_resharding": false,
+        "protocol_upgrade_stake_threshold": [
+            4,
+            5
+        ],
+        "epoch_length": 43200,
+        "gas_limit": 1000000000000000,
+        "min_gas_price": "1000000000",
+        "max_gas_price": "10000000000000000000000",
+        "block_producer_kickout_threshold": 90,
+        "chunk_producer_kickout_threshold": 90,
+
+// ---- snip ----
+}
+```
+
+You can learn more about how epochs are used to manage network validation in the [Validator FAQ](https://github.com/near/wiki/blob/master/Archive/validators/faq.md#what-is-an-epoch).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

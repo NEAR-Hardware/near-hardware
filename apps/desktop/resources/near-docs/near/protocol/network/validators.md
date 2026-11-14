@@ -1,0 +1,94 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Validators
+
+> Learn about NEAR Protocol validators, their roles in network security, consensus mechanisms, validator economics, and how to become a validator.
+
+At its core, NEAR Protocol is a decentralized blockchain that operates on a network of independent participants called validators who process transactions and secure the network.
+
+These validators must reach consensus, meaning they need to agree on which transactions are valid and should be added to the blockchain. This ensures no one steals funds, double-spend tokens, or manipulates the system.
+
+NEAR validators use [Proof-of-Stake (PoS)](https://en.wikipedia.org/wiki/Proof_of_stake), a consensus mechanism that secures the network through economic incentives rather than energy-intensive computational power. Unlike Bitcoin's [proof-of-work](https://en.wikipedia.org/wiki/Proof_of_work) system that requires massive amounts of electricity, PoS makes the network environmentally sustainable while maintaining robust security.
+
+In Proof-of-Stake, users demonstrate support for specific validators by delegating their NEAR tokens through a process called staking. The principle is straightforward: validators with more delegated tokens are trusted by the community to keep the network safe. Validators that produce too few of their assigned blocks, chunks, or chunk endorsements earn less or no reward, and can be removed from the validator set.
+
+### Securing the Network
+
+Validators have two main jobs. The first is to validate and execute transactions, aggregating them in the blocks that form the blockchain. Their second job is to oversee other validators, making sure no one produces an invalid block or creates an alternative chain (eg. with the goal of creating a double spend).
+
+NEAR does not slash (burn) staked tokens. A validator that is offline or underperforms loses its rewards and can be removed from the validator set.
+
+Every block needs approvals from block producers that hold more than two thirds of the block producers' stake. To produce blocks without the other validators, an attacker would need validators with that much stake, which requires a huge amount of capital. If block producers that hold one third or more of that stake stop sending approvals, no new blocks can be produced.
+
+### Validator's Economy
+
+In exchange for servicing the network, validators are rewarded with NEAR every epoch. The yearly reward budget is 2.5% of the total supply. 10% of the reward budget goes to the protocol treasury. The rest is shared by validators, as described under Block & Chunk producers below.
+
+The system burns the transaction fees collected in each epoch. On protocol version 86 and earlier, contracts receive 30% of the gas they burn as a rebate, so that part is not burned. From protocol version 87 (nearcore 2.14.0), all of it is burned. The inflationary reward is paid out to validators at the same rate regardless of the number of fees collected or burned.
+
+***
+
+## Intro to Validators
+
+[Validators](https://www.near.org/papers) are responsible for producing and validating blocks and chunks, ensuring the security and integrity of the NEAR network.
+
+The hardware requirements for running a validator node vary depending on the staking position. Detailed specifications can be found here: [the hardware requirements](https://near-nodes.io/validator/hardware-validator).
+
+> [!NOTE]
+>
+> The `public_key` in a [`Stake` action](https://docs.near.org/protocol/transactions/transaction-anatomy#actions) is the validator's block-production key and must use `ed25519`. This is separate from the access key that signs the transaction, which can use any [supported signature scheme](https://docs.near.org/protocol/accounts-contracts/access-keys.md#signature-schemes), including `ml-dsa-65`.
+
+You can view the list of currently active validators on platforms like [NEAR-STAKING](https://near-staking.com/stats). Mainnet has 500 validator seats. If 500 or more proposals pass the minimum stake ratio, the seat price is one yoctoNEAR more than the stake of the 500th largest proposal. Otherwise the seat price is set by the minimum stake ratio: a validator's stake must be more than 1/62,500 of the total stake of all selected validators. There is no fixed minimum amount in `$NEAR`. The current seat price to join the active validator set is updated in real-time on [NEAR BLOCKS](https://nearblocks.io/node-explorer). Any validator node with a stake greater than the current seat price can join the set of active validators.
+
+> [!TIP]
+>
+> **Is there a plan to support GPU compute if certain validator nodes can offer that or is it just CPU?**
+>
+> We don't need GPU support as we are a POS chain and we require very little compute power.
+>
+> You can read more about our consensus strategy on our [Validator Quickstart](https://github.com/near/wiki/blob/master/Archive/validators/about.md) and [Staking FAQ](https://github.com/near/wiki/blob/master/Archive/validators/faq.md).
+
+***
+
+## Block & Chunk producers
+
+The top 100 validators are responsible for producing and validating blocks, as well as producing chunks. Under normal circumstances, each validator is assigned to a single shard, for which it produces chunks.
+
+The yearly reward budget is 2.5% of the total supply. 10% of the budget goes to the protocol treasury, and validators share the rest in proportion to stake. A validator's yearly yield is therefore about 2.25% times the total supply divided by the total stake. Validators with less than 90% uptime in an epoch get no reward for that epoch, and the reward is reduced between 90% and 99% uptime. Rewards that validators do not earn are not minted.
+
+***
+
+## Chunk Validators
+
+\[Note] Block & Chunk producers also serve as chunk validators.
+
+Non-top 100 validators take on the role of chunk validators, which has lower hardware and staking requirements, making it more accessible. This role helps expand the network's validator set, increasing opportunities to earn rewards and strengthen the security of the NEAR ecosystem.
+
+Chunk validators do not track shards. Their responsibilities are focused solely on validating and endorsing chunks.
+
+Chunk validators earn rewards from the same pool as block and chunk producers, in proportion to stake. There is no guaranteed minimum rate. A chunk validator that sends at least 70% of its expected chunk endorsements in an epoch gets its full share. Below 70% it gets no reward and is normally removed from the validator set. For more details on validator economics, check out [NEAR’s Economics Explained](https://near.org/blog/near-protocol-economics/).
+
+***
+
+## Sunsetting a staking pool
+
+If you operate a pool and want to wind it down, follow [Sunsetting a Staking Pool](https://docs.near.org/protocol/tutorials/sunsetting-a-staking-pool.md) to pause staking and help delegators withdraw their funds.
+
+***
+
+## Dedicated Validator Documentation Site
+
+If you'd like to further explore Validators and Nodes in general, you can visit the [Dedicated Validator Documentation Site](https://near-nodes.io/).
+
+> [!TIP]
+>
+> **If a developer writes a vulnerable or malicious dApp, is a validator implicitly taking on risk?**
+>
+> No. We have handled the potential damages to the network on the protocol level. For example, we have a lot of limiters that constrain how much data you can pass into a function call or how much compute you can do in one function call, etc.
+>
+> That said, smart contract developers will need to be responsible for their own dApps, as there is no stage gate or approval process. All vulnerabilities can only damage the smart contract itself. Luckily, updating smart contracts is very smooth on NEAR, so vulnerabilities can be updated/patched to an account in ways that cannot be done on other blockchains.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

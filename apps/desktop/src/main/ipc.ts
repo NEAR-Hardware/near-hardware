@@ -38,7 +38,8 @@ import {
   type ConnectedEnvironment,
   type EnvironmentId
 } from '../shared/environments'
-import { detectEnvironment } from './environments'
+import { detectEnvironment, refreshSearchPath } from './environments'
+import { readAuthStatus } from './setup'
 import { readSettings, updateSettings } from './settings'
 
 // Dev only: pretend some agents are missing to try the install flow, e.g.
@@ -58,8 +59,14 @@ function assertEnvironmentId(value: unknown): EnvironmentId {
 export function registerIpcHandlers(): void {
   registerHardwareIpc()
 
-  ipcMain.handle('environments:detect-all', () =>
-    Promise.all(ENVIRONMENTS.map((environment) => detect(environment.id)))
+  // A full scan also re-reads PATH, so agents installed while the app is open are found
+  ipcMain.handle('environments:detect-all', () => {
+    refreshSearchPath()
+    return Promise.all(ENVIRONMENTS.map((environment) => detect(environment.id)))
+  })
+
+  ipcMain.handle('environments:auth-status', async (_event, id: unknown) =>
+    readAuthStatus(await detect(assertEnvironmentId(id)))
   )
 
   ipcMain.handle('environments:detect', (_event, id: unknown) => detect(assertEnvironmentId(id)))

@@ -1,6 +1,8 @@
 // What the main area shows
 export type View =
   | { kind: 'environments' }
+  // Every NEAR account, opened from the sidebar's primary accounts
+  | { kind: 'accounts' }
   // A project's home, or one of its chats when chatId is set
   | { kind: 'project'; projectId: string; chatId?: string }
 
@@ -9,6 +11,7 @@ const STORAGE_KEY = 'near-hardware.view'
 export function loadView(): View {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+    if (saved?.kind === 'accounts') return { kind: 'accounts' }
     if (saved?.kind === 'project' && typeof saved.projectId === 'string') {
       return {
         kind: 'project',
@@ -21,6 +24,8 @@ export function loadView(): View {
   }
   return { kind: 'environments' }
 }
+
+export const sameView = (a: View, b: View): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 export function saveView(view: View): void {
   try {

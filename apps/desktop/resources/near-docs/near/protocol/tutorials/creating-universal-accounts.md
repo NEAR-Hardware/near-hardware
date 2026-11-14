@@ -1,0 +1,324 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Creating Universal Accounts
+
+> Three ways to create and initialize a 0u universal account: relayer-assisted, self-signed bootstrap, and from inside a smart contract, with code and RPC examples.
+
+A [universal account](https://docs.near.org/protocol/accounts-contracts/account-id.md#universal-address)'s address is the hash of its own initial state, so creating one is always the same underlying operation: submit a `UniversalStateInit` action carrying that state — the code, storage, and access keys the account will start with. What differs between the three flows below is **who signs** the transaction that carries it, and **when** the account starts existing.
+
+This page assumes you're familiar with [Universal Address](https://docs.near.org/protocol/accounts-contracts/account-id.md#universal-address) and [Access Keys](https://docs.near.org/protocol/accounts-contracts/access-keys.md).
+
+> [!WARNING]
+>
+> Universal accounts need protocol version 88 or later (nearcore 2.14.0). On a network with an earlier protocol version, a `UniversalStateInit` action is rejected, and a `Transfer` to a `0u` address fails without creating an account. To see a network's protocol version, call the `status` RPC method and read `protocol_version`. As of October 2026, testnet supports universal accounts and mainnet does not yet.
+
+> [!NOTE]
+>
+> This is a protocol-level walkthrough using raw transactions and RPC calls. Dedicated SDK helpers for building a `UniversalStateInit` action are expected to follow in `near-api-js` and `near-kit` — check [NEAR API](https://docs.near.org/tools/near-api.md) for the latest tooling before hand-rolling this in production.
+
+***
+
+## Choosing a flow
+
+| Flow | Who signs | Who pays gas | Good for |
+| - | - | - | - |
+| [Relayer-assisted](#relayer-assisted-creation) | An existing, already-funded account | The signer | Onboarding someone who doesn't hold any NEAR yet |
+| [Self-signed bootstrap](#self-signed-bootstrap) | The new account's own key | The new account itself | The owner already generated their key pair and can fund the address directly |
+| [Contract-triggered](#contract-triggered-creation) | A deployed contract, via a promise | The calling contract | Factory patterns: a contract creating new accounts on demand |
+
+***
+
+## The uninitialized account
+
+Before any state init runs, a `0u` address can already receive NEAR: a plain `Transfer` to an address that doesn't exist yet silently creates it as **uninitialized** — it holds a balance, but has no code, access keys, or storage.
+
+> [!WARNING]
+>
+> An uninitialized account accepts exactly one thing: a `UniversalStateInit` action whose state init hashes to that same address. Every other action — `AddKey`, `FunctionCall`, `DeployContract`, `Stake`, and so on — fails with `AccountNotInitialized`, and leaves the account untouched.
+
+Querying an uninitialized account looks like this:
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "query",
+>   "params": {
+>     "request_type": "view_account",
+>     "finality": "final",
+>     "account_id": "0u0000000000000000000000000000000000000000000000000000"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.query({
+>   request_type: 'view_account',
+>   finality: 'final',
+>   account_id: '0u0000000000000000000000000000000000000000000000000000',
+> });
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=query \
+>   params:='{"request_type":"view_account","finality":"final","account_id":"0u0000000000000000000000000000000000000000000000000000"}'
+> ```
+
+> [accordion] Example response (uninitialized)
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "amount": "3000000000000000000000000",
+>     "locked": "0",
+>     "code_hash": "11111111111111111111111111111111",
+>     "storage_usage": 100,
+>     "state": "uninitialized",
+>     "bootstrap_nonce": 187440903000000,
+>     "block_hash": "56xEo2LorUFVNbkFhCncFSWNiobdp1kzm14nZ47b5JVW",
+>     "block_height": 187440904
+>   },
+>   "id": "dontcare"
+> }
+> ```
+>
+> `bootstrap_nonce` is seeded as `(block_height - 1) * 1,000,000` — the block the account was created at, using the exact same formula and multiplier NEAR uses for a freshly added access key's starting nonce (see the [nonce values](https://docs.near.org/protocol/transactions/transaction-anatomy.md#actions) note on the Transaction Anatomy page).
+
+Once its state init runs, the same account looks like any other: `state` and `bootstrap_nonce` disappear from the response entirely, rather than flipping to `"initialized"` / `null`.
+
+> [accordion] Example response (initialized)
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "result": {
+>     "amount": "3000000000000000000000000",
+>     "locked": "0",
+>     "code_hash": "11111111111111111111111111111111",
+>     "storage_usage": 182,
+>     "block_hash": "8n1QWQyc7sTZDDxLBSyMWzquv9uUFrjEXFf4ZjZwUwjE",
+>     "block_height": 187440920
+>   },
+>   "id": "dontcare"
+> }
+> ```
+
+> [!NOTE]
+>
+> **Why `bootstrap_nonce` matters**
+>
+> An uninitialized account has no access key yet, so there's no `view_access_key` query to ask for a nonce. `bootstrap_nonce` — seeded from the block height the account was created at — is the *only* place to learn the value a [self-signed bootstrap](#self-signed-bootstrap) transaction's nonce is based on: the transaction itself must use `bootstrap_nonce + 1`, the same "+1" rule as any other nonce.
+
+***
+
+## Relayer-assisted creation
+
+An existing, funded account creates and pays for someone else's universal account in a single transaction. This is the pattern for onboarding: the new owner doesn't need to hold any NEAR up front.
+
+**1. Build the state init and derive the address**
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_crypto::PublicKeyHandle;
+use near_primitives::universal_state_init::{UniversalStateInit, UniversalStateInitV1};
+use near_primitives::utils::derive_universal_account_id;
+use std::collections::{BTreeMap, BTreeSet};
+
+let state_init = UniversalStateInit::V1(UniversalStateInitV1 {
+    code: None, // key-only account, no contract
+    data: BTreeMap::new(),
+    access_keys: BTreeSet::from([PublicKeyHandle::from(owner_public_key)]),
+});
+let raw = state_init.to_raw();
+let account_id = derive_universal_account_id(&raw);
+```
+
+`PublicKeyHandle` is the compact form an access key takes in a state init: the full public key for `ed25519`/`secp256k1`, or the 32-byte SHA3-256 hash for [`ml-dsa-65`](https://docs.near.org/protocol/accounts-contracts/access-keys#signature-schemes) — `PublicKeyHandle::from(public_key)` picks the right variant for you.
+
+Control over the account is entirely decided by whichever keys end up in `access_keys` at this step — there's no separate "owner" concept. A relayer building this state init could just as well name its own key alongside (or instead of) the future owner's; whoever holds any key committed here controls the account from the moment it initializes.
+
+**2. Sign one transaction with UniversalStateInit and Transfer**
+
+The relayer signs a transaction from **its own** account, targeting the derived id, bundling the state init with a funding transfer:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_primitives::action::{Action, UniversalStateInitAction};
+use near_primitives::transaction::{SignedTransaction, TransferAction};
+use near_primitives::types::Balance;
+
+let tx = SignedTransaction::from_actions(
+    relayer_nonce,
+    relayer_account_id,
+    account_id.clone(),
+    &relayer_signer,
+    vec![
+        Action::UniversalStateInit(Box::new(UniversalStateInitAction {
+            state_init: raw,
+            deposit: Balance::ZERO,
+        })),
+        Action::Transfer(TransferAction { deposit: Balance::from_near(1) }),
+    ],
+    recent_block_hash,
+);
+```
+
+Either `UniversalStateInit` or `Transfer` can run first. The one that runs first creates the account, and the other one then applies to it. The order matters for storage stake. If `UniversalStateInit` runs first, the account starts with a zero balance, so the state init's own `deposit` must cover the storage stake of everything it installs. This is not needed when the account uses 770 bytes or less, as in this example. A `FunctionCall` can follow in the same batch too, to call into the contract the state init just installed.
+
+> [!NOTE]
+>
+> **Why is `deposit` zero here, and `Transfer` used instead?** `UniversalStateInitAction.deposit` isn't a general funding mechanism. It only tops up the account's balance to cover its **storage stake**. This happens only the first time a state init initializes the account. A `UniversalStateInit` that lands on an already-initialized account always refunds the whole deposit, because there is nothing left for it to cover. A zero `deposit` works here because the new account uses 770 bytes or less, so it needs no storage stake. For a larger account, put the `Transfer` first, or set `deposit` to cover the storage stake. The `Transfer` sets the account's spendable balance.
+
+**3. Broadcast it**
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "jsonrpc": "2.0",
+  "id": "dontcare",
+  "method": "send_tx",
+  "params": {
+    "signed_tx_base64": "DwAAAHJlbGF5ZXIudGVzdG5ldA...",
+    "wait_until": "EXECUTED_OPTIMISTIC"
+  }
+}
+```
+
+> [!WARNING]
+>
+> **A relayer cannot make itself an owner.** If the batch also includes an `AddKey` for the relayer's own key, the whole receipt is rejected with `ActorNoPermission` — creating an account by funding it does not carry the creator's authority into it. Nothing in the batch takes effect: the account is never created either.
+
+***
+
+## Self-signed bootstrap
+
+The future owner already holds a key pair and just needs somewhere to send funds to before that key exists on-chain as an access key. No relayer, no second party — the account initializes itself.
+
+**1. Fund the address**
+
+Anyone — typically the owner themselves, from another account or an exchange withdrawal — sends an ordinary transfer to the derived `0u` address. This is the exact mechanic described in [The uninitialized account](#the-uninitialized-account): the transfer alone brings the account into existence, uninitialized.
+
+**2. Read the bootstrap nonce**
+
+Query `view_account` (see the [example above](#the-uninitialized-account)) to confirm `state` is `"uninitialized"` and read `bootstrap_nonce`.
+
+**3. Sign the state init with the account's own key**
+
+The transaction's `signer_id` and `receiver_id` are both the new account itself, signed with the key that's *inside* `state_init.access_keys` — the same key pair the owner generated in step 1 of the relayer flow above:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_crypto::InMemorySigner;
+
+let nonce = bootstrap_nonce + 1;
+let signer = InMemorySigner::from_secret_key(account_id.clone(), owner_secret_key);
+
+let tx = SignedTransaction::from_actions(
+    nonce,
+    account_id.clone(),
+    account_id.clone(),
+    &signer,
+    vec![Action::UniversalStateInit(Box::new(UniversalStateInitAction {
+        state_init: raw,
+        deposit: Balance::ZERO,
+    }))],
+    recent_block_hash,
+);
+```
+
+**4. Broadcast it**
+
+Same `send_tx` call as the relayer flow. Once it executes, the key that signed the bootstrap is a real full-access key, and the account behaves like any other.
+
+> [!WARNING]
+>
+> Only a key that's actually committed inside `state_init.access_keys` is accepted as the signer of this bootstrap transaction — this is checked independently both when the transaction is admitted to the mempool and when it executes. An unrelated key cannot claim someone else's uninitialized account, even though the account technically has no access key on file yet.
+
+***
+
+## Contract-triggered creation
+
+A deployed contract creates a universal account as part of its own execution — the pattern for factories that spin up new accounts on demand, or for airdrop/linkdrop-style contracts that pre-fund an address before its owner claims it.
+
+> [!NOTE]
+>
+> Unlike `app.bob.near`, a universal account created this way is **not** a namespace child of the creating contract — its `0u` address is just a hash of its own state, unrelated to the contract's account id. "Spinning up an account" here means creating an independently-addressed account, not extending the contract's own domain the way named sub-accounts do.
+
+**1. Derive the account id on-chain**
+
+The contract asks the host to derive the id from the exact bytes it's about to use, so the promise it creates in the next step is guaranteed to target the right receiver. The call also validates the bytes and reports the result, instead of silently deriving an id for anything:
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[allow(unused)]
+unsafe extern "C" {
+    fn universal_state_init_to_account_id(state_init_len: u64, state_init_ptr: u64, register_id: u64) -> u64;
+    fn promise_batch_action_universal_state_init(
+        promise_idx: u64,
+        state_init_len: u64,
+        state_init_ptr: u64,
+        amount_ptr: u64,
+    );
+}
+```
+
+These are the raw host-function imports — there's no `near-sdk-rs` ergonomic wrapper for them yet, so this is what you write directly, the same low-level way you'd import any other host function it doesn't wrap.
+
+`universal_state_init_to_account_id` returns a status instead of always succeeding. `0` means the id was derived and written to the register. `1` means the bytes don't decode into a `UniversalStateInit`, which includes bytes with extra data at the end. `2` means they decode but aren't the one canonical encoding: unsorted or duplicate `data` keys or `access_keys`. On anything but `0`, the register is left unwritten. Check the status before moving on. Otherwise this is a pure computation: no side effects, and it can run inside a view call.
+
+**2. Append the UniversalStateInit action to a promise**
+
+If step 1 returned a status other than `0`, do not create the promise.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let promise_idx = unsafe { promise_batch_create(receiver_len, receiver_ptr) };
+unsafe {
+    promise_batch_action_universal_state_init(
+        promise_idx,
+        state_init_len,
+        state_init_ptr,
+        amount_ptr, // pointer to a little-endian u128 yoctoNEAR deposit
+    );
+}
+```
+
+Like in the relayer flow, this `amount_ptr` deposit only tops up the account's **storage stake**, and only on the state init that actually initializes the account, refunding the rest back to the calling contract. A state init that lands on an account that's already initialized — a repeat, idempotent call — always refunds the **whole** deposit, since there's no storage left for it to cover. It doesn't unconditionally add to the account's balance the way a `Transfer` action does; if you want the new account to end up with a specific spendable balance, batch a `Transfer` action onto the same promise as well.
+
+> [!NOTE]
+>
+> There's no host function to build up a `UniversalStateInit`'s `data` map incrementally the way `set_state_init_data_entry` does for a [deterministic account](https://docs.near.org/protocol/accounts-contracts/account-id.md#deterministic-address). If your contract needs to populate initial storage, it has to construct the whole Borsh-encoded state init itself before calling `promise_batch_action_universal_state_init` — the two host functions here only derive an id from bytes and attach an action, they don't help build the bytes.
+
+**3. Invalid input fails your function call**
+
+If the contract creates the promise with input that fails validation, the contract's own function call fails with `NewReceiptValidationError`. The failed call's state changes are rolled back. None of the receipts it created run, including callbacks.
+
+`promise_batch_action_universal_state_init` does not check the bytes or the receiver when the contract calls it. The runtime checks them when the contract's function call finishes, together with every other receipt that the call created. The inner `ActionsValidation` error says which check failed:
+
+| Check | Inner error |
+| - | - |
+| The promise's receiver is the id that the bytes derive to | `InvalidUniversalStateInitReceiver` |
+| The bytes decode into a `UniversalStateInit` and are the canonical encoding | `MalformedUniversalStateInit` |
+| The state init actions of the receipt have at most 1,500 storage entries in total | `TotalNumberOfStateInitEntriesExceeded` |
+| The state init actions of the receipt have at most 1,024 access keys in total | `TotalNumberOfStateInitKeysExceeded` |
+| Each storage key is at most 2,048 bytes | `UniversalStateInitKeyLengthExceeded` |
+| Each storage value is at most 4,194,304 bytes | `UniversalStateInitValueLengthExceeded` |
+
+The receiver check runs before the decoding check. A status of `0` from step 1 does not check the size limits in the last four rows.
+
+A promise that passes all checks is sent. The state init can still fail when it runs, for example if the account balance and the deposit together do not cover the storage stake. If your contract's logic depends on the account having been created, check the outcome of the cross-contract call.
+
+> [!NOTE]
+>
+> Both host functions are gated by the `UniversalAccounts` protocol feature, stable from protocol version 88. Calling them on a network that hasn't reached that version fails to link, the same way any other protocol-gated host function does.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

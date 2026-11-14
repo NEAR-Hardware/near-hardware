@@ -1,0 +1,938 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Sandbox Testing
+
+> Learn how to write and run sandbox tests for NEAR smart contracts in a local NEAR Sandbox.
+
+Sandbox tests deploy your contract to a local NEAR Sandbox and create test accounts to interact with it. This lets you test contract behavior in a realistic blockchain environment during local development.
+
+The tests handle local accounts, balances, and contract setup in code. You do not need to create a public account, request faucet tokens, or log in with a wallet. Use sandbox tests to check your contract thoroughly before sharing a version on testnet.
+
+Moreover, when using the local `sandbox` you gain complete control of the network:
+
+1. Create test `Accounts` and manipulate their `State` and `Balance`.
+2. Simulate errors on callbacks.
+3. Control the time flow and fast-forward into the future.
+
+Use Rust [`near-sandbox`](https://github.com/near/near-sandbox-rs) to start and control a local NEAR node, and `near-api` to create accounts, deploy contracts, send transactions, and read their outcomes. The examples below use these libraries directly.
+
+> [!NOTE]
+>
+> **Sandbox Testing**
+>
+> Run automated sandbox tests locally with `near-sandbox`. Each test can create its own accounts, deploy contracts built from source, and inspect transaction and receipt outcomes. Use `near-api` to interact with the node through its local RPC endpoint.
+
+> [accordion] Alternative: in-process testing with near-mock
+>
+> When a full sandbox node is more than you need — fast local iteration, hermetic CI, or replaying a specific mainnet account — [`near-mock`](https://github.com/Kampouse/near-mock) executes **unmodified contract wasm in-process** via `wasmtime`: no node, Docker, RPC, or fees. Contracts only see host calls, state, and gas, so existing binaries (vaults, DEXes, oracles) run as-is and complete in milliseconds.
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> cargo install near-mock
+> ```
+>
+> It implements the production host surface (\~140 functions: storage, registers, promise batch actions, validators, epochs), protocol-accurate gas metering (V155 fee table), and the real crypto precompiles (`ecrecover`, `p256_verify`, `alt_bn128`, `keccak512`, BLS12-381) using the same crates as `nearcore`.
+>
+> Two patterns where it complements sandbox testing:
+>
+> > [tab] Deterministic CI
+> >
+> > Pin randomness, time, and epoch height via environment variables, so every CI run replays identically:
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > NEAR_MOCK_SEED=abc123 NEAR_MOCK_NOW=1700000000 near-mock state.bin call my-contract my_method '{}'
+> > ```
+>
+> > [tab] Mainnet forensics
+> >
+> > Snapshot a live contract's state at a pinned block and probe it offline — call views, script cross-contract flows, or diff behavior across upgrades without touching the network:
+> >
+> > ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> > near-mock snapshot pyth-oracle.near pyth.bin
+> > near-mock pyth.bin --view some_view_method '{}'
+> > ```
+>
+> > [!TIP]
+> >
+> > For workflows that need the full node stack — wallets, indexers, network behavior — keep using [near-sandbox](https://github.com/near/near-sandbox-rs). Use `near-mock` when you want chain semantics without the chain.
+
+***
+
+## Create Accounts
+
+### Account
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+
+let alice_account_id: AccountId = "alice.test.sandbox".parse().unwrap();
+sandbox
+    .create_account(alice_account_id.clone())
+    .initial_balance(NearToken::from_near(1))
+    .send()
+    .await?;
+let alice_account = Account(alice_account_id.clone());
+
+println!("alice_account: {:#?}", alice_account);
+// alice_account: Account(
+//     AccountId(
+//       "alice.test.sandbox",
+//   ),
+// )
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L16-L31)
+
+***
+
+### Using Secret Key
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let account_id: AccountId = "test.sandbox".parse().unwrap();
+let secret_key = SecretKey::from_random(KeyType::ED25519);
+
+sandbox
+    .create_account(account_id.clone())
+    .public_key(secret_key.public_key().to_string())
+    .initial_balance(NearToken::from_near(1))
+    .send()
+    .await?;
+let account = Account(account_id.clone());
+
+println!("account: {:#?}", account);
+// account: Account(
+//     AccountId(
+//         "test.sandbox",
+//     ),
+// )
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L40-L57)
+
+### Using Credentials From File
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let signer = near_crypto::InMemorySigner::from_file(Path::new("./tests/credentials.json"))
+    .map_err(|err| anyhow::Error::new(err))
+    .unwrap();
+let account_id = signer.get_account_id();
+let secret_key = match signer {
+    near_crypto::Signer::Empty(_) => panic!("Empty signer"),
+    near_crypto::Signer::InMemory(signer) => signer.secret_key,
+};
+
+sandbox
+    .create_account(account_id.clone())
+    .public_key(secret_key.public_key().to_string())
+    .initial_balance(NearToken::from_near(1))
+    .send()
+    .await?;
+let account = Account(account_id.clone());
+
+println!("account: {:#?}", account);
+// account: Account(
+//     AccountId(
+//         "test-ac-1719933221123-3.testnet",
+//     ),
+// )
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L66-L89)
+
+***
+
+## WASM Files
+
+### Compile Contract Code
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let compiling_wasm_result = cargo_near_build::build_with_cli(Default::default());
+assert!(compiling_wasm_result.is_ok());
+
+let _contract_wasm = std::fs::read(compiling_wasm_result.unwrap())
+    .expect("Could not process WASM file after compiling");
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L98-L102)
+
+> [!TIP]
+>
+> You don't need to assert compiling process everytime. You can use `?` operator to get the result as `Vec<u8>` without dealing with `Result<Vec<u8>>, Error>` type. That way you can directly use this vector to deploy the wasm file into account. Your test will still fail if compiling process fails.
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> let contract_wasm_path = cargo_near_build::build_with_cli(Default::default())?;
+> ```
+
+### Loading From File
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let artifact_path = "target/near/hello_rs.wasm";
+
+let reading_file_result = std::fs::read(artifact_path);
+
+assert!(reading_file_result.is_ok());
+
+let _contract_wasm = reading_file_result
+    .expect(format!("Could not read WASM file from {}", artifact_path).as_str());
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L109-L116)
+
+> [!TIP]
+>
+> The same as in the case of compilation wasm from code, you don't need to assert reading file process everytime. You can use `expect` method to get the reading file result as `Vec<u8>` and provide error message as a parameter. Your test will still fail if compiling process fails.
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> let contract_wasm = std::fs::read(artifact_path)
+>     .expect(format!("Could not read WASM file from {}", artifact_path).as_str());
+> ```
+
+***
+
+## Deploy Contracts
+
+### Deploy To Account
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let contract_wasm_path = cargo_near_build::build_with_cli(Default::default())?;
+let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+let contract_account_id: AccountId = "contract.sandbox".parse().unwrap();
+sandbox
+    .create_account(contract_account_id.clone())
+    .initial_balance(NearToken::from_near(10))
+    .send()
+    .await?;
+let contract = Account(contract_account_id).as_contract();
+
+// Initialize signer for the contract deployment
+let signer = near_api::Signer::from_secret_key(
+    near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+        .parse()
+        .unwrap(),
+)?;
+
+// Deploy the contract
+near_api::Contract::deploy(contract.account_id().clone())
+    .use_code(contract_wasm)
+    .without_init_call()
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .assert_success();
+
+println!("contract: {:#?}", contract);
+// contract: Contract(
+//     AccountId(
+//         "contract.sandbox",
+//     ),
+// )
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L123-L159)
+
+***
+
+## Logs
+
+Show contract's logs.
+
+You can use `println` or `dbg!` when you want to see information from your code.
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let alice_account = Account(alice_account_id.clone());
+
+println!("alice_account: {:#?}", alice_account);
+// alice_account: Account(
+//     AccountId(
+//       "alice.test.sandbox",
+//   ),
+// )
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L24-L31)
+
+In Rust, the output from your code is captured by default and not displayed in the terminal. In order to see the output, you have to use the `--nocapture` flag
+
+eg. `cargo test -- --nocapture`
+
+If you want to access the contracts logs, you can find them in the `tx_outcome.logs()` Vec.
+
+```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let tx_outcome = contract
+        .call_function("set_greeting", json!({"greeting": "Hello World!"}))
+        .transaction()
+        .gas(Gas::from_tgas(100))
+        .with_signer(contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?;
+    assert!(tx_outcome.is_success());
+
+    dbg!(tx_outcome.logs());
+    // [tests/test_basics.rs:29:5] tx_outcome.logs() = [
+    //     "Saving greeting: Hello World!",
+    // ]
+```
+
+***
+
+## Account Balance
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let alice_account_id: AccountId = "alice.test.sandbox".parse().unwrap();
+sandbox
+    .create_account(alice_account_id.clone())
+    .initial_balance(NearToken::from_near(1))
+    .send()
+    .await?;
+let alice_account = Account(alice_account_id.clone());
+
+let account_near_balance = alice_account
+    .tokens()
+    .near_balance()
+    .fetch_from(&sandbox_network)
+    .await
+    .expect("Account has to have some balance");
+
+println!("account_near_balance: {:#?}", account_near_balance);
+// account_near_balance: UserBalance {
+//     total: NearToken {
+//         inner: 1000000000000000000000000,
+//     },
+//     storage_locked: NearToken {
+//         inner: 1820000000000000000000,
+//     },
+//     storage_usage: 182,
+//     locked: NearToken {
+//         inner: 0,
+//     },
+// }
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L168-L199)
+
+***
+
+## Transactions
+
+### Call
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let contract_wasm_path = cargo_near_build::build_with_cli(
+    cargo_near_build::BuildOpts::builder()
+        .manifest_path("./tests/contracts/ft/Cargo.toml")
+        .build(),
+)?;
+let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+let contract_account_id: AccountId = "contract.sandbox".parse().unwrap();
+sandbox
+    .create_account(contract_account_id.clone())
+    .initial_balance(NearToken::from_near(10))
+    .send()
+    .await?;
+let contract = Account(contract_account_id).as_contract();
+
+// Initialize signer for the contract deployment
+let signer = near_api::Signer::from_secret_key(
+    near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+        .parse()
+        .unwrap(),
+)?;
+
+// Deploy the contract
+near_api::Contract::deploy(contract.account_id().clone())
+    .use_code(contract_wasm)
+    .without_init_call()
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .assert_success();
+
+let initialize_result = contract
+    .call_function("new_default_meta", json!({"owner_id": contract.account_id().clone(), "name": "token", "symbol": "tt", "total_supply": "1000000000000000000000000" }))
+    .transaction()
+    .gas(Gas::from_tgas(100))
+    .with_signer(contract.account_id().clone(), signer.clone())
+    .send_to(&sandbox_network)
+    .await?;
+
+println!("initialize_result: {:#?}", initialize_result);
+// initialize_result: ExecutionFinalResult {
+//   total_gas_burnt: NearGas {
+//       inner: 2422860822219,
+//   },
+//   transaction: SignedTransaction {
+//   ...
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L208-L257)
+
+### View
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let contract_wasm_path = cargo_near_build::build_with_cli(
+    cargo_near_build::BuildOpts::builder()
+        .manifest_path("./tests/contracts/ft/Cargo.toml")
+        .build(),
+)?;
+let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+let contract_account_id: AccountId = "contract.sandbox".parse().unwrap();
+sandbox
+    .create_account(contract_account_id.clone())
+    .initial_balance(NearToken::from_near(10))
+    .send()
+    .await?;
+let contract = Account(contract_account_id).as_contract();
+
+// Initialize signer for the contract deployment
+let signer = near_api::Signer::from_secret_key(
+    near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+        .parse()
+        .unwrap(),
+)?;
+
+// Deploy the contract
+near_api::Contract::deploy(contract.account_id().clone())
+    .use_code(contract_wasm)
+    .without_init_call()
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .assert_success();
+
+contract
+  .call_function("new_default_meta", json!({"owner_id": contract.account_id().clone(), "name": "token", "symbol": "tt", "total_supply": "1000000000000000000000000" }))
+  .transaction()
+  .gas(Gas::from_tgas(100))
+  .with_signer(contract.account_id().clone(), signer.clone())
+  .send_to(&sandbox_network)
+  .await?
+  .assert_success();
+
+let account_balance: NearToken = contract
+    .call_function(
+        "ft_balance_of",
+        json!({"account_id": contract.account_id().clone()}),
+    )
+    .read_only()
+    .fetch_from(&sandbox_network)
+    .await?
+    .data;
+
+println!("account_balance: {:#?}", account_balance);
+// account_balance: NearToken {
+//     inner: 1000000000000000000000000,
+// }
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L266-L323)
+
+***
+
+## Patch State on the Fly
+
+In Sandbox-mode, you can add or modify any contract state, contract code, account or access key with `patchState`.
+
+You can alter contract code, accounts, and access keys using normal transactions via the `DeployContract`, `CreateAccount`, and `AddKey` [actions](https://nomicon.io/RuntimeSpec/Actions#addkeyaction). But this limits you to altering your own account or sub-account. `patchState` allows you to perform these operations on any account.
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let contract_wasm_path = cargo_near_build::build_with_cli(Default::default())?;
+let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+let contract_account_id: AccountId = "contract.sandbox".parse().unwrap();
+sandbox
+    .create_account(contract_account_id.clone())
+    .initial_balance(NearToken::from_near(10))
+    .send()
+    .await?;
+let contract = Account(contract_account_id).as_contract();
+
+// Initialize signer for the contract deployment
+let signer = near_api::Signer::from_secret_key(
+    near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+        .parse()
+        .unwrap(),
+)?;
+
+// Deploy the contract
+near_api::Contract::deploy(contract.account_id().clone())
+    .use_code(contract_wasm)
+    .without_init_call()
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .assert_success();
+
+let new_greeting = "Howdy";
+
+let state_key = general_purpose::STANDARD.encode("STATE");
+let state_value =
+    general_purpose::STANDARD.encode(borsh::to_vec(new_greeting.as_bytes()).unwrap());
+
+let patch_state_result = sandbox
+    .patch_state(contract.account_id().clone())
+    .storage(state_key, state_value)
+    .send()
+    .await?;
+println!("patch_state_result: {:#?}", patch_state_result);
+
+let current_greeting: String = contract
+    .call_function("get_greeting", json!({}))
+    .read_only()
+    .fetch_from(&sandbox_network)
+    .await?
+    .data;
+
+println!("current_greeting: {:#?}", current_greeting);
+// current_greeting: "Howdy"
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L332-L384)
+
+> [!NOTE]
+>
+> As an alternative to `patchState`, you can stop the node, dump state at genesis, edit the genesis, and restart the node.
+> This approach is more complex to do and also cannot be performed without restarting the node.
+
+***
+
+## Time Traveling
+
+`sandbox` offers support for forwarding the state of the blockchain to the future. This means contracts which require time sensitive data do not need to sit and wait the same amount of time for blocks on the sandbox to be produced. We can simply just call `sandbox.fast_forward` to get us further in time:
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+let contract_wasm_path = cargo_near_build::build_with_cli(
+    cargo_near_build::BuildOpts::builder()
+        .manifest_path("./tests/contracts/simple-contract/Cargo.toml")
+        .build(),
+)?;
+let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+let contract_account_id: AccountId = "contract.sandbox".parse().unwrap();
+sandbox
+    .create_account(contract_account_id.clone())
+    .initial_balance(NearToken::from_near(10))
+    .send()
+    .await?;
+let contract = Account(contract_account_id).as_contract();
+
+// Initialize signer for the contract deployment
+let signer = near_api::Signer::from_secret_key(
+    near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+        .parse()
+        .unwrap(),
+)?;
+
+// Deploy the contract
+near_api::Contract::deploy(contract.account_id().clone())
+    .use_code(contract_wasm)
+    .without_init_call()
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .assert_success();
+
+let height = near_api::Chain::block_number()
+    .fetch_from(&sandbox_network)
+    .await
+    .unwrap();
+
+println!("BlockInfo pre-fast_forward {:#?}", height);
+
+// Call into fast_forward. This will take a bit of time to invoke, but is
+// faster than manually waiting for the same amounts of blocks to be produced
+sandbox.fast_forward(1000).await.unwrap();
+
+let new_height = near_api::Chain::block_number()
+    .fetch_from(&sandbox_network)
+    .await
+    .unwrap();
+
+println!("BlockInfo post-fast_forward {:#?}", new_height);
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L393-L444)
+
+*[See the full Sandbox timeout test](https://github.com/near-examples/yield-resume/blob/main/contract/tests/yield_resume.rs).*
+
+***
+
+## Using Testnet
+
+For checks against deployed [testnet contracts](https://docs.near.org/protocol/network/networks.md), use `near-api` with `NetworkConfig::testnet()` and funded testnet accounts. Sandbox runs a separate local node; its account creation, state patching, and fast-forward controls apply to that local node. Testnet checks can help you:
+
+* Check your contract against a public network
+* Exercise interactions with existing testnet contracts
+* Compare results with your local Sandbox tests
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let testnet_network = near_api::NetworkConfig::testnet();
+
+let account_id: AccountId = "test-ac-1719933221123-3.testnet".parse().unwrap();
+let secret_key: near_api::SecretKey = "ed25519:5QEPBcxrYJroypA4zFCofGR2VxXwyHuc6it7hzX3Er6uYfSJyR4ppq7cZ9MBUqErJG6xzHvqtB5TCTo5b2X1Uoze".parse().unwrap();
+
+let signer = near_api::Signer::from_secret_key(secret_key)?;
+
+let hello_near_contract = Account("hello.near-examples.testnet".parse().unwrap()).as_contract();
+
+let current_greeting_on_testnet: String = hello_near_contract
+    .call_function("get_greeting", json!({}))
+    .read_only()
+    .fetch_from(&testnet_network)
+    .await?
+    .data;
+
+println!(
+    "current_greeting_on_testnet: {:#?}",
+    current_greeting_on_testnet
+);
+// current_greeting_on_testnet: "defi is cool"
+
+let new_greeting = format!("{current_greeting_on_testnet} updated");
+let _ = hello_near_contract
+    .call_function("set_greeting", json!({"greeting": new_greeting}))
+    .transaction()
+    .max_gas()
+    .with_signer(account_id, signer.clone())
+    .send_to(&testnet_network)
+    .await?
+    .assert_success();
+let updated_greeting_on_testnet: String = hello_near_contract
+    .call_function("get_greeting", json!({}))
+    .read_only()
+    .fetch_from(&testnet_network)
+    .await?
+    .data;
+
+println!(
+    "updated_greeting_on_testnet: {:#?}",
+    updated_greeting_on_testnet
+);
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L458-L499)
+
+> [!TIP]
+>
+> If you can create a new account on each iteration as well.
+
+***
+
+## Spooning Contracts
+
+[Spooning a blockchain](https://coinmarketcap.com/alexandria/glossary/spoon-blockchain) is copying the data from one network into a different network. NEAR Sandbox makes it easy to copy data from Mainnet or Testnet contracts into your local Sandbox environment:
+
+Specify the contract name from `testnet` you want to be pulling, and a specific block ID referencing back to a specific time. (Just in case the contract you're referencing has been changed or updated)
+
+Create a function called `pull_contract` which will pull the contract's `.wasm` file from the chain and deploy it onto your local sandbox. You'll have to re-initialize it with all the data to run tests. This is because the contract's data is too big for the RPC service to pull down. (limits are set to 50Mb)
+
+```rust title="basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+let sandbox_network =
+    near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+let testnet_network = near_api::NetworkConfig::testnet();
+
+let hello_near_contract = Account("hello.near-examples.testnet".parse().unwrap()).as_contract();
+
+sandbox
+    .patch_state(hello_near_contract.account_id().clone())
+    .fetch_from(RPCEndpoint::testnet().url, FetchData::ALL)
+    .await
+    .unwrap()
+    .initial_balance(NearToken::from_near(666))
+    .send()
+    .await
+    .unwrap();
+
+let greeting_from_testnet: String = hello_near_contract
+    .call_function("get_greeting", json!({}))
+    .read_only()
+    .fetch_from(&testnet_network)
+    .await?
+    .data;
+let greeting: String = hello_near_contract
+    .call_function("get_greeting", json!({}))
+    .read_only()
+    .fetch_from(&sandbox_network)
+    .await?
+    .data;
+
+assert_eq!(greeting_from_testnet, greeting);
+```
+
+[See code on GitHub](https://github.com/near-examples/near-workspaces-examples/blob/e5404e2d8c275aa04270130b9356266bae1b5d9e/contract-rs/tests/basics.rs#L507-L537)
+
+***
+
+## Snippets
+
+### Snippet I: Testing Hello NEAR
+
+Lets take a look at the test of our [Quickstart Project](https://docs.near.org/smart-contracts/quickstart.md) [👋 Hello NEAR](https://github.com/near-examples/hello-near-examples), where we deploy the contract on an account and test it correctly retrieves and sets the greeting.
+
+```rust title="test_basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_api::{AccountId, NearToken};
+use near_sdk::serde_json::json;
+
+#[tokio::test]
+async fn test_contract_is_operational() -> testresult::TestResult<()> {
+    // Build the contract wasm file
+    let contract_wasm_path = cargo_near_build::build_with_cli(Default::default())?;
+    let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+    // Initialize the sandbox
+    let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+    let sandbox_network =
+        near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+    // Create accounts
+    let user_account = create_subaccount(&sandbox, "user.sandbox").await?;
+    let contract = create_subaccount(&sandbox, "contract.sandbox")
+        .await?
+        .as_contract();
+
+    // Initialize signer for the contract deployment
+    let signer = near_api::Signer::from_secret_key(
+        near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+            .parse()
+            .unwrap(),
+    )?;
+
+    // Deploy the contract with the init call
+    near_api::Contract::deploy(contract.account_id().clone())
+        .use_code(contract_wasm)
+        .without_init_call()
+        .with_signer(signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
+
+    // Change the greeting
+    contract
+        .call_function("set_greeting", json!({"greeting": "Hello World!"}))
+        .transaction()
+        .with_signer(user_account.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
+
+    // Get the greeting and assert it is the same as the one set by the user
+    let user_message_outcome: String = contract
+        .call_function("get_greeting", ())
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(user_message_outcome, "Hello World!");
+
+    Ok(())
+}
+
+async fn create_subaccount(
+    sandbox: &near_sandbox::Sandbox,
+    name: &str,
+) -> testresult::TestResult<near_api::Account> {
+    let account_id: AccountId = name.parse().unwrap();
+    sandbox
+        .create_account(account_id.clone())
+        .initial_balance(NearToken::from_near(10))
+        .send()
+        .await?;
+    Ok(near_api::Account(account_id))
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/hello-near-examples/blob/be63c9f326b47d881dddaea87564fe578bcd844e/contract-rs/tests/test_basics.rs#L1-L69)
+
+***
+
+### Snippet II: Testing Donations
+
+In most cases we will want to test complex methods involving multiple users and money transfers. A perfect example for this is our [Donation Example](https://github.com/near-examples/donation-examples), which enables users to `donate` money to a beneficiary. Lets see its sandbox tests
+
+```rust title="test_basics.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+use near_api::types::{AccountId, NearToken};
+use near_sdk::json_types::{U128, U64};
+use serde_json::json;
+
+const ONE_NEAR: NearToken = NearToken::from_near(1);
+const STORAGE_COST: NearToken = NearToken::from_millinear(1);
+
+#[tokio::test]
+async fn test_contract_is_operational() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let sandbox = near_sandbox::Sandbox::start_sandbox().await?;
+    let sandbox_network =
+        near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+
+    // Build the contract
+    let contract_wasm_path = cargo_near_build::build_with_cli(Default::default())?;
+    let contract_wasm = std::fs::read(contract_wasm_path)?;
+
+    // Create accounts
+    let alice = create_subaccount(&sandbox, "alice.sandbox").await?;
+    let bob = create_subaccount(&sandbox, "bob.sandbox").await?;
+    let beneficiary = create_subaccount(&sandbox, "beneficiary.sandbox").await?;
+    let contract = create_subaccount(&sandbox, "donation.sandbox")
+        .await?
+        .as_contract();
+
+    // Initialize signer for the contract deployment
+    let signer = near_api::Signer::from_secret_key(
+        near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PRIVATE_KEY
+            .parse()
+            .unwrap(),
+    )?;
+
+    // Deploy the contract and initialize it with the beneficiary
+    near_api::Contract::deploy(contract.account_id().clone())
+        .use_code(contract_wasm)
+        .with_init_call(
+            "init",
+            json!({ "beneficiary": beneficiary.account_id() }),
+        )?
+        .with_signer(signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
+
+    let initial_balance = near_api::Account(beneficiary.account_id().clone())
+        .view()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data
+        .amount;
+
+    // Alice and Bob donate
+    for (donor, amount) in [
+        (&alice, ONE_NEAR),
+        (&bob, ONE_NEAR),
+        (&alice, ONE_NEAR.saturating_mul(3)),
+    ] {
+        contract
+            .call_function("donate", json!({}))
+            .transaction()
+            .deposit(amount)
+            .with_signer(donor.account_id().clone(), signer.clone())
+            .send_to(&sandbox_network)
+            .await?
+            .assert_success();
+    }
+
+    // There are two donors
+    let number_of_donors: U64 = contract
+        .call_function("number_of_donors", json!({}))
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(number_of_donors, U64::from(2));
+
+    #[derive(near_sdk::serde::Serialize, near_sdk::serde::Deserialize, Debug, PartialEq)]
+    #[serde(crate = "near_sdk::serde")]
+    struct Donation {
+        account_id: String,
+        total_amount: U128,
+    }
+
+    // Alice's donations are accumulated
+    let donation: Donation = contract
+        .call_function("get_donation_for_account", json!({"account_id": alice.account_id()}))
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(
+        u128::from(donation.total_amount),
+        NearToken::from_near(4).as_yoctonear()
+    );
+
+    // All donations are recorded
+    let donations: Vec<Donation> = contract
+        .call_function("get_donations", json!({}))
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(
+        donations,
+        vec![
+            Donation {
+                account_id: alice.account_id().to_string(),
+                total_amount: U128::from(NearToken::from_near(4).as_yoctonear()),
+            },
+            Donation {
+                account_id: bob.account_id().to_string(),
+                total_amount: U128::from(NearToken::from_near(1).as_yoctonear()),
+            },
+        ]
+    );
+
+    // The beneficiary received the donations, minus the storage costs
+    let donation_amount = NearToken::from_near(5).saturating_sub(STORAGE_COST.saturating_mul(2));
+    let final_balance = near_api::Account(beneficiary.account_id().clone())
+        .view()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data
+        .amount;
+    assert_eq!(final_balance, initial_balance.saturating_add(donation_amount));
+
+    Ok(())
+}
+
+async fn create_subaccount(
+    sandbox: &near_sandbox::Sandbox,
+    name: &str,
+) -> testresult::TestResult<near_api::Account> {
+    let account_id: AccountId = name.parse().unwrap();
+    sandbox
+        .create_account(account_id.clone())
+        .initial_balance(NearToken::from_near(10))
+        .send()
+        .await?;
+    Ok(near_api::Account(account_id))
+}
+```
+
+[See code on GitHub](https://github.com/near-examples/donation-examples/blob/25df0dc9fa53eee44317e0f211ebf5c30443b161/contract-rs/tests/test_basics.rs#L1-L142)
+
+***
+
+## Additional Resources
+
+### Advanced Examples
+
+* [Rust](https://github.com/near/near-sandbox-rs/tree/main/examples)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

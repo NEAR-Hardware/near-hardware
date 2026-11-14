@@ -1,0 +1,112 @@
+# IronClaw
+
+## Docs
+
+###  
+
+- [Introduction](https://docs.ironclaw.com/index.md): The secure, open-source AI agent
+- [Quickstart](https://docs.ironclaw.com/quickstart.md): Create your first Agent in minutes
+- [Onboard](https://docs.ironclaw.com/onboard.md): Initialize your agent's home directory and first-run settings
+
+### Using IronClaw
+
+- [Web Interface](https://docs.ironclaw.com/using/webui.md): Chat with your agent and manage it from the browser
+- [CLI Reference](https://docs.ironclaw.com/using/cli.md): Every command the ironclaw binary provides
+- [Run as a Service](https://docs.ironclaw.com/using/service.md): Keep IronClaw running in the background
+
+### Capabilities
+
+- [Capabilities Overview](https://docs.ironclaw.com/capabilities/overview.md): Discover what makes IronClaw unique
+- [Inference Providers](https://docs.ironclaw.com/capabilities/llm-providers.md): IronClaw readily supports multiple LLM providers
+
+#### Core Capabilities
+
+- [Security](https://docs.ironclaw.com/security.md): IronClaw's defense-in-depth security architecture
+- [Storage](https://docs.ironclaw.com/capabilities/database.md): Where IronClaw keeps its data, and when to move to PostgreSQL
+- [Configuration](https://docs.ironclaw.com/capabilities/configuration.md): How IronClaw is configured and where each setting lives
+- [Skills](https://docs.ironclaw.com/capabilities/skills.md): Prompt extensions that activate based on context
+- [WASM Tools](https://docs.ironclaw.com/capabilities/sandboxed-tools.md): Sandboxed tool execution via WebAssembly (wasmtime)
+- [Trace Commons](https://docs.ironclaw.com/capabilities/traces.md): Optionally contribute redacted agent traces and earn credit
+
+##### Memory
+
+- [Persistent Memory](https://docs.ironclaw.com/capabilities/memory/memory.md): Your agent's durable, searchable long-term memory system
+- [Identity Files](https://docs.ironclaw.com/capabilities/memory/identity.md): Files injected into the LLM system prompt to give the agent persistent identity
+
+##### Routines
+
+- [Cron Routines](https://docs.ironclaw.com/capabilities/routines/cron.md): Schedule recurring tasks with cron expressions
+- [Heartbeat System](https://docs.ironclaw.com/capabilities/routines/heartbeat.md): Periodic checks and execution
+- [Reactive Routines](https://docs.ironclaw.com/capabilities/routines/reactive.md): Event-driven and webhook-triggered automation
+
+##### Jobs
+
+- [Jobs & Parallel Execution](https://docs.ironclaw.com/capabilities/jobs/jobs.md): Parallel job scheduling and the job state machine
+- [Self-Repair & Stuck Jobs](https://docs.ironclaw.com/capabilities/jobs/self-repair.md): Automatic detection and recovery of stuck jobs
+
+### Channels
+
+- [Overview](https://docs.ironclaw.com/channels/overview.md): Reach your agent from a messaging app
+- [Slack](https://docs.ironclaw.com/channels/slack.md): Talk to your agent in Slack channels and direct messages
+- [Telegram](https://docs.ironclaw.com/channels/telegram.md): Interact with your agent through Telegram
+
+### IronHub
+
+- [Overview](https://docs.ironclaw.com/hub/overview.md): The official catalog of installable tools and skills
+- [Installing skills & tools](https://docs.ironclaw.com/hub/installing.md): Install skills and tools from the IronHub catalog
+- [Contributing](https://docs.ironclaw.com/hub/contributing.md): Submit your own skills and tools to the IronHub catalog
+
+### API
+
+- [Responses API](https://docs.ironclaw.com/api/responses.md): OpenAI-compatible Responses endpoint backed by the full IronClaw agent loop
+
+### Extensions (Tools)
+
+- [Overview](https://docs.ironclaw.com/extensions/overview.md): Extend your agent with built-in and external tools
+
+#### Built-in Extensions
+
+- [File Handling](https://docs.ironclaw.com/extensions/file-tools.md): Let your agent read and write files in the local filesystem
+- [GitHub](https://docs.ironclaw.com/extensions/github.md): Let your agent access GitHub
+- [MCP Servers](https://docs.ironclaw.com/extensions/mcp.md): Connect Model Context Protocol servers to extend IronClaw
+- [Web Access](https://docs.ironclaw.com/extensions/web-search.md): Let your agent search the web and read pages
+- [Shell Commands](https://docs.ironclaw.com/extensions/shell.md): Execute shell commands with environment scrubbing and injection detection
+
+##### Google
+
+- [OAuth Setup](https://docs.ironclaw.com/extensions/google/oauth-setup.md): One-time setup for any Google extension in IronClaw
+- [Gmail](https://docs.ironclaw.com/extensions/google/gmail.md): Let your agent read, send, and manage your Gmail messages
+- [Calendar](https://docs.ironclaw.com/extensions/google/calendar.md): Let your agent manage your Google Calendar
+- [Docs](https://docs.ironclaw.com/extensions/google/docs.md): Let your agent create and edit Google Documents
+- [Drive](https://docs.ironclaw.com/extensions/google/drive.md): Let your agent manage files and folders in Google Drive
+- [Sheets](https://docs.ironclaw.com/extensions/google/sheets.md): Let your agent read and write Google Spreadsheets
+- [Slides](https://docs.ironclaw.com/extensions/google/slides.md): Let your agent create and edit Google Presentations
+
+### Tutorials
+
+- [How to implement a Reborn tool extension](https://docs.ironclaw.com/extensions/building-a-tool.md): A Reborn-only implementation guide for IronClaw extension tools
+- [How to build a channel](https://docs.ironclaw.com/channels/building-a-channel.md): Build a WASM messaging channel that plugs into IronClaw
+
+#### How to host IronClaw on...
+
+- [DigitalOcean Droplet](https://docs.ironclaw.com/infrastructure/droplet.md): Host IronClaw on a DigitalOcean Droplet
+- [Google Compute Engine](https://docs.ironclaw.com/infrastructure/google.md): Host IronClaw on a Google Compute Engine VM
+- [Amazon EC2](https://docs.ironclaw.com/infrastructure/amazon.md): Host IronClaw on an Amazon EC2 Instance
+
+## Changelog
+
+- [Changelog](https://docs.ironclaw.com/changelog.md): What shipped in each stable IronClaw release
+
+## Optional
+
+- [Agent Dashboard](https://agent.near.ai/)
+- [NEAR AI Cloud](https://cloud.near.ai)
+
+> The links below point to documentation indexes. Follow each `/_llms/` index recursively until you reach documentation pages.
+
+## Indexes
+
+- [Chinese (36 pages)](https://docs.ironclaw.com/_llms/zh.txt):  .
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

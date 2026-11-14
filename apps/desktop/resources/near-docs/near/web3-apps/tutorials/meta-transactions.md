@@ -1,0 +1,309 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Building a Meta Transaction Relayer
+
+> Learn how to build a meta transaction relayer that allows users to transact on NEAR without paying gas fees while maintaining transaction security through signed delegates.
+
+Relayers allow users to transact on NEAR while a service pays their transaction gas fees. Users still sign the actions they want to execute, so the relayer can submit those actions without holding the users' private keys.
+
+> [accordion] Common use cases
+>
+> * **Gasless onboarding:** let new users interact with your app before they own any NEAR, while your relayer pays their gas.
+> * **Transact with only a token balance:** users who only hold fungible tokens, such as stablecoins, can still send transactions because the relayer covers the gas.
+> * **Sponsor activity from a shared pool:** fund one relayer account instead of sending NEAR to every user account.
+
+> [!NOTE]
+>
+> The JavaScript examples require `near-api-js` 7.4 or later and `borsh` 2. The Rust examples use the `near-api` crate version 0.8.6, with Axum for the server, Reqwest for the client, and `borsh` 1 for serialization.
+
+## Client
+
+The client creates a signed delegate action: a message containing the sender, receiver, actions, nonce, and expiry block height. Signing it authorizes the call without broadcasting a transaction or paying transaction gas.
+
+This example shows how to sign a `set_greeting` call to `hello.near-examples.testnet` with zero attached deposit and an expiry of 120 blocks:
+
+> [tab] JavaScript
+>
+> ```typescript title="client.ts" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import dotenv from "dotenv";
+> import {
+>   Account, JsonRpcProvider, actions, encodeSignedDelegate, teraToGas,
+>   type KeyPairString,
+> } from "near-api-js";
+>
+> dotenv.config();
+> const provider = new JsonRpcProvider({
+>   url: process.env.RPC_URL ?? "https://test.rpc.fastnear.com",
+> });
+> const client = new Account(
+>   process.env.CLIENT_ID!, provider, process.env.CLIENT_PRIVATE_KEY! as KeyPairString,
+> );
+>
+> // Sign the contract call locally, without sending a transaction.
+> const { signedDelegate } = await client.createSignedMetaTransaction({
+>   receiverId: process.env.CONTRACT_ID ?? "hello.near-examples.testnet",
+>   actions: [actions.functionCall("set_greeting", { greeting: "Hello!" }, teraToGas(10), 0n)],
+>   blockHeightTtl: 120,
+> });
+>
+> const response = await fetch(process.env.RELAYER_URL ?? "http://127.0.0.1:3000/relay", {
+>   method: "POST",
+>   headers: { "Content-Type": "application/json" },
+>   body: JSON.stringify({
+>     signedDelegate: Buffer.from(encodeSignedDelegate(signedDelegate)).toString("base64"),
+>   }),
+> });
+> const outcome = await response.json();
+> if (!response.ok) throw new Error(JSON.stringify(outcome));
+> console.log(outcome);
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/near-api-examples/blob/28875c7c8da3beba355c227841d27b7b89797138/near-api-js/examples/meta-tx/client.ts)
+
+> [tab] Rust
+>
+> ```rust title="client.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> use base64::{engine::general_purpose::STANDARD, Engine};
+> use near_api::{AccountId, Contract, NearGas, NearToken, NetworkConfig, Signer};
+> use serde_json::json;
+>
+> #[tokio::main]
+> async fn main() -> Result<(), Box<dyn std::error::Error>> {
+>     dotenv::dotenv().ok();
+>     let client_id: AccountId = std::env::var("CLIENT_ID")?.parse()?;
+>     let signer = Signer::from_secret_key(std::env::var("CLIENT_PRIVATE_KEY")?.parse()?)?;
+>     let contract_id =
+>         std::env::var("CONTRACT_ID").unwrap_or_else(|_| "hello.near-examples.testnet".into());
+>     let network = NetworkConfig::from_rpc_url(
+>         "testnet",
+>         std::env::var("RPC_URL")
+>             .unwrap_or_else(|_| "https://test.rpc.fastnear.com".into())
+>             .parse()?,
+>     );
+>
+>     let meta_tx = Contract(contract_id.parse()?)
+>         .call_function("set_greeting", json!({ "greeting": "Hello!" }))
+>         .transaction()
+>         .gas(NearGas::from_tgas(10))
+>         .deposit(NearToken::from_yoctonear(0))
+>         .with_signer(client_id, signer)
+>         .meta()
+>         .tx_live_for(120)
+>         .presign_with(&network)
+>         .await?;
+>     let signed_delegate = meta_tx
+>         .transaction
+>         .signed()
+>         .ok_or("Delegate was not signed")?;
+>
+>     let response = reqwest::Client::new()
+>         .post(std::env::var("RELAYER_URL").unwrap_or_else(|_| "http://127.0.0.1:3000/relay".into()))
+>         .json(&json!({
+>             "signedDelegate": STANDARD.encode(borsh::to_vec(&signed_delegate)?),
+>         }))
+>         .send()
+>         .await?
+>         .error_for_status()?;
+>     println!("{}", response.json::<serde_json::Value>().await?);
+>     Ok(())
+> }
+> ```
+
+The signed delegate is converted to Borsh bytes, which we encode as base64 for the JSON request to `/relay`. The client's private key stays on the client; the relayer receives only the signed delegate.
+
+> [accordion] Relaying with wallets
+>
+> This example signs locally with a private key. To use a wallet, its signing interface must support delegate actions without immediately broadcasting them. Ordinary transaction signing and NEP-413 message signing produce different payloads and cannot replace delegate-action signing.
+
+## Relayer (server)
+
+The relayer uses its own funded account to pay transaction gas. For parallel submissions, **multiple access keys** reduce nonce contention and failures caused by transactions executing out of order.
+
+The relayer's signer rotates between the configured keys for each transaction. All keys must be registered as full-access keys on the relayer account.
+
+The `/relay` endpoint decodes the signed delegate from base64 and Borsh, wraps it in a transaction signed by the relayer, and sends it to NEAR:
+
+> [tab] JavaScript
+>
+> ```typescript title="server.ts" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import dotenv from "dotenv";
+> import express from "express";
+> import { deserialize } from "borsh";
+> import {
+>   Account, JsonRpcProvider, MultiKeySigner, SCHEMA,
+>   type KeyPairString, type SignedDelegate,
+> } from "near-api-js";
+>
+> dotenv.config();
+> const provider = new JsonRpcProvider({
+>   url: process.env.RPC_URL ?? "https://test.rpc.fastnear.com",
+> });
+>
+> // All keys must be registered as full-access keys on the relayer account.
+> const privateKeys = JSON.parse(process.env.RELAYER_PRIVATE_KEYS!) as KeyPairString[];
+> const signer = MultiKeySigner.fromSecretKeys(privateKeys);
+> const relayer = new Account(process.env.RELAYER_ID!, provider, signer);
+>
+> const app = express();
+> app.use(express.json());
+>
+> app.post("/relay", async (req, res) => {
+>   try {
+>     const bytes = Buffer.from(req.body.signedDelegate, "base64");
+>     const signedDelegate = deserialize(SCHEMA.SignedDelegate, bytes) as unknown as SignedDelegate;
+>     const outcome = await relayer.relayMetaTransaction(signedDelegate);
+>     res.json(outcome);
+>   } catch (error) {
+>     res.status(400).json({ error: error instanceof Error ? error.message : String(error) });
+>   }
+> });
+>
+> const port = Number(process.env.PORT ?? 3000);
+> app.listen(port, "127.0.0.1", () => console.log(`Relayer: http://127.0.0.1:${port}/relay`));
+> ```
+>
+> [See code on GitHub](https://github.com/near-examples/near-api-examples/blob/28875c7c8da3beba355c227841d27b7b89797138/near-api-js/examples/meta-tx/server.ts)
+
+> [tab] Rust
+>
+> ```rust title="server.rs" lines theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+> use base64::{engine::general_purpose::STANDARD, Engine};
+> use near_api::{
+>     types::{transaction::delegate_action::SignedDelegateAction, Action},
+>     AccountId, NetworkConfig, Signer, Transaction,
+> };
+> use serde_json::{json, Value};
+> use std::sync::Arc;
+>
+> type Relayer = (AccountId, Arc<Signer>, NetworkConfig);
+>
+> async fn relay(
+>     State((relayer_id, signer, network)): State<Relayer>,
+>     Json(body): Json<Value>,
+> ) -> Result<Json<Value>, (StatusCode, String)> {
+>     let encoded = body["signedDelegate"]
+>         .as_str()
+>         .ok_or_else(|| bad_request("Missing signedDelegate"))?;
+>     let bytes = STANDARD.decode(encoded).map_err(bad_request)?;
+>     let signed_delegate: SignedDelegateAction = borsh::from_slice(&bytes).map_err(bad_request)?;
+>     let sender_id = signed_delegate.delegate_action.sender_id.clone();
+>     let outcome = Transaction::construct(relayer_id, sender_id)
+>         .add_action(Action::Delegate(Box::new(signed_delegate)))
+>         .with_signer(signer)
+>         .send_to(&network)
+>         .await
+>         .map_err(bad_request)?
+>         .into_result()
+>         .map_err(bad_request)?;
+>     Ok(Json(json!({
+>         "transaction": outcome.transaction(),
+>         "logs": outcome.logs(),
+>     })))
+> }
+>
+> fn bad_request(error: impl std::fmt::Display) -> (StatusCode, String) {
+>     (StatusCode::BAD_REQUEST, error.to_string())
+> }
+>
+> #[tokio::main]
+> async fn main() -> Result<(), Box<dyn std::error::Error>> {
+>     dotenv::dotenv().ok();
+>     let relayer_id: AccountId = std::env::var("RELAYER_ID")?.parse()?;
+>     let keys: Vec<String> = serde_json::from_str(&std::env::var("RELAYER_PRIVATE_KEYS")?)?;
+>     let (first, rest) = keys.split_first().ok_or("Missing relayer keys")?;
+>     let signer = Signer::from_secret_key(first.parse()?)?;
+>     for key in rest {
+>         signer.add_secret_key_to_pool(key.parse()?).await?;
+>     }
+>     let network = NetworkConfig::from_rpc_url(
+>         "testnet",
+>         std::env::var("RPC_URL")
+>             .unwrap_or_else(|_| "https://test.rpc.fastnear.com".into())
+>             .parse()?,
+>     );
+>     let app = Router::new()
+>         .route("/relay", post(relay))
+>         .with_state((relayer_id, signer, network));
+>     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".into());
+>     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{port}")).await?;
+>     axum::serve(listener, app).await?;
+>     Ok(())
+> }
+> ```
+
+The outer transaction is addressed to the client's account, which is the sender in the signed delegate. The network checks the client's signature and executes the delegated actions. The relayer pays transaction gas; any attached deposit or transferred NEAR comes from the client's account.
+
+Both examples read credentials from environment variables loaded from `.env`. Set `CLIENT_ID` and `CLIENT_PRIVATE_KEY` for the client, and `RELAYER_ID` and `RELAYER_PRIVATE_KEYS` for the server. `RELAYER_PRIVATE_KEYS` is a JSON array of private keys. Both processes must use the same network, and the client account must already exist and cover its storage requirements.
+
+***
+
+## High volume parallel processing
+
+When running a relayer that handles a large number of transactions, you can run into a `nonce` collision problem. At the protocol level, each access key has its own nonce, which increases with each transaction to prevent replay attacks.
+
+When multiple transactions are sent from the same access key simultaneously, their nonces might collide or they might execute out of order. For example, if `Tx3` has a higher nonce than `Tx1` and `Tx2` and executes first, the earlier transactions can fail because their nonces are now too low.
+
+The examples above use multiple full-access keys on the same relayer account. Both signing libraries rotate through the configured keys. This distributes transactions across independent nonces and reduces contention.
+
+Key rotation reduces nonce contention, but a key can be reused while an earlier transaction is still pending. For sustained parallel traffic, coordinate submissions per key or wait for its pending transaction to complete before reusing it. Rotating relayer keys also does not change the nonce of a client's signed delegate; clients should wait for one delegated call to finish before signing the next with the same key.
+
+***
+
+## Gating the relayer
+
+A relayer can choose which calls it will sponsor by checking the decoded delegate action before submitting it. For example, to sponsor only calls from a particular user to a particular contract, add this check after decoding the signed delegate in the endpoint:
+
+> [tab] JavaScript
+>
+> ```typescript theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> const { senderId, receiverId } = signedDelegate.delegateAction;
+>
+> if (senderId !== "some-user.testnet" || receiverId !== "some-contract.testnet") {
+>   res.status(403).json({ error: "This call is not sponsored" });
+>   return;
+> }
+> ```
+
+> [tab] Rust
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> let delegate = &signed_delegate.delegate_action;
+>
+> if delegate.sender_id.as_str() != "some-user.testnet"
+>     || delegate.receiver_id.as_str() != "some-contract.testnet"
+> {
+>     return Err((StatusCode::FORBIDDEN, "This call is not sponsored".into()));
+> }
+> ```
+
+We can also inspect each action to limit attached deposits, gas, contract methods, or arguments. Function-call arguments in a Borsh-decoded delegate are bytes, so we can read JSON arguments with:
+
+> [tab] JavaScript
+>
+> ```typescript theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> for (const action of signedDelegate.delegateAction.actions) {
+>   if (action.functionCall) {
+>     const args = JSON.parse(Buffer.from(action.functionCall.args).toString("utf8"));
+>     console.log(args);
+>   }
+> }
+> ```
+
+> [tab] Rust
+>
+> ```rust theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> for action in &signed_delegate.delegate_action.actions {
+>     if let Action::FunctionCall(call) = &**action {
+>         let args: Value = serde_json::from_slice(&call.args).map_err(bad_request)?;
+>         println!("{args}");
+>     }
+> }
+> ```
+
+For a Rust relayer with account allowances, allowlists, and other deployment options, see the [reference implementation](https://github.com/near/pagoda-relayer-rs/).
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

@@ -1,0 +1,249 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Transactions
+
+> Send transactions and query their status using the NEAR RPC API.
+
+The RPC API exposes several methods for broadcasting signed transactions and tracking their execution. All transaction methods accept a base64-encoded `signed_tx_base64` payload. Status methods accept either the same payload or a `tx_hash` + `sender_account_id` pair.
+
+## Quick Reference
+
+| Method | Purpose |
+| - | - |
+| [`send_tx`](#send-transaction) | Broadcast a signed transaction and wait for the result |
+| [`tx`](#transaction-status) | Get the status of a previously broadcast transaction |
+| [`tx_status`](#transaction-status-with-receipts) | Like `tx`, but also returns receipt details (nearcore 2.14.0 or later) |
+| [`EXPERIMENTAL_receipt`](#receipt-by-id) | Fetch a single receipt by id |
+| [`broadcast_tx_async`](#broadcast-async) | Broadcast and return immediately with the transaction hash |
+| [`broadcast_tx_commit`](#broadcast-commit) | Broadcast and wait until the transaction is included in a block |
+
+> [!NOTE]
+>
+> Prefer `send_tx` and `tx` for new integrations, and `tx_status` on nodes that run nearcore 2.14.0 or later. On older nodes, use `EXPERIMENTAL_tx_status`, which also works on 2.14.0 and later. The `broadcast_tx_async` and `broadcast_tx_commit` methods are kept for backward compatibility but offer less control over when the call returns.
+
+***
+
+## The `wait_until` Field
+
+`send_tx`, `tx`, and `tx_status` accept an optional `wait_until` field that controls **how long the RPC waits before returning a response**. Each value waits for a stricter execution milestone than the previous one — pick the lowest level that satisfies your use case so you don't pay extra latency.
+
+| Value | Returns when… | Typical use |
+| - | - | - |
+| `NONE` | Right away. `send_tx` returns before the node validates or includes the transaction, and its response is `{"final_execution_status": "NONE"}` with no transaction hash. `tx` and `tx_status` return the current status without waiting. | Fire-and-forget broadcasts. Compute the transaction hash on the client, or use `broadcast_tx_async` if you need the RPC to return it. |
+| `INCLUDED` | The transaction is included in a block (the block may not be finalized). | UI optimism: you want to confirm the tx hit the chain. |
+| `EXECUTED_OPTIMISTIC` *(default)* | Included + all non-refund receipts have executed (blocks may still not be finalized). | Default for most apps — you can read the result. |
+| `INCLUDED_FINAL` | Included in a *finalized* block. | You need finality but don't care about receipts. |
+| `EXECUTED` | Finalized + all non-refund receipts executed. | Strong correctness without waiting for refund receipts. |
+| `FINAL` | Finalized + all receipts (including refunds) finalized. | Accounting and cross-chain settlement, where refund-tracking matters. |
+
+If the field is omitted, the RPC behaves as if `EXECUTED_OPTIMISTIC` was passed.
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "jsonrpc": "2.0",
+  "id": "dontcare",
+  "method": "send_tx",
+  "params": {
+    "signed_tx_base64": "DwAAAHNlbmRlci50ZXN0bmV0...",
+    "wait_until": "FINAL"
+  }
+}
+```
+
+> [!WARNING]
+>
+> Higher `wait_until` levels can take several seconds. If your client has a short timeout, prefer `INCLUDED` or `EXECUTED_OPTIMISTIC` and poll `tx` for the stricter level.
+
+***
+
+## Send Transaction
+
+Broadcasts a signed transaction and waits for the requested execution milestone before returning.
+
+* **method**: `send_tx`
+* **params**: `signed_tx_base64`, optional `wait_until`
+
+> [tab] JSON
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "send_tx",
+>   "params": {
+>     "signed_tx_base64": "DwAAAHNlbmRlci50ZXN0bmV0...",
+>     "wait_until": "EXECUTED_OPTIMISTIC"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.sendTransactionUntil(
+>   signedTransaction,
+>   'EXECUTED_OPTIMISTIC',
+> );
+> ```
+
+> [tab] HTTPie
+>
+> ```bash theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> http POST https://rpc.testnet.near.org \
+>   jsonrpc=2.0 id=dontcare method=send_tx \
+>   params:='{"signed_tx_base64":"DwAAAHNlbmRlci50ZXN0bmV0...","wait_until":"EXECUTED_OPTIMISTIC"}'
+> ```
+
+Successful contract return values appear as base64-encoded `status.SuccessValue`. See the [decoded result](https://docs.near.org/api/rpc/contracts.md#transaction-return-values) reference to read them.
+
+***
+
+## Transaction Status
+
+Returns the status of a previously submitted transaction.
+
+* **method**: `tx`
+* **params**: either `signed_tx_base64`, or `tx_hash` + `sender_account_id`. Optional `wait_until`.
+
+> [tab] JSON (by hash)
+>
+> ```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> {
+>   "jsonrpc": "2.0",
+>   "id": "dontcare",
+>   "method": "tx",
+>   "params": {
+>     "tx_hash": "6zgh2u9DqHHiXzdy9ouTP7oGky2T4nugbhqsK7wQHnZS",
+>     "sender_account_id": "sender.testnet",
+>     "wait_until": "FINAL"
+>   }
+> }
+> ```
+
+> [tab] JavaScript
+>
+> ```js theme={"theme":{"light":"github-light","dark":"github-dark"}}
+> import { JsonRpcProvider } from "near-api-js";
+>
+> const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+>
+> const response = await provider.txStatus(
+>   '6zgh2u9DqHHiXzdy9ouTP7oGky2T4nugbhqsK7wQHnZS',
+>   'sender.testnet',
+>   'FINAL',
+> );
+> ```
+
+***
+
+## Transaction Status with Receipts
+
+`tx_status` returns the same payload as `tx`, plus a `receipts` list with the receipts that the transaction produced. It is useful when debugging cross-contract calls.
+
+* **method**: `tx_status`
+* **params**: same as `tx`
+
+The `receipts` list can be incomplete:
+
+* Receipts that have not run yet when the node answers are not in the list. With the default `wait_until` (`EXECUTED_OPTIMISTIC`), refund receipts are often still missing. `wait_until: "FINAL"` waits until all receipts, including refunds, have run.
+* When the signer and the receiver are the same account, the list leaves out the first receipt. This is the receipt converted from the transaction.
+* A node that does not track the signer's shard can return the result without the `receipts` list.
+
+> [!NOTE]
+>
+> `tx_status` is available from nearcore 2.14.0. The 2.14.0 release candidates (versions that start with `2.14.0-rc`) also have it. Earlier versions call this method `EXPERIMENTAL_tx_status`. Nodes that run them return a "Method not found" error for `tx_status`. `EXPERIMENTAL_tx_status` still works in 2.14.0, as a deprecated alias with identical request and response types. Use `EXPERIMENTAL_tx_status` until every node you call runs one of these versions or later. To see which version a node runs, call the `status` method and read `version.version`.
+
+***
+
+## Receipt by Id
+
+Fetches a single receipt by its id.
+
+* **method**: `EXPERIMENTAL_receipt`
+* **params**: `receipt_id`
+
+***
+
+## Broadcast Async
+
+Broadcasts a signed transaction and returns immediately with the transaction hash. It submits the transaction the same way as `send_tx` with `wait_until: "NONE"`. The difference is the response: `broadcast_tx_async` returns the transaction hash as a string, while `send_tx` returns only `{"final_execution_status": "NONE"}`.
+
+* **method**: `broadcast_tx_async`
+* **params**: a single positional string — the base64-encoded signed transaction.
+
+***
+
+## Broadcast Commit
+
+Broadcasts a signed transaction and waits for it to be included in a block. Equivalent to `send_tx` with `wait_until: "EXECUTED_OPTIMISTIC"`.
+
+* **method**: `broadcast_tx_commit`
+* **params**: a single positional string — the base64-encoded signed transaction.
+
+***
+
+## Error Handling
+
+`INTERNAL_ERROR` is returned as the error `name`. The other errors are returned with `name` set to `HANDLER_ERROR` and the error code below in `cause.name`.
+
+| Error Code | Description | Solution |
+| - | - | - |
+| `INVALID_TRANSACTION` | The signed transaction failed validation. | See [Invalid transactions](#invalid-transactions). |
+| `TIMEOUT_ERROR` | The chosen `wait_until` level was not reached before the RPC's deadline. | See [Timeouts](#timeouts). |
+| `UNKNOWN_TRANSACTION` | No record of the requested transaction hash. `tx` and `tx_status` return this only when `wait_until` is `NONE`. With other values, they wait until the deadline and return `TIMEOUT_ERROR`. | Verify the hash and `sender_account_id`. |
+| `DOES_NOT_TRACK_SHARD` | The node does not track the shard needed to answer the request. | Send the request to a node that tracks that shard, such as an RPC node that tracks all shards. |
+| `INTERNAL_ERROR` | The node reached its limits or failed internally. | Try again later. |
+
+### Invalid transactions
+
+The reason for an `INVALID_TRANSACTION` error is in `data.TxExecutionError.InvalidTxError`. For example, this is the error for a transaction whose reference block hash is too old:
+
+```json theme={"theme":{"light":"github-light","dark":"github-dark"}}
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "name": "HANDLER_ERROR",
+    "cause": {
+      "name": "INVALID_TRANSACTION",
+      "info": {}
+    },
+    "code": -32000,
+    "message": "Server error",
+    "data": {
+      "TxExecutionError": {
+        "InvalidTxError": "Expired"
+      }
+    }
+  },
+  "id": "dontcare"
+}
+```
+
+The reason is a string, such as `"Expired"`, or an object, such as `{"InvalidNonce": {"tx_nonce": 5, "ak_nonce": 7}}`. What to do depends on the reason:
+
+* `Expired`: the reference block hash is too old. Refresh `block_hash` and sign again.
+* `InvalidSignature`: the signature does not match the signer's key. Sign again with the matching access key.
+* `ShardCongested` or `ShardStuck`: the receiver's shard is congested. The node checks congestion before the signature, key, nonce and balance, so the transaction may still be valid. Wait, and then send the same signed transaction again while its block hash is still valid.
+* Any other reason: fix the reported nonce, key or balance, and sign again.
+
+### Timeouts
+
+A `TIMEOUT_ERROR` means that the transaction did not reach the chosen `wait_until` level before the RPC's deadline. The nearcore default deadline is 10 seconds. Node operators can change it, so some providers wait longer.
+
+From nearcore 2.14.0, `cause.info.cause` says how far the transaction got. Older nodes send no `cause.info`.
+
+* `NOT_OBSERVED`: the node has not seen the transaction in a block. After `send_tx`, poll `tx` with the transaction hash, and send the same signed transaction again if it does not appear. After `tx`, check the hash and `sender_account_id`.
+* `PENDING`: the node has seen the transaction, but it has not reached the chosen level yet. The last known status is in `cause.info.status`. Poll `tx` again.
+* `DOES_NOT_TRACK_SHARD`: the node does not track the shard of the transaction, and it got no answer from a node that does. Send the request to a node that tracks that shard.
+* `ERROR`: the node could not get a usable status before the deadline. Try again later.
+
+You can also lower `wait_until` and poll `tx`, or use an archival or dedicated provider.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

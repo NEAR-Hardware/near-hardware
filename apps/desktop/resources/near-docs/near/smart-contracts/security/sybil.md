@@ -1,0 +1,53 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Sybil attacks
+
+> Design NEAR applications that do not mistake multiple accounts for independent participants.
+
+A Sybil attack occurs when one actor creates or controls many accounts to gain extra votes, rewards, reputation, or access. NEAR account IDs identify accounts—not unique people.
+
+## Example: one account, one vote
+
+Suppose a DAO opens voting to the community and gives every account one vote:
+
+1. A proposal is submitted.
+2. One actor creates or funds many NEAR accounts.
+3. Each account casts one valid vote.
+4. Together, those accounts outweigh the independent participants.
+
+Checking that each account votes only once does not stop the attack. The contract enforces one vote per account, while the intended rule was one vote per participant.
+
+The same weakness affects per-account airdrops, quotas, referrals, reviews, and reputation systems.
+
+## Choose a defense
+
+No single defense fits every application. Select a mechanism based on what the system is trying to represent.
+
+| Defense | What it adds | Main tradeoff |
+| - | - | - |
+| Proof of personhood | Evidence that participants are unique people | Privacy, accessibility, and external trust |
+| Token-weighted participation | Economic cost proportional to influence | Concentrates influence among large holders |
+| Deposits or fees | A cost for each identity or action | Excludes some users; wealthy attackers can pay |
+| Reputation or account age | Time and activity requirements | Slow onboarding and farmable behavior |
+| Delegation or trusted membership | Admission by an existing group | More centralized governance |
+| Rate limits and anomaly detection | Limits rapid abuse | Mitigates attacks without proving uniqueness |
+
+Layering independent defenses is usually stronger than making one threshold increasingly strict.
+
+## Review before deployment
+
+* Identify every rule that assumes one account represents one participant.
+* Estimate the cost of creating enough accounts to profit from the rule.
+* Avoid equal per-account rewards when uniqueness is not verified.
+* Make snapshots, eligibility windows, and tie-breaking rules explicit.
+* Monitor coordinated creation, funding, voting, and claiming patterns.
+* Document which attacks the chosen mechanism reduces and which remain possible.
+
+> [!WARNING]
+>
+> Token weighting and fees make Sybil attacks more expensive; they do not establish that accounts belong to different people.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

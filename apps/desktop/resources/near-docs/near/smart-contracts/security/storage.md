@@ -1,0 +1,44 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.near.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Storage cost attacks
+
+> Prevent attackers from locking a contract's balance by forcing unbounded state growth.
+
+NEAR accounts must maintain a balance proportional to the data they store. If users can grow contract state without paying for it, an attacker can create enough entries to lock the contract's available balance.
+
+## How the attack works
+
+Consider a [guest book](https://github.com/near-examples/guest-book-examples) that stores any message:
+
+1. An attacker stores a message, for which the contract - not the visitor - pays the storage cost
+2. An attacker repeats, storing thousands of inexpensive messages
+3. More of the contract's NEAR becomes locked for storage
+4. The contract eventually lacks liquid balance for other operations
+
+The attack is an economic imbalance: each write is cheap for the attacker but consumes balance belonging to the contract.
+
+## Charge for state growth
+
+Measure the bytes written and require the attached deposit to cover them. The exact implementation depends on whether you charge per operation or use a storage-management standard.
+
+```rust highlight={8-11} theme={"theme":{"light":"github-light","dark":"github-dark"}}
+#[payable]
+pub fn add_message(&mut self, message: String) {
+    let before = env::storage_usage();
+    self.messages.push(message);
+    let bytes_used = env::storage_usage() - before;
+    let required = env::storage_byte_cost().saturating_mul(bytes_used.into());
+
+    require!(
+        env::attached_deposit() >= required,
+        "Insufficient deposit for storage"
+    );
+}
+```
+
+If the deposit is insufficient, the panic reverts the state written by that receipt. Define what happens to any excess deposit and how users recover storage deposits when their data is removed.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
